@@ -320,7 +320,7 @@ abstract class dbio_handler extends base {
             }
             
             if ($this->import['operation'] == 'check') {
-              $this->debug_message ("SQL for $table_name:\n" . $db->perform ($table_name, $sql_data_array, $this->import['action'], $where_clause, true));
+              $this->debug_message ("SQL for $table_name:\n" . $db->perform ($table_name, $sql_data_array, $this->import['action'], $where_clause, 'return'));
               
             } else {
               $this->debug_message ("Performing database " . $this->import['action'] . " for $table_name with where_clause = '$where_clause':\n" . var_export ($sql_data_array, true));
@@ -335,7 +335,7 @@ abstract class dbio_handler extends base {
   
   function debug_message ($message) {
     if ($this->debug) {
-      error_log ($message . "\n", 3, $this->debug_log_file);
+      error_log (date (DBIO_DEBUG_DATE_FORMAT) . ": $message\n", 3, $this->debug_log_file);
       
     }
   }
@@ -380,6 +380,7 @@ abstract class dbio_handler extends base {
             break;
           }
           case 'char':
+          case 'text':
           case 'varchar':
           case 'mediumtext': {
             $field_type = 'string';

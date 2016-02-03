@@ -200,12 +200,18 @@ if (!class_exists ('dbio_products')) {
           $parent_category = 0;
           $categories = explode ('^', $field_value);
           foreach ($categories as $current_category_name) {
-            $category_info_sql = "SELECT categories_id FROM " . TABLE_CATEGORIES_DESCRIPTION . " WHERE parent_id = $parent_category AND categories_name = :categories_name: AND language_id = 1 LIMIT 1";
+            $category_info_sql = "SELECT c.categories_id FROM " . TABLE_CATEGORIES . " c, " . TABLE_CATEGORIES_DESCRIPTION . " cd
+                                   WHERE c.parent_id = $parent_category 
+                                     AND c.categories_id = cd.categories_id
+                                     AND cd.categories_name = :categories_name: 
+                                     AND cd.language_id = 1 LIMIT 1";
             $category_info = $db->Execute ($db->bindVars ($category_info_sql, ':categories_name:', $current_category_name, 'string'));
             if (!$category_info->EOF) {
               $parent_category = $category_info->fields['categories_id'];
               
             } else {
+              $this->debug_message ("[*] Creating category named \"$current_category_name\", with parent category $parent_category.");
+              
               $sql_data_array = array ();
               $sql_data_array[] = array ( 'fieldName' => 'parent_id', 'value' => $parent_category, 'type' => 'integer' );
               $sql_data_array[] = array ( 'fieldName' => 'date_added', 'value' => 'now()', 'type' => 'noquotestring' );
@@ -215,7 +221,7 @@ if (!class_exists ('dbio_products')) {
               foreach ($this->languages as $language_code => $language_id) {
                 $sql_data_array = array ();
                 $sql_data_array[] = array ( 'fieldName' => 'categories_id', 'value' => $categories_id, 'type' => 'integer' );
-                $sql_data_array[] = array ( 'fieldName' => 'languages_id', 'value' => $language_id, 'type' => 'integer' );
+                $sql_data_array[] = array ( 'fieldName' => 'language_id', 'value' => $language_id, 'type' => 'integer' );
                 $sql_data_array[] = array ( 'fieldName' => 'categories_name', 'value' => $current_category_name, 'type' => 'string' );
                 $db->perform (TABLE_CATEGORIES_DESCRIPTION, $sql_data_array);
                 
