@@ -17,9 +17,9 @@ if (!class_exists ('dbio_products')) {
   // This dbIO report class handles the customizations required for a Zen Cart product import/export.
   //
   class dbio_products extends dbio_handler {
-    function __construct (array $languages) {
+    function __construct ($log_file_suffix, array $languages) {
       $this->config = array (
-        'key' => array ( TABLE_PRODUCTS => 'products_model' ),
+        'key' => array ( 'table' => TABLE_PRODUCTS, 'match_field' => 'products_model', 'key_field' => 'products_id', 'key_field_type' => 'integer' ),
         'include_header' => true,
         'tables' => array ( 
           TABLE_PRODUCTS => array ( 
@@ -29,13 +29,15 @@ if (!class_exists ('dbio_products')) {
           ), 
           TABLE_PRODUCTS_DESCRIPTION => array ( 
             'short_name' => 'pd',
+            'language_field_name' => 'language_id',
+            'key_field' => 'products_id',
           ), 
         ), 
         'description' => array (
           'en' => "This report-format supports import/export of all fields within the <code>products</code> and <code>products_description</code> tables, the basic product information.",
         ),
       );
-      parent::__construct ($languages);
+      parent::__construct ($log_file_suffix, $languages);
       
     }
     
@@ -105,6 +107,15 @@ if (!class_exists ('dbio_products')) {
       return $fields;
       
     }
+    
+    function import_initialize ($language = 'all', $operation = 'check') {
+      parent::import_initialize ($language, $operation);
+      
+      $this->import['headers'][] = 'v_manufacturers_name';
+      $this->import['headers'][] = 'v_tax_class_title';
+      $this->import['headers'][] = 'v_categories_name';
+      
+    }
   
 // ----------------------------------------------------------------------------------
 //             I N T E R N A L / P R O T E C T E D   F U N C T I O N S 
@@ -121,6 +132,106 @@ if (!class_exists ('dbio_products')) {
       $this->tables[TABLE_PRODUCTS_DESCRIPTION]['fields']['products_id']['include_in_export'] = false;
       $this->tables[TABLE_PRODUCTS_DESCRIPTION]['fields']['language_id']['include_in_export'] = false;
       
+    }
+    
+    protected function import_field_check ($field_name) {
+      switch ($field_name) {
+        case 'products_id':
+        case 'language_id':
+        case 'manufacturers_id':
+        case 'products_tax_class_id':
+        case 'master_categories_id': {
+          $field_name = DBIO_NO_IMPORT;
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+      return $field_name;
+      
+    }
+    
+    protected function import_finalize_fields ($data) {
+      return true;
+    }
+    
+    protected function add_import_field ($table_name, $field_name, $field_value, $field_type) {
+      global $db;
+      switch ($field_name) {
+        case 'manufacturers_name': {
+          if (empty ($field_value)) {
+            $manufacturers_id = 0;
+            
+          } else {
+            $manufacturer_check_sql = "SELECT manufacturers_id FROM " . TABLE_MANUFACTURERS . " WHERE manufacturers_name = :manufacturer_name: LIMIT 1";
+            $manufacturer_check = $db->Execute ($db->bindVars ($manufacturer_check_sql, ':manufacturer_name:', $field_value, 'string'));
+            if (!$manufacturer_check->EOF) {
+              $manufacturers_id = $manufacturer_check->fields['manufacturers_id'];
+              
+            } else {
+              $this->log_message ("Import, creating database entry for manufacturer named \"$field_value\"");
+              $sql_data_array = array ();
+              $sql_data_array[] = array ( 'fieldName' => 'manufacturers_name', 'value' => $field_value, 'type' => 'string' );
+              $sql_data_array[] = array ( 'fieldName' => 'date_added', 'value' => 'now()', 'type' => 'noquotestring' );
+              $db->perform (TABLE_MANUFACTURERS, $sql_data_array);
+              $manufacturers_id = $db->Insert_ID();
+              
+              foreach ($this->languages as $language_code => $language_id) {
+                $sql_data_array = array ();
+                $sql_data_array[] = array ( 'fieldName' => 'manufacturers_id', 'value' => $manufacturers_id, 'type' => 'integer' );
+                $sql_data_array[] = array ( 'fieldName' => 'languages_id', 'value' => $language_id, 'type' => 'integer' );
+                $db->perform (TABLE_MANUFACTURERS_INFO, $sql_data_array);
+                
+              }
+            }
+          }
+          parent::add_import_field (TABLE_PRODUCTS, 'manufacturers_id', $manufacturers_id, 'integer');
+          break;
+        }
+        case 'tax_class_title': {
+          $tax_class_check_sql = "SELECT tax_class_id FROM " . TABLE_TAX_CLASS . " WHERE tax_class_title = :tax_class_title: LIMIT 1";
+          $tax_class_check = $db->Execute ($db->bindVars ($tax_class_check_sql, ':tax_class_title:', $field_value, 'string'));
+          $tax_class_id = ($tax_class_check->EOF) ? 0 : $tax_class_check->fields['tax_class_id'];
+          parent::add_import_field (TABLE_PRODUCTS, 'products_tax_class_id', $tax_class_id, 'integer');
+          break;
+        }
+        case 'categories_name': {
+          $parent_category = 0;
+          $categories = explode ('^', $field_value);
+          foreach ($categories as $current_category_name) {
+            $category_info_sql = "SELECT categories_id FROM " . TABLE_CATEGORIES_DESCRIPTION . " WHERE parent_id = $parent_category AND categories_name = :categories_name: AND language_id = 1 LIMIT 1";
+            $category_info = $db->Execute ($db->bindVars ($category_info_sql, ':categories_name:', $current_category_name, 'string'));
+            if (!$category_info->EOF) {
+              $parent_category = $category_info->fields['categories_id'];
+              
+            } else {
+              $sql_data_array = array ();
+              $sql_data_array[] = array ( 'fieldName' => 'parent_id', 'value' => $parent_category, 'type' => 'integer' );
+              $sql_data_array[] = array ( 'fieldName' => 'date_added', 'value' => 'now()', 'type' => 'noquotestring' );
+              $db->perform (TABLE_CATEGORIES, $sql_data_array);
+              
+              $categories_id = $db->insert_ID ();
+              foreach ($this->languages as $language_code => $language_id) {
+                $sql_data_array = array ();
+                $sql_data_array[] = array ( 'fieldName' => 'categories_id', 'value' => $categories_id, 'type' => 'integer' );
+                $sql_data_array[] = array ( 'fieldName' => 'languages_id', 'value' => $language_id, 'type' => 'integer' );
+                $sql_data_array[] = array ( 'fieldName' => 'categories_name', 'value' => $current_category_name, 'type' => 'string' );
+                $db->perform (TABLE_CATEGORIES_DESCRIPTION, $sql_data_array);
+                
+              }
+              $parent_category = $categories_id;
+              
+            }
+          }
+          
+          break;
+        }
+        default: {
+          parent::add_import_field ($table_name, $field_name, $field_value, $field_type);
+          break;
+        }
+      }
     }
     
   }  //-END class dbio_products

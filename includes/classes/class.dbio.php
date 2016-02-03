@@ -28,7 +28,6 @@ define ('DBIO_FORMAT_MESSAGE_EXPORT_NO_FP', 'Export aborted. Failure creating ou
 define ('DBIO_EXPORT_NOTHING_TO_DO', 'dbIO Export: No matching fields were found.');
 define ('DBIO_FORMAT_MESSAGE_IMPORT_FILE_MISSING', 'Import aborted:  Missing input file (%s).');
 define ('DBIO_WARNING_ENCODING_ERROR', 'dbIO Import: Could not encode the input for ' . CHARSET . '.');
-define ('DBIO_FORMAT_MESSAGE_IMPORT_MISSING_HEADER', 'Import aborted: Missing header information for input file (%s).');
 
 // -----
 // These definitions will, eventually, be migrated to admin-level configuration values.
@@ -37,16 +36,12 @@ if (!defined ('DBIO_DEBUG')) define ('DBIO_DEBUG', 'true');
 if (!defined ('DBIO_CSV_DELIMITER')) define ('DBIO_CSV_DELIMITER', ',');
 if (!defined ('DBIO_CSV_ENCLOSURE')) define ('DBIO_CSV_ENCLOSURE', '"');
 if (!defined ('DBIO_CSV_ESCAPE')) define ('DBIO_CSV_ESCAPE', '\\');
-if (!defined ('DBIO_USE_LANGUAGE_SUFFIX')) define ('DBIO_USE_LANGUAGE_SUFFIX', 'true');  //-'true' or 'false', controls whether a language-specific field's header has the code appended
 
 class dbio extends base {
 
   function __construct ($dbio_type = '') {
     $this->message = '';
     $this->file_suffix = date ('Ymd-His-') . mt_rand (1000,999999);
-    
-    $this->debug = (DBIO_DEBUG == 'true');
-    $this->debug_log_file = DIR_FS_LOGS . '/dbio-' . $this->file_suffix . '.log';
     
     $this->languages = array ();
     if (!class_exists ('language')) {
@@ -124,7 +119,7 @@ class dbio extends base {
           
         } else {
           $this->initialized = true;
-          $this->handler = new $handler_classname ($this->languages);
+          $this->handler = new $handler_classname ($this->file_suffix, $this->languages);
           
         }
       }
@@ -201,7 +196,7 @@ class dbio extends base {
     
   }
   
-  function import ($filename, $language = 'all') {
+  function import ($filename, $operation = 'check', $language = 'all') {
     $completion_code = false;
     $this->message = '';
     $import_file = DIR_FS_DBIO_IMPORT . $filename;
@@ -218,13 +213,14 @@ class dbio extends base {
       trigger_error ($this->message, E_USER_WARNING);
       
     } else {
-      $this->handler->import_initialize ($language);
-      $this->import_header = ($this->handler->config['include_header']) ? $this->get_csv_record (true) : $this->handler->import_get_header ($language);
-      if (!is_array ($this->import_header)) {
-        $this->message = sprintf (DBIO_FORMAT_MESSAGE_IMPORT_MISSING_HEADER, $import_file);
+      $this->handler->import_initialize ($language, $operation);
+      if (!$this->handler->import_get_header (($this->handler->config['include_header']) ? $this->get_csv_record () : false)) {
+        $this->message = $this->handler->get_handler_message ();
         
       } else {
         while (($data = $this->get_csv_record ()) !== false) {
+          $this->handler->import_csv_record ($data);
+          
         }
       }
       fclose ($this->import_fp);
@@ -238,16 +234,13 @@ class dbio extends base {
 ** $value = iconv('Windows-1252', 'UTF-8//IGNORE//TRANSLIT', $value);
 */
   
-  function _is_valid_variable_name ($name) {
-    return preg_match ('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/', $name);
-    
-  }
-  
   function debug_message ($message) {
-    if ($this->debug) {
-      error_log ($message . "\n", 3, $this->debug_log_file);
-      
+    if (!isset ($this->handler) || !method_exists ($this->handler, 'debug_message')) {
+      trigger_error ("Missing handler or method for message: $message", E_USER_ERROR);
+      exit ();
     }
+    $this->handler->debug_message ($message);
+
   }
   
   private function write_csv_record ($csv_record) {
@@ -262,16 +255,12 @@ class dbio extends base {
     }
   }
   
-  private function get_csv_record ($is_header = false) {
+  private function get_csv_record () {
     if (version_compare (PHP_VERSION, '5.3.0', '>=')) {
       $data = fgetcsv ($this->import_fp, 0, $this->handler->import['delimiter'], $this->handler->import['enclosure'], $this->handler->import['escape']);
       
     } else {
       $data = fgetcsv ($this->import_fp, 0, $this->handler->import['delimiter'], $this->handler->import['enclosure']);
-      
-    }
-    if ($data !== false) {
-      $data = $this->handler->import_csv_record ($data, $is_header);
       
     }
     return $data;

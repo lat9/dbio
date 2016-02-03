@@ -8,9 +8,20 @@ if (!defined ('IS_ADMIN_FLAG')) {
   
 }
 
+// -----
+// These definitions will, eventually, be migrated to language files.
+//
+define ('DBIO_MESSAGE_IMPORT_MISSING_HEADER', 'Import aborted: Missing header information for input file.');
+define ('DBIO_FORMAT_MESSAGE_IMPORT_MISSING_KEY', 'Import aborted: Missing key column (%s).');
+define ('DBIO_NO_IMPORT', '--none--');
+
 abstract class dbio_handler extends base {
-  function __construct (array $languages) {
+  function __construct ($log_file_suffix, array $languages) {
     $this->languages = $languages;
+    
+    $this->debug = (DBIO_DEBUG == 'true');
+    $this->debug_log_file = DIR_FS_LOGS . '/dbio-' . $log_file_suffix . '.log';
+    
     $this->_initialize ();
     
   }
@@ -78,6 +89,7 @@ abstract class dbio_handler extends base {
             }
           }
           $first_language = false;
+          
         }
         $this->export[$config_table_name]['select'] = substr ($this->export[$config_table_name]['select'], 0, -2);
         
@@ -113,7 +125,7 @@ abstract class dbio_handler extends base {
     
   }
   
-  function import_initialize ($language = 'all') {
+  function import_initialize ($language = 'all', $operation = 'check') {
     if (!isset ($this->config)) {
       trigger_error ('Import aborted: dbIO helper not configured.', E_USER_ERROR);
       exit ();
@@ -125,27 +137,30 @@ abstract class dbio_handler extends base {
       $language = key ($this->languages);
       
     }
+    $this->import = array ();
     $this->import['delimiter'] = DBIO_CSV_DELIMITER;
     $this->import['enclosure'] = DBIO_CSV_ENCLOSURE;
     $this->import['escape'] = DBIO_CSV_ESCAPE;
+    $this->import['operation'] = $operation;
+    $this->import['record_count'] = ($this->config['include_header']) ? 1 : 0;
     
     $this->import['headers'] = array ();
     foreach ($this->config['tables'] as $config_table_name => $config_table_info) {
       $is_language_table = $this->tables[$config_table_name]['uses_language'];
       foreach ($this->tables[$config_table_name]['fields'] as $current_field => $field_info) {
-        if ($field_info['include_in_export']) {
-          if (DBIO_USE_LANGUAGE_SUFFIX == 'true' && !$this->config['include_header'] && $is_language_table) {
+        if ($field_info['include_in_export'] === true) {
+          if (!$this->config['include_header'] && $is_language_table) {
             if ($language != 'all') {
-              $this->import['headers'][] = $current_field . '_' . $language;
+              $this->import['headers'][] = 'v_' . $current_field . '_' . $this->languages[$language];
               
             } else {
               foreach ($this->languages as $language_code => $language_id) {
-                $this->import['headers'][] = $current_field . '_' . $language_code;
+                $this->import['headers'][] = 'v_' . $current_field . '_' . $language_id;
                 
               }
             }
           } else {
-            $this->import['headers'][] = $current_field;
+            $this->import['headers'][] = 'v_' . $current_field;
             
           }
         }
@@ -155,14 +170,247 @@ abstract class dbio_handler extends base {
     
   }
   
-  function import_csv_record (array $data, $is_header = false) {
-    return $data;
+  function import_get_header ($header) {
+    if (!isset ($this->import) || !isset ($this->import['headers'])) {
+      trigger_error ("Import aborted, sequencing error. Can't get the header before overall initialization.", E_USER_ERROR);
+      exit ();
+      
+    }
+    if (!is_array ($header)) {
+      $this->debug_message ('import_get_header: No header included, using generated default.');
+      $header = $this->import['headers'];
+      
+    }
+    $this->debug_message ("import_get_header, using headers:\n" . var_export ($header, true));
+    $this->import['table_names'] = array ();
+    $this->import['language_id'] = array ();
+    $this->import['header_field_count'] = 0;
+    $this->import['key_index'] = false;
+    $key_index = 0;
+    foreach ($header as &$current_field) {
+      $table_name = DBIO_NO_IMPORT;
+      $field_language_id = 0;
+      if (strpos ($current_field, 'v_') !== 0) {
+        $current_field = DBIO_NO_IMPORT;
+        
+      } else {
+        $current_field = $this->import_field_check (substr ($current_field, 2));
+        if ($current_field != DBIO_NO_IMPORT) {
+          foreach ($this->tables as $database_table_name => $table_info) {
+            if ($table_info['uses_language']) {
+              foreach ($this->languages as $language_code => $language_id) {
+                $language_suffix = '_' . (int)$language_id;
+                $field_name = (strlen ($current_field) > strlen ($language_suffix)) ? substr ($current_field, 0, -strlen ($language_suffix)) : DBIO_NO_IMPORT;
+                if (array_key_exists ($field_name, $table_info['fields'])) {
+                  $table_name = $database_table_name;
+                  $field_language_id = $language_id;
+                  $current_field = $field_name;
+                  break;
+                  
+                }
+              }
+              if ($table_name != DBIO_NO_IMPORT) {
+                break;
+                
+              }
+            } elseif (array_key_exists ($current_field, $table_info['fields'])) {
+              $table_name = $database_table_name;
+              break;
+              
+            }
+          }
+        }
+        if ($this->config['key']['table'] == $table_name && $this->config['key']['match_field'] == $current_field) {
+          $this->import['key_index'] = $key_index;
+          
+        }
+      }
+      $this->import['table_names'][] = $table_name;
+      $this->import['language_id'][] = $field_language_id;
+      if ($current_field != DBIO_NO_IMPORT) {
+        $this->import['header_field_count']++;
+        
+      }  
+      $key_index++;
+      
+    }
+    $this->import['headers'] = $header;
+    $this->import['header_columns'] = count ($header);
+    
+    $initialization_complete = true;
+    if ($this->import['header_field_count'] == 0) {
+      $this->message = DBIO_MESSAGE_IMPORT_MISSING_HEADER;
+      $initialization_complete = false;
+      
+    } elseif ($this->import['key_index'] === false) {
+      $this->message = sprintf (DBIO_FORMAT_MESSAGE_IMPORT_MISSING_KEY, $this->config['key']['match_field']);
+      $initialization_complete = false;
+      
+    }
+    if (!$initialization_complete) {
+      unset ($this->import['table_names']);
+      
+    }
+    return $initialization_complete;
     
   }
   
+  function import_csv_record (array $data) {
+    global $db;
+    if (!isset ($this->import['table_names'])) {
+      trigger_error ("Import aborted, sequencing error. Previous import-header initialization error.", E_USER_ERROR);
+      exit ();
+      
+    }
+    $this->import['record_count']++;
+    $key_index = $this->import['key_index'];
+    if (count ($data) < $key_index) {
+      $this->log_message ('Data record at line #' . $this->import['record_count'] . ' not imported.  Column count (' . count ($data) . ') missing key column (' . $key_index . ').');
+      
+    } else {
+      $data_key_check = $db->Execute ("SELECT " . $this->config['key']['key_field'] . " as key_value 
+                                         FROM " . $this->config['key']['table'] . " 
+                                        WHERE " . $this->config['key']['match_field'] . " = '" . $db->prepare_input ($data[$key_index]) . "' LIMIT 1");
+      if ($data_key_check->EOF) {
+        $this->import['action'] = 'insert';
+        $this->import['where_clause'] = '';
+        
+      } else {
+        $this->import['action'] = 'update';
+        $this->import['where_clause'] = $db->bindVars ($this->config['key']['key_field'] . ' = :key_value:', ':key_value:', $data_key_check->fields['key_value'], $this->config['key']['key_field_type']);
+        
+      }
+      
+      $data_index = 0;
+      $this->import_sql_data = array ();
+      foreach ($data as $current_element) {
+        if ($data_index > $this->import['header_columns']) {
+          break;
+          
+        }
+        $field_name = $this->import['headers'][$data_index];
+        $table_name = $this->import['table_names'][$data_index];
+        $language_id = $this->import['language_id'][$data_index];
+        $data_index++;
+        
+        if ($field_name == DBIO_NO_IMPORT) {
+          continue;
+          
+        }
+        $this->process_import_field ($table_name, $field_name, $language_id, $current_element);
+
+      }
+
+      if ($this->import_finalize_fields ($data) !== false) {
+        $key_value = false;
+        foreach ($this->import_sql_data as $database_table => $sql_data_array) {
+          if ($database_table != DBIO_NO_IMPORT) {
+            $table_name = $database_table;
+            $where_clause = $this->import['where_clause'];
+            $capture_key_value = ($this->import['action'] == 'insert' && $this->config['key']['table'] == $table_name);
+
+            if (strpos ($table_name, '^') !== false) {
+              $language_tables = explode ('^', $table_name);
+              $table_name = $language_tables[0];
+              $language_id = $language_tables[1];
+              if ($this->import['action'] == 'update') {
+                $where_clause .= " AND language_id = $language_id";
+                
+              }
+            }
+            
+            if ($this->import['operation'] == 'check') {
+              $this->debug_message ("SQL for $table_name:\n" . $db->perform ($table_name, $sql_data_array, $this->import['action'], $where_clause, true));
+              
+            } else {
+              $this->debug_message ("Performing database " . $this->import['action'] . " for $table_name with where_clause = '$where_clause':\n" . var_export ($sql_data_array, true));
+              $db->perform ($table_name, $sql_data_array, $this->import['action'], $where_clause);
+              
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  function debug_message ($message) {
+    if ($this->debug) {
+      error_log ($message . "\n", 3, $this->debug_log_file);
+      
+    }
+  }
+  
 // ----------------------------------------------------------------------------------
-//                         P R O T E C T E D   F U N C T I O N S 
+//                P R O T E C T E D / I N T E R N A L   F U N C T I O N S 
 // ----------------------------------------------------------------------------------
+
+  protected function import_finalize_fields ($data) {
+    return true;
+  }
+  
+  protected function add_import_field ($table_name, $field_name, $field_value, $field_type) {
+    if (!isset ($this->import_sql_data[$table_name])) {
+      $this->import_sql_data[$table_name] = array ();
+      
+    }
+    $this->import_sql_data[$table_name][] = array ( 'fieldName' => $field_name, 'value' => $field_value, 'type' => $field_type );
+    
+  }
+  
+  protected function process_import_field ($table_name, $field_name, $language_id, $field_value, $field_type = false) {
+    if ($language_id == 0) {
+      $import_table_name = $table_name;
+      if (!isset ($this->import_sql_data[$table_name])) {
+        $this->import_sql_data[$table_name] = array ();
+        
+      }
+    } else {
+      $import_table_name = "$table_name^$language_id";
+      if (!isset ($this->import_sql_data[$import_table_name])) {
+        $this->import_sql_data[$import_table_name] = array ();
+        
+      }
+    }
+    if ($field_type === false) {
+      if (isset ($this->tables[$table_name]) && isset ($this->tables[$table_name]['fields'][$field_name])) {
+        switch ($this->tables[$table_name]['fields'][$field_name]['data_type']) {
+          case 'int':
+          case 'tinyint': {
+            $field_type = 'integer';
+            break;
+          }
+          case 'char':
+          case 'varchar':
+          case 'mediumtext': {
+            $field_type = 'string';
+            break;
+          }
+          case 'float':
+          case 'decimal': {
+            $field_type = 'float';
+            break;
+          }
+          case 'date':
+          case 'datetime': {
+            $field_type = 'date';
+            break;
+          }
+          default: {
+            $field_type = 'string';
+            trigger_error ("Unknown datatype (" . $this->tables[$table_name]['fields'][$field_name]['data_type'] . ") for $table_name::$field_name", E_USER_WARNING);
+            break;
+          }
+        }
+      }
+    }
+    $this->add_import_field ($import_table_name, $field_name, $field_value, $field_type);
+    
+  }
+  
+  protected function import_field_check ($field_name) {
+    return $field_name;
+    
+  }
   
   protected function export_get_sql ($sql_limit = '') {
     if (!isset ($this->export_language) || !isset ($this->export['select'])) {
@@ -185,12 +433,14 @@ abstract class dbio_handler extends base {
   
   protected function _initialize () {
     $this->message = '';
-    
+
     if (!isset ($this->config) || !isset ($this->config['tables']) || !is_array ($this->config['tables'])) {
       trigger_error ('dbIO configuration not set prior to _initialize.  Current class: ' . var_export ($this, true), E_USER_ERROR);
       exit();
       
     }
+    
+    $this->config['operation'] = NULL;
     
     if (!isset ($this->config['include_header'])) {
       $this->config['include_header'] = true;
@@ -198,7 +448,6 @@ abstract class dbio_handler extends base {
     }
 
     $this->tables = array ();
-    
     foreach ($this->config['tables'] as $table_name => $table_info) {
       $this->_initialize_table_fields ($table_name);
       $this->_initialize_sql_inputs ($table_name);
@@ -266,6 +515,7 @@ abstract class dbio_handler extends base {
         $uses_language = true;
         
       }
+/*
       if (strpos ($table_indexes, $field_name . ',') === false || $field_info['extra'] != 'auto_increment') {
         if (!$field_info['nullable'] && $field_info['default'] === NULL) {
           $required_fields .= ($field_name . ',');
@@ -273,6 +523,7 @@ abstract class dbio_handler extends base {
 
         }
       }
+*/
       if (isset ($this->config['tables'][$table_name]['insert_now']) && $this->config['tables'][$table_name]['insert_now'] == $field_name) {
         $insert_data_array[$field_name] = 'now()';
         
