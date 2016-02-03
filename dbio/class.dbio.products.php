@@ -29,7 +29,7 @@ if (!class_exists ('dbio_products')) {
           ), 
           TABLE_PRODUCTS_DESCRIPTION => array ( 
             'short_name' => 'pd',
-            'language_field_name' => 'language_id',
+            'language_field' => 'language_id',
             'key_field' => 'products_id',
           ), 
         ), 
@@ -153,7 +153,8 @@ if (!class_exists ('dbio_products')) {
     }
     
     protected function import_finalize_fields ($data) {
-      return true;
+      return parent::import_finalize_fields ($data);
+      
     }
     
     protected function add_import_field ($table_name, $field_name, $field_value, $field_type) {
@@ -165,7 +166,7 @@ if (!class_exists ('dbio_products')) {
             
           } else {
             $manufacturer_check_sql = "SELECT manufacturers_id FROM " . TABLE_MANUFACTURERS . " WHERE manufacturers_name = :manufacturer_name: LIMIT 1";
-            $manufacturer_check = $db->Execute ($db->bindVars ($manufacturer_check_sql, ':manufacturer_name:', $field_value, 'string'));
+            $manufacturer_check = $db->Execute ($db->bindVars ($manufacturer_check_sql, ':manufacturer_name:', $field_value, 'string'), false, false, 0, true);
             if (!$manufacturer_check->EOF) {
               $manufacturers_id = $manufacturer_check->fields['manufacturers_id'];
               
@@ -188,6 +189,7 @@ if (!class_exists ('dbio_products')) {
           }
           parent::add_import_field (TABLE_PRODUCTS, 'manufacturers_id', $manufacturers_id, 'integer');
           break;
+          
         }
         case 'tax_class_title': {
           $tax_class_check_sql = "SELECT tax_class_id FROM " . TABLE_TAX_CLASS . " WHERE tax_class_title = :tax_class_title: LIMIT 1";
@@ -195,6 +197,7 @@ if (!class_exists ('dbio_products')) {
           $tax_class_id = ($tax_class_check->EOF) ? 0 : $tax_class_check->fields['tax_class_id'];
           parent::add_import_field (TABLE_PRODUCTS, 'products_tax_class_id', $tax_class_id, 'integer');
           break;
+          
         }
         case 'categories_name': {
           $parent_category = 0;
@@ -205,7 +208,7 @@ if (!class_exists ('dbio_products')) {
                                      AND c.categories_id = cd.categories_id
                                      AND cd.categories_name = :categories_name: 
                                      AND cd.language_id = 1 LIMIT 1";
-            $category_info = $db->Execute ($db->bindVars ($category_info_sql, ':categories_name:', $current_category_name, 'string'));
+            $category_info = $db->Execute ($db->bindVars ($category_info_sql, ':categories_name:', $current_category_name, 'string'), false, false, 0, true);
             if (!$category_info->EOF) {
               $parent_category = $category_info->fields['categories_id'];
               
@@ -230,14 +233,58 @@ if (!class_exists ('dbio_products')) {
               
             }
           }
-          
+          $category_check = $db->Execute ("SELECT categories_id FROM " . TABLE_CATEGORIES . " WHERE parent_id = $parent_category LIMIT 1", false, false, 0, true);
+          if (!$category_check->EOF) {
+            $this->import['record_ok'] = false;
+            $message = "==> Product not processed at line number " . $this->import['record_count'] . "; category ($field_name) has categories.";
+            trigger_error ($message, E_USER_WARNING);
+            $this->debug_message ($message);
+            
+          } else {
+            parent::add_import_field (TABLE_PRODUCTS, 'master_categories_id', $parent_category, 'integer');
+            parent::add_import_field (TABLE_PRODUCTS_TO_CATEGORIES, 'categories_id', $parent_category, 'integer');
+            
+          }
           break;
+          
         }
         default: {
           parent::add_import_field ($table_name, $field_name, $field_value, $field_type);
           break;
+          
         }
       }
+    }
+    
+    // -----
+    // This function, issued just prior to the database action, allows the I/O handler to make any "last-minute" changes based
+    // on the record's 'key' value -- for this report, it's the products_id value.
+    //
+    // If we're doing an insert (i.e. a new product), simply add the products_id field to the non-products tables' SQL
+    // input array.
+    //
+    // If we're doing an update (i.e. existing product), the built-in handling has already taken care of the language
+    // tables, but there's some special handling required for the products-to-categories table.  That table's update
+    // happens within this function and we set the return value to false to indicate to the parent processing that the
+    // associated update has been already handled.
+    //
+    protected function import_update_record_key ($table_name, $sql_data_array, $products_id) {
+      global $db;
+      if ($this->import['action'] == 'insert') {
+        if ($table_name != TABLE_PRODUCTS) {
+          $sql_data_array[] = array ( 'fieldName' => 'products_id', 'value' => $products_id, 'type' => 'integer' );
+          
+        }
+      } elseif ($table_name == TABLE_PRODUCTS_TO_CATEGORIES) {
+        foreach ($sql_data_array as $next_category) {
+          $db->Execute ("INSERT IGNORE INTO $table_name (products_id, categories_id) VALUES ( $products_id, " . $next_category['value'] . ")");
+          
+        }
+        $sql_data_array = false;
+
+      }
+      return parent::import_update_record_key ($table_name, $sql_data_array, $products_id);
+      
     }
     
   }  //-END class dbio_products

@@ -255,6 +255,9 @@ abstract class dbio_handler extends base {
     
   }
   
+  // -----
+  // This function is the heart of the dbIO-Import handling, processing the current CSV record into the store's database.
+  //
   function import_csv_record (array $data) {
     global $db;
     if (!isset ($this->import['table_names'])) {
@@ -262,25 +265,46 @@ abstract class dbio_handler extends base {
       exit ();
       
     }
+    // -----
+    // Indicate, initially, that the record is OK to import and increment the count of lines processed.  The last value
+    // will be used in any debug-log information to note the location of any processing.
+    //
+    $this->import['record_ok'] = true;
     $this->import['record_count']++;
+    
+    // -----
+    // Determine the "key" value associated with the record.  If there are fewer columns of data than required to access
+    // the key-index, the record is not imported.
+    //
     $key_index = $this->import['key_index'];
     if (count ($data) < $key_index) {
       $this->log_message ('Data record at line #' . $this->import['record_count'] . ' not imported.  Column count (' . count ($data) . ') missing key column (' . $key_index . ').');
       
     } else {
+      // -----
+      // See if a record matching the field-to-match exists.  If there is one, we'll be updating the associated record;
+      // otherwise, we'll be inserting.
+      //      
       $data_key_check = $db->Execute ("SELECT " . $this->config['key']['key_field'] . " as key_value 
                                          FROM " . $this->config['key']['table'] . " 
                                         WHERE " . $this->config['key']['match_field'] . " = '" . $db->prepare_input ($data[$key_index]) . "' LIMIT 1");
       if ($data_key_check->EOF) {
         $this->import['action'] = 'insert';
         $this->import['where_clause'] = '';
+        $key_value = false;
         
       } else {
         $this->import['action'] = 'update';
-        $this->import['where_clause'] = $db->bindVars ($this->config['key']['key_field'] . ' = :key_value:', ':key_value:', $data_key_check->fields['key_value'], $this->config['key']['key_field_type']);
+        $key_value = $data_key_check->fields['key_value'];
+        $this->import['where_clause'] = $db->bindVars ($this->config['key']['key_field'] . ' = :key_value:', ':key_value:', $key_value, $this->config['key']['key_field_type']);
         
       }
       
+      // -----
+      // Loop, processing each 'column' of data into its respective database field(s).  At the end of this processing,
+      // we'll have a couple of sql-data arrays to be used as input to the database 'perform' function; that function will
+      // handle any conversions and quoting required.
+      //
       $data_index = 0;
       $this->import_sql_data = array ();
       foreach ($data as $current_element) {
@@ -301,8 +325,10 @@ abstract class dbio_handler extends base {
 
       }
 
+      // -----
+      // If the record didn't have errors preventing its insert ...
+      //
       if ($this->import_finalize_fields ($data) !== false) {
-        $key_value = false;
         foreach ($this->import_sql_data as $database_table => $sql_data_array) {
           if ($database_table != DBIO_NO_IMPORT) {
             $table_name = $database_table;
@@ -316,16 +342,25 @@ abstract class dbio_handler extends base {
               if ($this->import['action'] == 'update') {
                 $where_clause .= " AND language_id = $language_id";
                 
+              } else {
+                $sql_data_array[] = array ( 'fieldName' => $this->config['tables'][$table_name]['language_field'], 'value' => $language_id, 'type' => 'integer' );
+                
               }
             }
             
             if ($this->import['operation'] == 'check') {
-              $this->debug_message ("SQL for $table_name:\n" . $db->perform ($table_name, $sql_data_array, $this->import['action'], $where_clause, 'return'));
+              $this->debug_message ("SQL for $table_name:\n" . $db->perform ($table_name, $sql_data_array, $this->import['action'], $where_clause, 'return') . "\n");
               
             } else {
-              $this->debug_message ("Performing database " . $this->import['action'] . " for $table_name with where_clause = '$where_clause':\n" . var_export ($sql_data_array, true));
-              $db->perform ($table_name, $sql_data_array, $this->import['action'], $where_clause);
-              
+              $sql_data_array = $this->import_update_record_key ($table_name, $sql_data_array, $key_value);
+              if ($sql_data_array !== false) {
+                $this->debug_message ("Performing database " . $this->import['action'] . " for $table_name with where_clause = '$where_clause':\n" . $this->prettify ($sql_data_array) . "\n");
+                $db->perform ($table_name, $sql_data_array, $this->import['action'], $where_clause);
+                if ($capture_key_value) {
+                  $key_value = $db->insert_ID ();
+                  
+                }
+              }
             }
           }
         }
@@ -333,6 +368,9 @@ abstract class dbio_handler extends base {
     }
   }
   
+  // -----
+  // Writes the requested message to the current debug-log file, if debug is enabled.
+  //
   function debug_message ($message) {
     if ($this->debug) {
       error_log (date (DBIO_DEBUG_DATE_FORMAT) . ": $message\n", 3, $this->debug_log_file);
@@ -344,8 +382,22 @@ abstract class dbio_handler extends base {
 //                P R O T E C T E D / I N T E R N A L   F U N C T I O N S 
 // ----------------------------------------------------------------------------------
 
+  // -----
+  // Local function (used when logging messages to reduce unnecessary whitespace.
+  //
+  protected function prettify (array $data) {
+    return str_replace (array ("',\n", "=> \n", "array (\n", "0,\n", '  '), array("',", "=> ", "array (", "0,", ' '), var_export ($data, true));
+    
+  }
+
   protected function import_finalize_fields ($data) {
-    return true;
+    return $this->import['record_ok'];
+    
+  }
+  
+  protected function import_update_record_key ($table_name, $sql_data_array, $key_value) {
+    return $sql_data_array;
+    
   }
   
   protected function add_import_field ($table_name, $field_name, $field_value, $field_type) {

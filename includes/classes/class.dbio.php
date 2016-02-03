@@ -33,6 +33,7 @@ define ('DBIO_WARNING_ENCODING_ERROR', 'dbIO Import: Could not encode the input 
 // These definitions will, eventually, be migrated to admin-level configuration values.
 //
 if (!defined ('DBIO_DEBUG')) define ('DBIO_DEBUG', 'true');
+if (!defined ('DBIO_DEBUG_DATE_FORMAT')) define ('DBIO_DEBUG_DATE_FORMAT', 'Y-m-d H:i:s');
 if (!defined ('DBIO_CSV_DELIMITER')) define ('DBIO_CSV_DELIMITER', ',');
 if (!defined ('DBIO_CSV_ENCLOSURE')) define ('DBIO_CSV_ENCLOSURE', '"');
 if (!defined ('DBIO_CSV_ESCAPE')) define ('DBIO_CSV_ESCAPE', '\\');
