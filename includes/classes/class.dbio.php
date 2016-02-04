@@ -32,11 +32,15 @@ define ('DBIO_WARNING_ENCODING_ERROR', 'dbIO Import: Could not encode the input 
 // -----
 // These definitions will, eventually, be migrated to admin-level configuration values.
 //
-if (!defined ('DBIO_DEBUG')) define ('DBIO_DEBUG', 'true');
-if (!defined ('DBIO_DEBUG_DATE_FORMAT')) define ('DBIO_DEBUG_DATE_FORMAT', 'Y-m-d H:i:s');
+if (!defined ('DBIO_DEBUG')) define ('DBIO_DEBUG', 'true');                                 //-Either 'true' or 'false'
+if (!defined ('DBIO_DEBUG_DATE_FORMAT')) define ('DBIO_DEBUG_DATE_FORMAT', 'Y-m-d H:i:s');  //-Date format used on the dbio log-output
+
 if (!defined ('DBIO_CSV_DELIMITER')) define ('DBIO_CSV_DELIMITER', ',');
 if (!defined ('DBIO_CSV_ENCLOSURE')) define ('DBIO_CSV_ENCLOSURE', '"');
 if (!defined ('DBIO_CSV_ESCAPE')) define ('DBIO_CSV_ESCAPE', '\\');
+
+if (!defined ('DBIO_IMPORT_DATE_FORMAT')) define ('DBIO_IMPORT_DATE_FORMAT', 'm/d/y');      //-Possible values: 'm-d-y', 'd-m-y', 'y-m-d'
+if (!defined ('DBIO_MAX_EXECUTION_TIME')) define ('DBIO_MAX_EXECUTION_TIME', '60');         //-Number of seconds for script time-out
 
 class dbio extends base {
 
@@ -157,6 +161,8 @@ class dbio extends base {
           $this->message = DBIO_EXPORT_NOTHING_TO_DO;
           
         } else {
+          ini_set ('max_execution_time', DBIO_MAX_EXECUTION_TIME);
+          
           $this->write_csv_record ($this->handler->export_get_header ());
           while (!$export_info->EOF) {
             $this->write_csv_record ($this->handler->export_prepare_fields ($export_info->fields));
@@ -219,6 +225,7 @@ class dbio extends base {
         $this->message = $this->handler->get_handler_message ();
         
       } else {
+        ini_set ('max_execution_time', DBIO_MAX_EXECUTION_TIME);
         while (($data = $this->get_csv_record ()) !== false) {
           $this->handler->import_csv_record ($data);
           

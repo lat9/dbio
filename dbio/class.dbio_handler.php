@@ -456,8 +456,10 @@ abstract class dbio_handler extends base {
         }
       }
     }
-    $this->add_import_field ($import_table_name, $field_name, $field_value, $field_type);
-    
+    if ($field_type !== false) {
+      $this->add_import_field ($import_table_name, $field_name, $field_value, $field_type);
+      
+    }
   }
   
   protected function import_field_check ($field_name) {

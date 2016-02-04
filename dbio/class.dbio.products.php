@@ -171,7 +171,7 @@ if (!class_exists ('dbio_products')) {
               $manufacturers_id = $manufacturer_check->fields['manufacturers_id'];
               
             } else {
-              $this->log_message ("Import, creating database entry for manufacturer named \"$field_value\"");
+              $this->debug_message ("[*] Import, creating database entry for manufacturer named \"$field_value\"");
               $sql_data_array = array ();
               $sql_data_array[] = array ( 'fieldName' => 'manufacturers_name', 'value' => $field_value, 'type' => 'string' );
               $sql_data_array[] = array ( 'fieldName' => 'date_added', 'value' => 'now()', 'type' => 'noquotestring' );
@@ -192,10 +192,19 @@ if (!class_exists ('dbio_products')) {
           
         }
         case 'tax_class_title': {
-          $tax_class_check_sql = "SELECT tax_class_id FROM " . TABLE_TAX_CLASS . " WHERE tax_class_title = :tax_class_title: LIMIT 1";
-          $tax_class_check = $db->Execute ($db->bindVars ($tax_class_check_sql, ':tax_class_title:', $field_value, 'string'));
-          $tax_class_id = ($tax_class_check->EOF) ? 0 : $tax_class_check->fields['tax_class_id'];
-          parent::add_import_field (TABLE_PRODUCTS, 'products_tax_class_id', $tax_class_id, 'integer');
+          if (zen_not_null ($field_value)) {
+            $tax_class_check_sql = "SELECT tax_class_id FROM " . TABLE_TAX_CLASS . " WHERE tax_class_title = :tax_class_title: LIMIT 1";
+            $tax_class_check = $db->Execute ($db->bindVars ($tax_class_check_sql, ':tax_class_title:', $field_value, 'string'));
+            if ($tax_class_check->EOF) {
+              $message = 'Import line #' . $this->import['record_count'] . ", undefined tax_class_title ($field_value).  Defaulting product to untaxed.";
+              $this->debug_message ('==> ' . $message);
+              trigger_error ($message, E_USER_WARNING);
+              
+            }
+            $tax_class_id = ($tax_class_check->EOF) ? 0 : $tax_class_check->fields['tax_class_id'];
+            parent::add_import_field (TABLE_PRODUCTS, 'products_tax_class_id', $tax_class_id, 'integer');
+            
+          }
           break;
           
         }
