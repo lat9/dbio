@@ -7,6 +7,14 @@ if (!defined ('IS_ADMIN_FLAG')) {
   exit ('Illegal access');
   
 }
+
+// ----
+// These definitions are used by this sequencing class as well as the report-specific handlers.
+//
+define ('DBIO_WARNING', 1);
+define ('DBIO_ERROR', 2);
+define ('DBIO_INVALID_CHAR_REPLACEMENT', 167); //-Use the "section symbol" (§) as the invalid-character replacement
+
 // -----
 // These definitions will, eventually, be migrated to an /extra_datafiles file.
 //
@@ -40,6 +48,7 @@ if (!defined ('DBIO_CSV_ENCLOSURE')) define ('DBIO_CSV_ENCLOSURE', '"');
 if (!defined ('DBIO_CSV_ESCAPE')) define ('DBIO_CSV_ESCAPE', '\\');
 
 if (!defined ('DBIO_IMPORT_DATE_FORMAT')) define ('DBIO_IMPORT_DATE_FORMAT', 'm/d/y');      //-Possible values: 'm-d-y', 'd-m-y', 'y-m-d'
+if (!defined ('DBIO_IMPORT_CHARSET')) define ('DBIO_IMPORT_CHARSET', 'CP1252');             //-Possible values: 'UTF-8', 'ISO-8859-1', 'ASCII', 'CP1252'
 if (!defined ('DBIO_MAX_EXECUTION_TIME')) define ('DBIO_MAX_EXECUTION_TIME', '60');         //-Number of seconds for script time-out
 
 class dbio extends base {
@@ -60,6 +69,8 @@ class dbio extends base {
     }
     unset ($languages);
     
+    mb_internal_encoding (CHARSET);
+    ini_set ('mbstring.substitute_character', DBIO_INVALID_CHAR_REPLACEMENT);
     ini_set ("auto_detect_line_endings", true);
     
     $this->initialize_config ($dbio_type);
@@ -97,7 +108,7 @@ class dbio extends base {
   // -----
   // Function to initialize the configuration settings for a given import type.  A given import type's configuration
   // is controlled by a file named class.dbio.$dbio_type.php, present in the DIR_FS_DBIO directory. That class-file 
-  // is a dbio_report-class object.
+  // is a dbio_handler-class object.
   //
   function initialize_config ($dbio_type) {
     unset ($this->handler);
@@ -203,6 +214,12 @@ class dbio extends base {
     
   }
   
+  // -----
+  // Import processing sequencer for the specified file.  The operation can be one of
+  // 'check' (check-only, no database update), 'run' (runs the import).  The language
+  // is specified as either 'all' (all store languages) or by the 2-character ISO code
+  // associated with the language, e.g. 'en' for English or 'es' for Spanish.
+  //
   function import ($filename, $operation = 'check', $language = 'all') {
     $completion_code = false;
     $this->message = '';
@@ -211,27 +228,32 @@ class dbio extends base {
       $this->message = DBIO_MESSAGE_IMPORT_NOT_INITIALIZED;
       trigger_error ($this->message, E_USER_WARNING);
       
-    } elseif (!file_exists ($import_file)) {
-      $this->message = sprintf (DBIO_FORMAT_MESSAGE_IMPORT_FILE_MISSING, $import_file);
-      trigger_error ($this->message, E_USER_WARNING);
-      
-    } elseif (($this->import_fp = fopen ($import_file, 'r')) === false) {
-      $this->message = sprintf (DBIO_FORMAT_MESSAGE_EXPORT_NO_FP, $import_file);
-      trigger_error ($this->message, E_USER_WARNING);
-      
     } else {
-      $this->handler->import_initialize ($language, $operation);
-      if (!$this->handler->import_get_header (($this->handler->config['include_header']) ? $this->get_csv_record () : false)) {
-        $this->message = $this->handler->get_handler_message ();
+      $this->handler->start_timer ();
+      if (!file_exists ($import_file)) {
+        $this->message = sprintf (DBIO_FORMAT_MESSAGE_IMPORT_FILE_MISSING, $import_file);
+        trigger_error ($this->message, E_USER_WARNING);
+        
+      } elseif (($this->import_fp = fopen ($import_file, 'r')) === false) {
+        $this->message = sprintf (DBIO_FORMAT_MESSAGE_EXPORT_NO_FP, $import_file);
+        trigger_error ($this->message, E_USER_WARNING);
         
       } else {
-        ini_set ('max_execution_time', DBIO_MAX_EXECUTION_TIME);
-        while (($data = $this->get_csv_record ()) !== false) {
-          $this->handler->import_csv_record ($data);
+        $this->handler->import_initialize ($language, $operation);
+        if (!$this->handler->import_get_header (($this->handler->config['include_header']) ? $this->get_csv_record () : false)) {
+          $this->message = $this->handler->get_handler_message ();
           
+        } else {
+          ini_set ('max_execution_time', DBIO_MAX_EXECUTION_TIME);
+          while (($data = $this->get_csv_record ()) !== false) {
+            $this->handler->import_csv_record ($data);
+            
+          }
         }
+        fclose ($this->import_fp);
+        
       }
-      fclose ($this->import_fp);
+      $this->handler->stop_timer ();
       
     }
     return $completion_code;
@@ -242,6 +264,10 @@ class dbio extends base {
 ** $value = iconv('Windows-1252', 'UTF-8//IGNORE//TRANSLIT', $value);
 */
   
+  // -----
+  // Redirect any debug-messages from this level of processing to the handler's message handling, so that
+  // all messages for a given import are recorded in a single location.
+  //
   function debug_message ($message) {
     if (!isset ($this->handler) || !method_exists ($this->handler, 'debug_message')) {
       trigger_error ("Missing handler or method for message: $message", E_USER_ERROR);
@@ -251,6 +277,9 @@ class dbio extends base {
 
   }
   
+  // -----
+  // Write the specified array of data to the current export .csv file.
+  //
   private function write_csv_record ($csv_record) {
     if (is_array ($csv_record) && count ($csv_record) != 0) {
       if (version_compare (PHP_VERSION, '5.5.4', '>=')) {
@@ -263,6 +292,9 @@ class dbio extends base {
     }
   }
   
+  // -----
+  // Retrieve (and return) the next record from the current import .csv file.
+  //
   private function get_csv_record () {
     if (version_compare (PHP_VERSION, '5.3.0', '>=')) {
       $data = fgetcsv ($this->import_fp, 0, $this->handler->import['delimiter'], $this->handler->import['enclosure'], $this->handler->import['escape']);

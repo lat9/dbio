@@ -22,7 +22,36 @@ abstract class dbio_handler extends base {
     $this->debug = (DBIO_DEBUG == 'true');
     $this->debug_log_file = DIR_FS_LOGS . '/dbio-' . $log_file_suffix . '.log';
     
+    $this->stats = array ( 'errors' => 0, 'warnings' => 0, 'record_count' => 0, 'inserts' => 0, 'updates' => 0, 'start_time' => 0, 'stop_time' => 0 );
+    
+    $this->debug_message ('Configured CHARSET (' . CHARSET . '), DB_CHARSET (' . DB_CHARSET . '), PHP multi-byte settings: ' . var_export (mb_get_info (), true));
+    
     $this->_initialize ();
+    
+  }
+  
+  // -----
+  // Set the current time into the process's start time.
+  //
+  public function start_timer () {
+    $this->stats['start_time'] = microtime (true);
+    
+  }
+  
+  // -----
+  // Set the current time into the process's stop time.
+  //
+  public function stop_timer () {
+    $this->stats['stop_time'] = microtime (true);
+    
+  }
+  
+  // -----
+  // Get the script's parse time, returned as a floating-point value identifying the number of seconds (a floating-point value).  The value is
+  // returned as 0 if the timer was either not started or not stopped.
+  //
+  public function get_parse_time () {
+    return ($this->stats['start_time'] === 0 || $this->stats['stop_time'] === 0) ? 0 : ($this->stats['stop_time'] - $this->stats['start_time']);
     
   }
   
@@ -142,7 +171,8 @@ abstract class dbio_handler extends base {
     $this->import['enclosure'] = DBIO_CSV_ENCLOSURE;
     $this->import['escape'] = DBIO_CSV_ESCAPE;
     $this->import['operation'] = $operation;
-    $this->import['record_count'] = ($this->config['include_header']) ? 1 : 0;
+    $this->import['check_values'] = ($operation == 'check' || $operation == 'run-check');
+    $this->stats['record_count'] = ($this->config['include_header']) ? 1 : 0;
     
     $this->import['headers'] = array ();
     foreach ($this->config['tables'] as $config_table_name => $config_table_info) {
@@ -270,7 +300,7 @@ abstract class dbio_handler extends base {
     // will be used in any debug-log information to note the location of any processing.
     //
     $this->import['record_ok'] = true;
-    $this->import['record_count']++;
+    $this->stats['record_count']++;
     
     // -----
     // Determine the "key" value associated with the record.  If there are fewer columns of data than required to access
@@ -278,7 +308,7 @@ abstract class dbio_handler extends base {
     //
     $key_index = $this->import['key_index'];
     if (count ($data) < $key_index) {
-      $this->log_message ('Data record at line #' . $this->import['record_count'] . ' not imported.  Column count (' . count ($data) . ') missing key column (' . $key_index . ').');
+      $this->debug_message ('Data record at line #' . $this->import['record_count'] . ' not imported.  Column count (' . count ($data) . ') missing key column (' . $key_index . ').', DBIO_ERROR);
       
     } else {
       // -----
@@ -291,10 +321,12 @@ abstract class dbio_handler extends base {
       if ($data_key_check->EOF) {
         $this->import['action'] = 'insert';
         $this->import['where_clause'] = '';
+        $this->stats['inserts']++;
         $key_value = false;
         
       } else {
         $this->import['action'] = 'update';
+        $this->stats['updates']++;
         $key_value = $data_key_check->fields['key_value'];
         $this->import['where_clause'] = $db->bindVars ($this->config['key']['key_field'] . ' = :key_value:', ':key_value:', $key_value, $this->config['key']['key_field_type']);
         
@@ -371,10 +403,23 @@ abstract class dbio_handler extends base {
   // -----
   // Writes the requested message to the current debug-log file, if debug is enabled.
   //
-  function debug_message ($message) {
+  function debug_message ($message, $severity = 0) {
     if ($this->debug) {
       error_log (date (DBIO_DEBUG_DATE_FORMAT) . ": $message\n", 3, $this->debug_log_file);
       
+    }
+    switch ($severity) {
+      case DBIO_WARNING: {
+        $this->stats['warnings']++;
+        break;
+      }
+      case DBIO_ERROR: {
+        $this->stats['errors']++;
+        break;
+      }
+      default: {
+        break;
+      }
     }
   }
   
@@ -425,38 +470,74 @@ abstract class dbio_handler extends base {
     }
     if ($field_type === false) {
       if (isset ($this->tables[$table_name]) && isset ($this->tables[$table_name]['fields'][$field_name])) {
+        $valid_string_field = false;
         switch ($this->tables[$table_name]['fields'][$field_name]['data_type']) {
           case 'int':
+          case 'smallint':
+          case 'mediumint':
+          case 'bigint':
           case 'tinyint': {
             $field_type = 'integer';
-            break;
-          }
-          case 'char':
-          case 'text':
-          case 'varchar':
-          case 'mediumtext': {
-            $field_type = 'string';
+            if ($this->import['check_values'] && !ctype_digit ($field_value)) {
+              $this->debug_message ("[*] $import_table_name.$field_name: Value ($field_value) is not an integer", DBIO_WARNING);
+              
+            }
             break;
           }
           case 'float':
           case 'decimal': {
             $field_type = 'float';
+            if ($this->import['check_values'] && !(ctype_digit (str_replace ('.', '', $field_value) && substr_count ($field_value, '.') <= 1))) {
+              $this->debug_message ("[*] $import_table_name.$field_name: Value ($field_value) is not a floating-point value.", DBIO_WARNING);
+              
+            }
             break;
           }
           case 'date':
           case 'datetime': {
             $field_type = 'date';
+            if ($this->import['check_values']) {
+            }
             break;
           }
+          case 'char':
+          case 'text':
+          case 'varchar':
+          case 'mediumtext':
+            $valid_string_field = true;  //-Indicate that a value string-type field was found and fall through to common processing
           default: {
             $field_type = 'string';
-            trigger_error ("Unknown datatype (" . $this->tables[$table_name]['fields'][$field_name]['data_type'] . ") for $table_name::$field_name", E_USER_WARNING);
+            if (!$valid_string_field) {
+              $message = "Unknown datatype (" . $this->tables[$table_name]['fields'][$field_name]['data_type'] . ") for $table_name::$field_name on line #" . $this->stats['record_count'];
+              $this->debug_message ("[*] process_input_field: $message", DBIO_WARNING);
+              trigger_error ($message, E_USER_WARNING);
+              
+            }
+            if ($this->import['check_values']) {
+              $field_value = htmlentities ($field_value, ENT_COMPAT, DBIO_IMPORT_CHARSET, false);
+              if (trim ($field_value) == '') {
+                $encoded_field_value = mb_convert_encoding ($field_value, DBIO_IMPORT_CHARSET, CHARSET);
+                if (mb_substr_count ($encoded_field_value, DBIO_IMPORT_CHARSET) != 0) {
+                  $message = "Invalid character(s) detected in field $table_name::$field_name: $encoded_field_value on line #" . $this->stats['record_count'];
+                  $this->debug_message ("[*] process_input_field: $message" , DBIO_WARNING);
+                  trigger_error ($message, E_USER_WARNING);
+                  
+                }
+                $field_value = $encoded_field_value;
+                
+              }
+              $field_value = html_entity_decode ($field_value, ENT_COMPAT, CHARSET);
+              
+            }
             break;
           }
         }
       }
     }
-    if ($field_type !== false) {
+    if ($field_type === false) {
+      $this->debug_message ("[*] process_input_field ($import_table_name, $field_name, $language_id, $field_value): Can't resolve field type, ignoring.", DBIO_WARNING);
+      
+    } else {
       $this->add_import_field ($import_table_name, $field_name, $field_value, $field_type);
       
     }
