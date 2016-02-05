@@ -59,7 +59,7 @@ abstract class dbio_handler extends base {
   // Return the language-specific description for the handler.
   //
   function get_handler_description ($language = 'en') {
-    return (isset ($this->config) && isset ($this->config['description']) && isset ($this->config['description'][$language])) ? $this->config['description'][$language] : DBIO_TEXT_NO_DESCRIPTION;
+    return (isset ($this->config) && isset ($this->config['description']) && isset ($this->config['description'][$language])) ? $this->config['description'][$language] : sprintf (DBIO_FORMAT_TEXT_NO_DESCRIPTION, $language);
     
   }
   
