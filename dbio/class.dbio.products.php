@@ -196,9 +196,7 @@ if (!class_exists ('dbio_products')) {
             $tax_class_check_sql = "SELECT tax_class_id FROM " . TABLE_TAX_CLASS . " WHERE tax_class_title = :tax_class_title: LIMIT 1";
             $tax_class_check = $db->Execute ($db->bindVars ($tax_class_check_sql, ':tax_class_title:', $field_value, 'string'));
             if ($tax_class_check->EOF) {
-              $message = 'Import line #' . $this->import['record_count'] . ", undefined tax_class_title ($field_value).  Defaulting product to untaxed.";
-              $this->debug_message ('==> ' . $message);
-              trigger_error ($message, E_USER_WARNING);
+              $this->debug_message ('[*] Import line #' . $this->import['record_count'] . ", undefined tax_class_title ($field_value).  Defaulting product to untaxed.", DBIO_WARNING);
               
             }
             $tax_class_id = ($tax_class_check->EOF) ? 0 : $tax_class_check->fields['tax_class_id'];
@@ -245,9 +243,7 @@ if (!class_exists ('dbio_products')) {
           $category_check = $db->Execute ("SELECT categories_id FROM " . TABLE_CATEGORIES . " WHERE parent_id = $parent_category LIMIT 1", false, false, 0, true);
           if (!$category_check->EOF) {
             $this->import['record_ok'] = false;
-            $message = "==> Product not processed at line number " . $this->import['record_count'] . "; category ($field_name) has categories.";
-            trigger_error ($message, E_USER_WARNING);
-            $this->debug_message ($message);
+            $this->debug_message ("[*] Product not processed at line number " . $this->import['record_count'] . "; category ($field_name) has categories.", DBIO_WARNING);
             
           } else {
             parent::add_import_field (TABLE_PRODUCTS, 'master_categories_id', $parent_category, 'integer');

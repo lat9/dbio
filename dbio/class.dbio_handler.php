@@ -411,10 +411,12 @@ abstract class dbio_handler extends base {
     switch ($severity) {
       case DBIO_WARNING: {
         $this->stats['warnings']++;
+        trigger_error ($message, E_USER_WARNING);
         break;
       }
       case DBIO_ERROR: {
         $this->stats['errors']++;
+        trigger_error ($message, E_USER_ERROR);
         break;
       }
       default: {
@@ -510,17 +512,15 @@ abstract class dbio_handler extends base {
             if (!$valid_string_field) {
               $message = "Unknown datatype (" . $this->tables[$table_name]['fields'][$field_name]['data_type'] . ") for $table_name::$field_name on line #" . $this->stats['record_count'];
               $this->debug_message ("[*] process_input_field: $message", DBIO_WARNING);
-              trigger_error ($message, E_USER_WARNING);
               
             }
             if ($this->import['check_values']) {
-              $field_value = htmlentities ($field_value, ENT_COMPAT, DBIO_IMPORT_CHARSET, false);
+              $field_value = htmlentities ($field_value, ENT_COMPAT, DBIO_CHARSET, false);
               if (trim ($field_value) == '') {
-                $encoded_field_value = mb_convert_encoding ($field_value, DBIO_IMPORT_CHARSET, CHARSET);
-                if (mb_substr_count ($encoded_field_value, DBIO_IMPORT_CHARSET) != 0) {
+                $encoded_field_value = mb_convert_encoding ($field_value, DBIO_CHARSET, CHARSET);
+                if (mb_substr_count ($encoded_field_value, DBIO_CHARSET) != 0) {
                   $message = "Invalid character(s) detected in field $table_name::$field_name: $encoded_field_value on line #" . $this->stats['record_count'];
                   $this->debug_message ("[*] process_input_field: $message" , DBIO_WARNING);
-                  trigger_error ($message, E_USER_WARNING);
                   
                 }
                 $field_value = $encoded_field_value;
