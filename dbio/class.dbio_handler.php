@@ -142,6 +142,7 @@ abstract class dbio_handler extends base {
   function export_get_header () {
     $header = false;
     if ($this->config['include_header'] == true) {
+      $this->stats['record_count']++;
       $header = $this->export['headers'];
       
     }
@@ -150,6 +151,7 @@ abstract class dbio_handler extends base {
   }
   
   function export_prepare_fields (array $fields) {
+    $this->stats['record_count']++;
     return $fields;
     
   }

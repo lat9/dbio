@@ -157,6 +157,8 @@ class dbio extends base {
       trigger_error ($this->message, E_USER_WARNING);
       
     } else {
+      $this->handler->start_timer ();
+      
       $this->handler->export_initialize ($language);
       $this->export_sql = $this->handler->export_get_sql ();
       
@@ -209,6 +211,8 @@ class dbio extends base {
         fclose ($this->export_fp);
         
       }
+      $this->handler->stop_timer ();
+      
     }
     return $completion_code;
     
