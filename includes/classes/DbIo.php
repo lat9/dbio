@@ -58,18 +58,6 @@ class DbIo extends base
         $this->message = '';
         $this->file_suffix = date ('Ymd-His-') . mt_rand (1000,999999);
 
-        $this->languages = array ();
-        if (!class_exists ('language')) {
-            require (DIR_WS_CLASSES . 'language.php');
-          
-        }
-        $languages = new language;
-        foreach ($languages->catalog_languages as $iso_code_2 => $language_info) {
-            $this->languages[$iso_code_2] = $language_info['id'];
-          
-        }
-        unset ($languages);
-
         mb_internal_encoding (CHARSET);
         ini_set ('mbstring.substitute_character', DBIO_INVALID_CHAR_REPLACEMENT);
         ini_set ("auto_detect_line_endings", true);
@@ -91,15 +79,16 @@ class DbIo extends base
     //
     public function getAvailableHandlers () 
     {
-        $handlers = glob (DIR_FS_DBIO . 'class.dbio.*.php');
+        $handlers = glob (DIR_FS_DBIO . 'DbIo*Handler.php');
         $handler_info = array ();
         if (is_array ($handlers)) {
             foreach ($handlers as $current_handler) {
-                $handler_class = 'dbio_' . substr (str_replace (DIR_FS_DBIO . 'class.dbio.', '', $current_handler), 0, -4);
-                require $current_handler;
-                $handler = new $handler_class ();
-                $handler_info[$handler_class] = array ( 'description' => $handler->getHandlerDescription () );
-        
+                $handler_class = str_replace (array (DIR_FS_DBIO, '.php'), '', $current_handler);
+                if ($handler_class != 'DbIoHandler') {
+                    require $current_handler;
+                    $handler = new $handler_class ();
+                    $handler_info[$handler_class] = array ( 'description' => $handler->getHandlerDescription () );
+                }
             }
         }
         $this->message = (count ($handler_info) == 0) ? DBIO_MESSAGE_NO_HANDLERS_FOUND : '';
@@ -120,10 +109,10 @@ class DbIo extends base
 
         $this->dbio_type = $dbio_type;   
         if ($this->dbio_type != '') {
-            if (!class_exists ('dbio_handler')) {
-                require (DIR_FS_DBIO . 'class.dbio_handler.php');
+            if (!class_exists ('DbIoHandler')) {
+                require (DIR_FS_DBIO . 'DbIoHandler.php');
             }
-            $dbio_handler = DIR_FS_DBIO . "class.dbio.$dbio_type.php";
+            $dbio_handler = DIR_FS_DBIO . 'DbIo' . $dbio_type . 'Handler.php';
             if (!file_exists ($dbio_handler)) {
                 $this->message = sprintf (DBIO_FORMAT_MESSAGE_NO_HANDLER, $dbio_handler);
                 trigger_error ($this->message, E_USER_WARNING);
@@ -137,7 +126,7 @@ class DbIo extends base
               
                 } else {
                     $this->initialized = true;
-                    $this->handler = new $handler_classname ($this->file_suffix, $this->languages);
+                    $this->handler = new $handler_classname ($this->file_suffix);
                     if (!method_exists ($this->handler, 'debugMessage')) {
                         trigger_error ("dbIO handler ($handler_classname) missing the \"debugMessage\" method; terminating.", E_USER_ERROR);
                         exit ();

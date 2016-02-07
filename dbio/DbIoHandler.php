@@ -17,16 +17,26 @@ define ('DBIO_NO_IMPORT', '--none--');
 
 abstract class DbIoHandler extends base 
 {
-    public function __construct ($log_file_suffix, array $languages) 
+    public function __construct ($log_file_suffix) 
     {
-        $this->languages = $languages;
-        
         $this->debug = (DBIO_DEBUG == 'true');
         $this->debug_log_file = DIR_FS_LOGS . '/dbio-' . $log_file_suffix . '.log';
         
         $this->stats = array ( 'errors' => 0, 'warnings' => 0, 'record_count' => 0, 'inserts' => 0, 'updates' => 0, 'start_time' => 0, 'stop_time' => 0 );
         
-        $this->debugMessage ('Configured CHARSET (' . CHARSET . '), DB_CHARSET (' . DB_CHARSET . '), PHP multi-byte settings: ' . var_export (mb_get_info (), true));
+        $this->debugMessage ('Configured CHARSET (' . CHARSET . '), DB_CHARSET (' . DB_CHARSET . '), DBIO_CHARSET (' . DBIO_CHARSET . '), PHP multi-byte settings: ' . var_export (mb_get_info (), true));
+        
+        $this->languages = array ();
+        if (!class_exists ('language')) {
+            require (DIR_WS_CLASSES . 'language.php');
+          
+        }
+        $languages = new language;
+        foreach ($languages->catalog_languages as $iso_code_2 => $language_info) {
+            $this->languages[$iso_code_2] = $language_info['id'];
+          
+        }
+        unset ($languages);
         
         $this->initialize ();
     }
