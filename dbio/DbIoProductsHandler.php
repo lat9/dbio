@@ -127,14 +127,18 @@ class DbIoProductsHandler extends DbIoHandler
         $fields['tax_class_title'] = ($tax_class_info->EOF) ? '' : $tax_class_info->fields['tax_class_title'];
       
         $cPath_array = explode ('_', zen_get_product_path ($products_id));
-        $categories_name = '';
-        foreach ($cPath_array as $next_category_id) {
-            $category_info = $db->Execute ("SELECT categories_name FROM " . TABLE_CATEGORIES_DESCRIPTION . " WHERE categories_id = $next_category_id AND language_id = 1 LIMIT 1");
-            $categories_name .= (($category_info->EOF) ? '--unknown--' : $category_info->fields['categories_name']) . '^';
-        
+        foreach ($this->languages as $language_code => $language_id) {
+            $categories_name = '';
+            foreach ($cPath_array as $next_category_id) {
+                if ($this->export_language !== 'all' && $this->export_language != $language_code) {
+                    continue;
+                }
+                $category_info = $db->Execute ("SELECT categories_name FROM " . TABLE_CATEGORIES_DESCRIPTION . " WHERE categories_id = $next_category_id AND language_id = $language_id LIMIT 1");
+                $categories_name .= (($category_info->EOF) ? '--unknown--' : $category_info->fields['categories_name']) . '^';
+            
+            }
+            $fields['categories_name_' . $language_code] = substr ($categories_name, 0, -1);
         }
-        $fields['categories_name'] = substr ($categories_name, 0, -1);
-      
         return parent::exportPrepareFields ($fields);
       
     }
