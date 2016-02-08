@@ -11,8 +11,6 @@ if (!defined ('IS_ADMIN_FLAG')) {
 // ----
 // These definitions are used by this sequencing class as well as the report-specific handlers.
 //
-define ('DBIO_WARNING', 1);
-define ('DBIO_ERROR', 2);
 define ('DBIO_INVALID_CHAR_REPLACEMENT', 167); //-Use the "section symbol" (§) as the invalid-character replacement
 
 // -----
@@ -36,6 +34,8 @@ define ('DBIO_FORMAT_MESSAGE_EXPORT_NO_FP', 'Export aborted. Failure creating ou
 define ('DBIO_EXPORT_NOTHING_TO_DO', 'dbIO Export: No matching fields were found.');
 define ('DBIO_FORMAT_MESSAGE_IMPORT_FILE_MISSING', 'Import aborted:  Missing input file (%s).');
 define ('DBIO_WARNING_ENCODING_ERROR', 'dbIO Import: Could not encode the input for ' . CHARSET . '.');
+define ('DBIO_ERROR_NO_HANDLER', 'dbIO Export. No dbIO helper is configured.');
+define ('DBIO_ERROR_EXPORT_NO_LANGUAGE', 'dbIO Export.  The language code "%s" is not configured for the store.');
 
 // -----
 // These definitions will, eventually, be migrated to admin-level configuration values.
@@ -86,8 +86,12 @@ class DbIo extends base
                 $handler_class = str_replace (array (DIR_FS_DBIO, '.php'), '', $current_handler);
                 if ($handler_class != 'DbIoHandler') {
                     require $current_handler;
-                    $handler = new $handler_class ();
-                    $handler_info[$handler_class] = array ( 'description' => $handler->getHandlerDescription () );
+                    $handler = new $handler_class ($this->file_suffix);
+                    $dbio_type = str_replace (array ('DbIo', 'Handler'), '', $handler_class);
+                    $handler_info[$dbio_type] = array ( 
+                        'description' => $handler->getHandlerDescription (), 
+                        'class_name' => $handler_class,
+                    );
                 }
             }
         }
@@ -112,14 +116,14 @@ class DbIo extends base
             if (!class_exists ('DbIoHandler')) {
                 require (DIR_FS_DBIO . 'DbIoHandler.php');
             }
-            $dbio_handler = DIR_FS_DBIO . 'DbIo' . $dbio_type . 'Handler.php';
+            $handler_classname = 'DbIo' . $dbio_type . 'Handler';
+            $dbio_handler = DIR_FS_DBIO . $handler_classname . '.php';
             if (!file_exists ($dbio_handler)) {
                 $this->message = sprintf (DBIO_FORMAT_MESSAGE_NO_HANDLER, $dbio_handler);
                 trigger_error ($this->message, E_USER_WARNING);
             
             } else {
                 require ($dbio_handler);
-                $handler_classname = "dbio_$dbio_type";
                 if (!class_exists ($handler_classname)) {
                     $this->message = sprintf (DBIO_FORMAT_MESSAGE_NO_CLASS, $handler_classname, $dbio_handler);
                     trigger_error ($this->message, E_USER_WARNING);
@@ -147,13 +151,12 @@ class DbIo extends base
         $completion_code = false;
         $this->message = '';
         if (!$this->initialized) {
-      $this->message = DBIO_MESSAGE_EXPORT_NOT_INITIALIZED;
+            $this->message = DBIO_MESSAGE_EXPORT_NOT_INITIALIZED;
             trigger_error ($this->message, E_USER_WARNING);
           
-        } else {
+        } elseif ($this->handler->exportInitialize ($language)) {
             $this->handler->startTimer ();
-          
-            $this->handler->exportInitialize ($language);
+ 
             $this->csv_parms = $this->handler->getCsvParameters ();
             $this->export_sql = $this->handler->exportGetSql ();
           
@@ -169,6 +172,7 @@ class DbIo extends base
                     $this->message = DBIO_EXPORT_NOTHING_TO_DO;
               
                 } else {
+                    $this->debugMessage ('dbioExport: Begin CSV creation loop.');
                     ini_set ('max_execution_time', DBIO_MAX_EXECUTION_TIME);
               
                     $this->writeCsvRecord ($this->handler->exportGetHeader ());
@@ -178,6 +182,7 @@ class DbIo extends base
                 
                     }
                     $completion_code = true;
+                    $this->debugMessage ('dbioExport: Finished CSV creation loop.');
                 }
                 unset ($export_info);
             
@@ -204,6 +209,9 @@ class DbIo extends base
                 fclose ($this->export_fp);
             }
             $this->handler->stopTimer ();
+        }
+        if (!$completion_code && $this->message == '') {
+            $this->message = $this->handler->getHandlerMessage ();
         }
         return $completion_code;
     }

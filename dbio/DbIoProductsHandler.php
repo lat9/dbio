@@ -20,7 +20,18 @@ class DbIoProductsHandler extends DbIoHandler
 {
     public function __construct ($log_file_suffix)
     {
+        parent::__construct ($log_file_suffix);
+  
+    }
+    
+    // -----
+    // This function, called during the overall class construction, is used to set this handler's database
+    // configuration for the dbIO operations.
+    //
+    protected function setHandlerConfiguration () 
+    {
         $this->config = array (
+            'version' => '0.0.0',
             'key' => array ( 
                 'table' => TABLE_PRODUCTS, 
                 'match_field' => 'products_model', 
@@ -33,42 +44,53 @@ class DbIoProductsHandler extends DbIoHandler
                     'short_name' => 'p',
                     'insert_now' => 'products_date_added',
                     'update_now' => 'products_last_modified',
+                    'io_field_overrides' => array (
+                        'products_id' => 'no-header',
+                        'manufacturers_id' => false,
+                        'products_tax_class_id' => 'no-header',
+                        'master_categories_id' => false,
+                    ),
                 ), 
                 TABLE_PRODUCTS_DESCRIPTION => array ( 
                     'short_name' => 'pd',
                     'language_field' => 'language_id',
                     'key_field' => 'products_id',
+                    'io_field_overrides' => array (
+                        'products_id' => false,
+                        'language_id' => false,
+                    ),
                 ), 
-            ), 
+            ),
+            'additional_headers' => array (
+                'v_manufacturers_name' => self::DBIO_FLAG_NONE,
+                'v_tax_class_title' => self::DBIO_FLAG_NONE,
+                'v_categories_name' => self::DBIO_FLAG_PER_LANGUAGE,
+            ),
             'description' => array (
                 'en' => "This report-format supports import/export of all fields within the <code>products</code> and <code>products_description</code> tables, the basic product information.",
             ),
         );
-        parent::__construct ($log_file_suffix);
-  
-    }
+    } 
 
     public function exportInitialize ($language = 'all') 
     {
-        parent::exportInitialize ($language);
-        if ($this->export['where'] != '') {
-            $this->export['where'] .= ' AND ';
-    
+        $initialized = parent::exportInitialize ($language);
+        if ($initialized) {
+            if ($this->export['where'] != '') {
+                $this->export['where'] .= ' AND ';
+        
+            }
+
+            $export_language = ($this->export_language == 'all') ? 1 : $this->languages[$this->export_language];
+            $this->export['where'] .= "p.products_id = pd.products_id AND pd.language_id = $export_language";
+            $this->export['order_by'] .= 'p.products_id ASC';
+
+            $this->export[TABLE_PRODUCTS_DESCRIPTION]['language_sql'] = 
+                'SELECT ' . $this->export[TABLE_PRODUCTS_DESCRIPTION]['select'] . 
+                ' FROM ' . TABLE_PRODUCTS_DESCRIPTION . 
+                ' WHERE products_id = %u AND language_id = %u LIMIT 1';
         }
-
-        $export_language = ($this->export_language == 'all') ? 1 : $this->languages[$this->export_language];
-        $this->export['where'] .= "p.products_id = pd.products_id AND pd.language_id = $export_language";
-        $this->export['order_by'] .= 'p.products_id ASC';
-
-        $this->export['headers'][] = 'v_manufacturers_name';
-        $this->export['headers'][] = 'v_tax_class_title';
-        $this->export['headers'][] = 'v_categories_name';
-
-        $this->export[TABLE_PRODUCTS_DESCRIPTION]['language_sql'] = 
-            'SELECT ' . $this->export[TABLE_PRODUCTS_DESCRIPTION]['select'] . 
-            ' FROM ' . TABLE_PRODUCTS_DESCRIPTION . 
-            ' WHERE products_id = %u AND language_id = %u LIMIT 1';
-  
+        return $initialized;
     }
 
     public function exportGetSql ($sql_limit = '') 
@@ -90,7 +112,7 @@ class DbIoProductsHandler extends DbIoHandler
                     if (!$description_info->EOF) {
                         foreach ($description_info->fields as $field_name => $field_value) {
                             if ($field_name != 'products_id' && $field_name != 'language_id') {
-                                $fields[$field_name . '_' . $language_id] = $field_value;
+                                $fields[$field_name . '_' . $language_code] = $field_value;
                       
                             }
                         }
@@ -117,33 +139,9 @@ class DbIoProductsHandler extends DbIoHandler
       
     }
 
-    public function importInitialize ($language = 'all', $operation = 'check') 
-    {
-        parent::importInitialize ($language, $operation);
-  
-        $this->import['headers'][] = 'v_manufacturers_name';
-        $this->import['headers'][] = 'v_tax_class_title';
-        $this->import['headers'][] = 'v_categories_name';
-  
-    }
-
 // ----------------------------------------------------------------------------------
 //             I N T E R N A L / P R O T E C T E D   F U N C T I O N S 
 // ----------------------------------------------------------------------------------
-
-    protected function initialize () 
-    {
-        parent::initialize ();
-
-        $this->tables[TABLE_PRODUCTS]['fields']['products_id']['include_in_export'] = 'no-header';
-        $this->tables[TABLE_PRODUCTS]['fields']['manufacturers_id']['include_in_export'] = false;
-        $this->tables[TABLE_PRODUCTS]['fields']['products_tax_class_id']['include_in_export'] = 'no-header';
-        $this->tables[TABLE_PRODUCTS]['fields']['master_categories_id']['include_in_export'] = false;
-
-        $this->tables[TABLE_PRODUCTS_DESCRIPTION]['fields']['products_id']['include_in_export'] = false;
-        $this->tables[TABLE_PRODUCTS_DESCRIPTION]['fields']['language_id']['include_in_export'] = false;
-
-     }
 
     protected function importFieldCheck ($field_name) 
     {
@@ -204,7 +202,7 @@ class DbIoProductsHandler extends DbIoHandler
                     $tax_class_check_sql = "SELECT tax_class_id FROM " . TABLE_TAX_CLASS . " WHERE tax_class_title = :tax_class_title: LIMIT 1";
                     $tax_class_check = $db->Execute ($db->bindVars ($tax_class_check_sql, ':tax_class_title:', $field_value, 'string'));
                     if ($tax_class_check->EOF) {
-                        $this->debugMessage ('[*] Import line #' . $this->import['record_count'] . ", undefined tax_class_title ($field_value).  Defaulting product to untaxed.", DBIO_WARNING);
+                        $this->debugMessage ('[*] Import line #' . $this->import['record_count'] . ", undefined tax_class_title ($field_value).  Defaulting product to untaxed.", self::DBIO_WARNING);
               
                     }
                     $tax_class_id = ($tax_class_check->EOF) ? 0 : $tax_class_check->fields['tax_class_id'];
@@ -249,7 +247,7 @@ class DbIoProductsHandler extends DbIoHandler
                 $category_check = $db->Execute ("SELECT categories_id FROM " . TABLE_CATEGORIES . " WHERE parent_id = $parent_category LIMIT 1", false, false, 0, true);
                 if (!$category_check->EOF) {
                     $this->import['record_ok'] = false;
-                    $this->debugMessage ("[*] Product not processed at line number " . $this->import['record_count'] . "; category ($field_name) has categories.", DBIO_WARNING);
+                    $this->debugMessage ("[*] Product not processed at line number " . $this->import['record_count'] . "; category ($field_name) has categories.", self::DBIO_WARNING);
 
                 } else {
                     parent::addImportField (TABLE_PRODUCTS, 'master_categories_id', $parent_category, 'integer');

@@ -17,6 +17,20 @@ define ('DBIO_NO_IMPORT', '--none--');
 
 abstract class DbIoHandler extends base 
 {
+// ----------------------------------------------------------------------------------
+//                                    C O N S T A N T S 
+// ----------------------------------------------------------------------------------
+    // ----- Interface Constants -----
+    const DBIO_HANDLER_VERSION  = '0.0.0';
+    // ----- Message Severity -----
+    const DBIO_WARNING           = 1;
+    const DBIO_ERROR             = 2;
+    // ----- Handler configuration bit switches -----
+    const DBIO_FLAG_NONE         = 0;       //- No special handling
+    const DBIO_FLAG_PER_LANGUAGE = 1;       //- Field is handled once per language
+// ----------------------------------------------------------------------------------
+//                             P U B L I C   F U N C T I O N S 
+// ----------------------------------------------------------------------------------
     public function __construct ($log_file_suffix) 
     {
         $this->debug = (DBIO_DEBUG == 'true');
@@ -38,9 +52,11 @@ abstract class DbIoHandler extends base
         }
         unset ($languages);
         
+        $this->setHandlerConfiguration ();
+        
         $this->initialize ();
     }
-  
+
     // -----
     // Set the current time into the process's start time.
     //
@@ -104,63 +120,87 @@ abstract class DbIoHandler extends base
     //
     public function exportInitialize ($language = 'all') 
     {
-        if (!isset ($this->config)) {
-            trigger_error ('Export aborted: dbIO helper not configured.', E_USER_ERROR);
-            exit ();
-        }
-        $this->message = '';
+        $initialized = false;
         if ($language == 'all' && count ($this->languages) == 1) {
             reset ($this->languages);
             $language = key ($this->languages);
         }
-        $this->export_language = $language;
-        $this->export = array ();
-        $this->export['select'] = $this->export['from'] = $this->export['where'] = $this->export['order_by'] = '';
-        $this->export['headers'] = array ();
-        foreach ($this->config['tables'] as $config_table_name => $config_table_info) {
-            $this->export['from'] .= $config_table_name;
-            $table_prefix = (isset ($config_table_info['short_name']) && $config_table_info['short_name'] != '') ? ($config_table_info['short_name'] . '.') : '';
-            if ($table_prefix != '') {
-                $this->export['from'] .= ' AS ' . $config_table_info['short_name'] . ', ';
+        $this->message = '';
+        
+        if (!isset ($this->config)) {
+            $this->message = DBIO_ERROR_NO_HANDLER;
+            trigger_error ($this->message, E_USER_ERROR);
             
-            }
-            if ($this->tables[$config_table_name]['uses_language']) {
-                $first_language = true;
-                $this->export[$config_table_name]['select'] = '';
-                foreach ($this->languages as $language_code => $language_id) {
+        } elseif ($language != 'all' && !isset ($this->languages[$language])) {
+            $this->message = sprintf (DBIO_ERROR_EXPORT_NO_LANGUAGE, $language);
+            
+        } else {
+            $initialized = true;
+            $this->export_language = $language;
+            $this->export = array ();
+            $this->export['select'] = $this->export['from'] = $this->export['where'] = $this->export['order_by'] = '';
+            $this->export['headers'] = array ();
+            foreach ($this->config['tables'] as $config_table_name => $config_table_info) {
+                $this->export['from'] .= $config_table_name;
+                $table_prefix = (isset ($config_table_info['short_name']) && $config_table_info['short_name'] != '') ? ($config_table_info['short_name'] . '.') : '';
+                if ($table_prefix != '') {
+                    $this->export['from'] .= ' AS ' . $config_table_info['short_name'] . ', ';
+                
+                }
+                if ($this->tables[$config_table_name]['uses_language']) {
+                    $first_language = true;
+                    $this->export[$config_table_name]['select'] = '';
+                    foreach ($this->languages as $language_code => $language_id) {
+                        if ($language !== 'all' && $language != $language_code) {
+                            continue;
+                        }
+                        foreach ($this->tables[$config_table_name]['fields'] as $current_field => $field_info) {
+                            if ($field_info['include_in_export'] !== false) {
+                                if ($first_language) {
+                                    $this->export['select'] .= "$table_prefix$current_field, ";
+                                    $this->export[$config_table_name]['select'] .= "$current_field, ";
+                        
+                                }
+                                if ($field_info['include_in_export'] === true) {
+                                    $this->export['headers'][] = 'v_' . $current_field . '_' . $language_code;
+                        
+                                }
+                            }
+                        }
+                        $first_language = false;
+                  
+                    }
+                    $this->export[$config_table_name]['select'] = substr ($this->export[$config_table_name]['select'], 0, -2);
+                
+                } else {
                     foreach ($this->tables[$config_table_name]['fields'] as $current_field => $field_info) {
                         if ($field_info['include_in_export'] !== false) {
-                            if ($first_language) {
-                                $this->export['select'] .= "$table_prefix$current_field, ";
-                                $this->export[$config_table_name]['select'] .= "$current_field, ";
-                    
-                            }
+                            $this->export['select'] .= "$table_prefix$current_field, ";
                             if ($field_info['include_in_export'] === true) {
-                                $this->export['headers'][] = 'v_' . $current_field . '_' . $language_id;
-                    
+                                $this->export['headers'][] = 'v_' . $current_field;
+                      
                             }
                         }
                     }
-                    $first_language = false;
-              
                 }
-                $this->export[$config_table_name]['select'] = substr ($this->export[$config_table_name]['select'], 0, -2);
+            }
+            $this->export['from'] = ($this->export['from'] == '') ? '' : substr ($this->export['from'], 0, -2);
+            $this->export['select'] = ($this->export['select'] == '') ? '' : substr ($this->export['select'], 0, -2);
             
-            } else {
-                foreach ($this->tables[$config_table_name]['fields'] as $current_field => $field_info) {
-                    if ($field_info['include_in_export'] !== false) {
-                        $this->export['select'] .= "$table_prefix$current_field, ";
-                        if ($field_info['include_in_export'] === true) {
-                            $this->export['headers'][] = 'v_' . $current_field;
-                  
+            if (isset ($this->config['additional_headers']) && is_array ($this->config['additional_headers'])) {
+                foreach ($this->config['additional_headers'] as $header_value => $flags) {
+                    if ($flags & self::DBIO_FLAG_PER_LANGUAGE) {
+                        foreach ($this->languages as $language_code => $language_id) {
+                            $this->export['headers'][] = $header_value . '_' . $language_code;
                         }
+                    } else {
+                        $this->export['headers'][] = $header_value;
                     }
                 }
             }
         }
-        $this->export['from'] = ($this->export['from'] == '') ? '' : substr ($this->export['from'], 0, -2);
-        $this->export['select'] = ($this->export['select'] == '') ? '' : substr ($this->export['select'], 0, -2);
-    
+        $this->debugMessage ("exportInitialize ($language), " . (($initialized) ? 'Successful' : ('Unsuccessful (' . $this->message . ')')));
+        return $initialized;
     }
   
     public function exportGetHeader () 
@@ -200,21 +240,34 @@ abstract class DbIoHandler extends base
         
         $this->import['headers'] = array ();
         foreach ($this->config['tables'] as $config_table_name => $config_table_info) {
-            $is_language_table = $this->tables[$config_table_name]['uses_language'];
-            foreach ($this->tables[$config_table_name]['fields'] as $current_field => $field_info) {
-                if ($field_info['include_in_export'] === true) {
-                    if (!$this->config['include_header'] && $is_language_table) {
-                        if ($language != 'all') {
-                            $this->import['headers'][] = 'v_' . $current_field . '_' . $this->languages[$language];
-                  
-                        } else {
-                            foreach ($this->languages as $language_code => $language_id) {
-                                $this->import['headers'][] = 'v_' . $current_field . '_' . $language_id;
-                            }
+            if ($this->tables[$config_table_name]['uses_language']) {
+                foreach ($this->languages as $language_code => $language_id) {
+                    if ($language !== 'all' && $language != $language_code) {
+                        continue;
+                    }
+                    foreach ($this->tables[$config_table_name]['fields'] as $current_field => $field_info) {
+                        if ($field_info['include_in_export'] === true) {
+                            $this->import['headers'][] = 'v_' . $current_field . '_' . $language_code;
                         }
-                    } else {
+                    }
+                }
+            } else {
+                foreach ($this->tables[$config_table_name]['fields'] as $current_field => $field_info) {
+                    if ($field_info['include_in_export'] === true) {
                         $this->import['headers'][] = 'v_' . $current_field;
                     }
+                }
+            }
+        }
+            
+        if (isset ($this->config['additional_headers']) && is_array ($this->config['additional_headers'])) {
+            foreach ($this->config['additional_headers'] as $header_value => $flags) {
+                if ($flags & self::DBIO_FLAG_PER_LANGUAGE) {
+                    foreach ($this->languages as $language_code => $language_id) {
+                        $this->import['headers'][] = $header_value . '_' . $language_code;
+                    }
+                } else {
+                    $this->import['headers'][] = $header_value;
                 }
             }
         }
@@ -325,7 +378,7 @@ abstract class DbIoHandler extends base
         //
         $key_index = $this->import['key_index'];
         if (count ($data) < $key_index) {
-            $this->debugMessage ('Data record at line #' . $this->import['record_count'] . ' not imported.  Column count (' . count ($data) . ') missing key column (' . $key_index . ').', DBIO_ERROR);
+            $this->debugMessage ('Data record at line #' . $this->import['record_count'] . ' not imported.  Column count (' . count ($data) . ') missing key column (' . $key_index . ').', self::DBIO_ERROR);
           
         } else {
             // -----
@@ -425,11 +478,11 @@ abstract class DbIoHandler extends base
       
         }
         switch ($severity) {
-            case DBIO_WARNING:
+            case self::DBIO_WARNING:
                 $this->stats['warnings']++;
                 trigger_error ($message, E_USER_WARNING);
                 break;
-            case DBIO_ERROR:
+            case self::DBIO_ERROR:
                 $this->stats['errors']++;
                 trigger_error ($message, E_USER_ERROR);
                 break;
@@ -439,9 +492,15 @@ abstract class DbIoHandler extends base
     }
   
 // ----------------------------------------------------------------------------------
-//                P R O T E C T E D / I N T E R N A L   F U N C T I O N S 
+//                      P R O T E C T E D   F U N C T I O N S 
 // ----------------------------------------------------------------------------------
-
+    
+    // -----
+    // This abstract function, required to be supplied for the actual handler, is called during the class
+    // construction to have the handler set its database-related configuration.
+    //
+    abstract protected function setHandlerConfiguration ();
+  
     // -----
     // Local function (used when logging messages to reduce unnecessary whitespace.
     //
@@ -494,7 +553,7 @@ abstract class DbIoHandler extends base
                     case 'tinyint':
                         $field_type = 'integer';
                         if ($this->import['check_values'] && !ctype_digit ($field_value)) {
-                            $this->debugMessage ("[*] $import_table_name.$field_name: Value ($field_value) is not an integer", DBIO_WARNING);
+                            $this->debugMessage ("[*] $import_table_name.$field_name: Value ($field_value) is not an integer", self::DBIO_WARNING);
               
                         }
                         break;
@@ -502,7 +561,7 @@ abstract class DbIoHandler extends base
                     case 'decimal':
                         $field_type = 'float';
                         if ($this->import['check_values'] && !(ctype_digit (str_replace ('.', '', $field_value) && substr_count ($field_value, '.') <= 1))) {
-                            $this->debugMessage ("[*] $import_table_name.$field_name: Value ($field_value) is not a floating-point value.", DBIO_WARNING);
+                            $this->debugMessage ("[*] $import_table_name.$field_name: Value ($field_value) is not a floating-point value.", self::DBIO_WARNING);
               
                         }
                         break;
@@ -521,7 +580,7 @@ abstract class DbIoHandler extends base
                         $field_type = 'string';
                         if (!$valid_string_field) {
                             $message = "Unknown datatype (" . $this->tables[$table_name]['fields'][$field_name]['data_type'] . ") for $table_name::$field_name on line #" . $this->stats['record_count'];
-                            $this->debugMessage ("[*] process_input_field: $message", DBIO_WARNING);
+                            $this->debugMessage ("[*] process_input_field: $message", self::DBIO_WARNING);
               
                         }
                         if ($this->import['check_values']) {
@@ -530,7 +589,7 @@ abstract class DbIoHandler extends base
                                 $encoded_field_value = mb_convert_encoding ($field_value, DBIO_CHARSET, CHARSET);
                                 if (mb_substr_count ($encoded_field_value, DBIO_CHARSET) != 0) {
                                     $message = "Invalid character(s) detected in field $table_name::$field_name: $encoded_field_value on line #" . $this->stats['record_count'];
-                                    $this->debugMessage ("[*] process_input_field: $message" , DBIO_WARNING);
+                                    $this->debugMessage ("[*] process_input_field: $message" , self::DBIO_WARNING);
                   
                                 }
                                 $field_value = $encoded_field_value;
@@ -544,7 +603,7 @@ abstract class DbIoHandler extends base
             }
         }
         if ($field_type === false) {
-            $this->debugMessage ("[*] process_input_field ($import_table_name, $field_name, $language_id, $field_value): Can't resolve field type, ignoring.", DBIO_WARNING);
+            $this->debugMessage ("[*] process_input_field ($import_table_name, $field_name, $language_id, $field_value): Can't resolve field type, ignoring.", self::DBIO_WARNING);
       
         } else {
             $this->addImportField ($import_table_name, $field_name, $field_value, $field_type);
@@ -604,7 +663,7 @@ abstract class DbIoHandler extends base
 
         $this->tables = array ();
         foreach ($this->config['tables'] as $table_name => $table_info) {
-            $this->initializeTableFields ($table_name);
+            $this->initializeTableFields ($table_name, (isset ($table_info['io_field_overrides']) && is_array ($table_info['io_field_overrides'])) ? $table_info['io_field_overrides'] : false);
             $this->initializeSqlInputs ($table_name);
       
         }
@@ -617,7 +676,7 @@ abstract class DbIoHandler extends base
     // as being an auto-increment field, which has "special" interpretation by the dbIO processing.  If that field is found
     // within the processing, simply mark it as non-auto-increment; ZC1.5.5 and later already do this.
     //
-    protected function initializeTableFields ($table_name) 
+    protected function initializeTableFields ($table_name, $field_overrides) 
     {
         global $db;
         $this->tables[$table_name] = array ();
@@ -637,7 +696,7 @@ abstract class DbIoHandler extends base
                 $table_info->fields['extra'] = '';
             }
             unset ($table_info->fields['column_name']);
-            $table_info->fields['include_in_export'] = true;
+            $table_info->fields['include_in_export'] = (is_array ($field_overrides) && isset ($field_overrides[$column_name])) ? $field_overrides[$column_name] : true;
             $table_info->fields['nullable'] = ($table_info->fields['nullable'] === 'TRUE');
             $table_info->fields['sort_order'] = 0;
             $this->tables[$table_name]['fields'][$column_name] = $table_info->fields;
@@ -699,5 +758,10 @@ abstract class DbIoHandler extends base
         $this->tables[$table_name]['sql_update']['data'] = $update_data_array;   
     
     }
+  
+// ----------------------------------------------------------------------------------
+//                      P R I V A T E   F U N C T I O N S 
+// ----------------------------------------------------------------------------------
+
 
 }
