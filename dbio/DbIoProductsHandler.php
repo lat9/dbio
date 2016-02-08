@@ -17,13 +17,7 @@ if (!class_exists ('DbIoHandler')) {
 // This dbIO class handles the customizations required for a basic Zen Cart product import/export.
 //
 class DbIoProductsHandler extends DbIoHandler 
-{
-    public function __construct ($log_file_suffix)
-    {
-        parent::__construct ($log_file_suffix);
-  
-    }
-    
+{   
     // -----
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the dbIO operations.
@@ -91,11 +85,6 @@ class DbIoProductsHandler extends DbIoHandler
                 ' WHERE products_id = %u AND language_id = %u LIMIT 1';
         }
         return $initialized;
-    }
-
-    public function exportGetSql ($sql_limit = '') 
-    {
-      return parent::exportGetSql ($sql_limit);
     }
 
     public function exportPrepareFields (array $fields) 
@@ -169,7 +158,7 @@ class DbIoProductsHandler extends DbIoHandler
   
     }
 
-    protected function addImportField ($table_name, $field_name, $field_value, $field_type) {
+    protected function importAddField ($table_name, $field_name, $field_value, $field_type) {
         global $db;
         switch ($field_name) {
             case 'manufacturers_name':
@@ -199,7 +188,7 @@ class DbIoProductsHandler extends DbIoHandler
                         }
                     }
                 }
-                parent::addImportField (TABLE_PRODUCTS, 'manufacturers_id', $manufacturers_id, 'integer');
+                parent::importAddField (TABLE_PRODUCTS, 'manufacturers_id', $manufacturers_id, 'integer');
                 break;
             case 'tax_class_title':
                 if (zen_not_null ($field_value)) {
@@ -210,7 +199,7 @@ class DbIoProductsHandler extends DbIoHandler
               
                     }
                     $tax_class_id = ($tax_class_check->EOF) ? 0 : $tax_class_check->fields['tax_class_id'];
-                    parent::addImportField (TABLE_PRODUCTS, 'products_tax_class_id', $tax_class_id, 'integer');
+                    parent::importAddField (TABLE_PRODUCTS, 'products_tax_class_id', $tax_class_id, 'integer');
             
                 }
                 break;
@@ -254,13 +243,13 @@ class DbIoProductsHandler extends DbIoHandler
                     $this->debugMessage ("[*] Product not processed at line number " . $this->import['record_count'] . "; category ($field_name) has categories.", self::DBIO_WARNING);
 
                 } else {
-                    parent::addImportField (TABLE_PRODUCTS, 'master_categories_id', $parent_category, 'integer');
-                    parent::addImportField (TABLE_PRODUCTS_TO_CATEGORIES, 'categories_id', $parent_category, 'integer');
+                    parent::importAddField (TABLE_PRODUCTS, 'master_categories_id', $parent_category, 'integer');
+                    parent::importAddField (TABLE_PRODUCTS_TO_CATEGORIES, 'categories_id', $parent_category, 'integer');
 
                 }
                 break;
             default:
-                parent::addImportField ($table_name, $field_name, $field_value, $field_type);
+                parent::importAddField ($table_name, $field_name, $field_value, $field_type);
                 break;
         }
     }

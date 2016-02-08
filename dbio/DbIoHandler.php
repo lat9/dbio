@@ -116,6 +116,29 @@ abstract class DbIoHandler extends base
     }
     
     // -----
+    // Writes the requested message to the current debug-log file, if debug is enabled.
+    //
+    public function debugMessage ($message, $severity = 0) 
+    {
+        if ($this->debug) {
+            error_log (date (DBIO_DEBUG_DATE_FORMAT) . ": $message\n", 3, $this->debug_log_file);
+      
+        }
+        switch ($severity) {
+            case self::DBIO_WARNING:
+                $this->stats['warnings']++;
+                trigger_error ($message, E_USER_WARNING);
+                break;
+            case self::DBIO_ERROR:
+                $this->stats['errors']++;
+                trigger_error ($message, E_USER_ERROR);
+                break;
+            default:
+                break;
+        }
+    }
+    
+    // -----
     // Initialize the dbIO export handling.
     //
     public function exportInitialize ($language = 'all') 
@@ -212,6 +235,26 @@ abstract class DbIoHandler extends base
       
         }
         return $header;
+    
+    }
+ 
+    public function exportGetSql ($sql_limit = '') 
+    {
+        if (!isset ($this->export_language) || !isset ($this->export['select'])) {
+            trigger_error ('Export aborted: dbIO export sequence error; not previously initialized.', E_USER_ERROR);
+            exit ();
+      
+         }
+        $export_sql = 'SELECT ' . $this->export['select'] . ' FROM ' . $this->export['from'];
+        if ($this->export['where'] != '') {
+            $export_sql .= ' WHERE ' . $this->export['where'];
+      
+        }
+        if ($this->export['order_by'] != '') {
+            $export_sql .= ' ORDER BY ' . $this->export['order_by'];
+      
+        }
+        return $export_sql . " $sql_limit";
     
     }
   
@@ -421,7 +464,7 @@ abstract class DbIoHandler extends base
                 if ($field_name == DBIO_NO_IMPORT) {
                     continue;
                 }
-                $this->processImportField ($table_name, $field_name, $language_id, $current_element);
+                $this->importProcessField ($table_name, $field_name, $language_id, $current_element);
 
             }
 
@@ -468,29 +511,6 @@ abstract class DbIoHandler extends base
         }
     }
   
-    // -----
-    // Writes the requested message to the current debug-log file, if debug is enabled.
-    //
-    public function debugMessage ($message, $severity = 0) 
-    {
-        if ($this->debug) {
-            error_log (date (DBIO_DEBUG_DATE_FORMAT) . ": $message\n", 3, $this->debug_log_file);
-      
-        }
-        switch ($severity) {
-            case self::DBIO_WARNING:
-                $this->stats['warnings']++;
-                trigger_error ($message, E_USER_WARNING);
-                break;
-            case self::DBIO_ERROR:
-                $this->stats['errors']++;
-                trigger_error ($message, E_USER_ERROR);
-                break;
-            default:
-                break;
-        }
-    }
-  
 // ----------------------------------------------------------------------------------
 //                      P R O T E C T E D   F U N C T I O N S 
 // ----------------------------------------------------------------------------------
@@ -519,16 +539,15 @@ abstract class DbIoHandler extends base
         return $sql_data_array;
     }
   
-    protected function addImportField ($table_name, $field_name, $field_value, $field_type) 
+    protected function importAddField ($table_name, $field_name, $field_value, $field_type) 
     {
         if (!isset ($this->import_sql_data[$table_name])) {
             $this->import_sql_data[$table_name] = array ();
         }
         $this->import_sql_data[$table_name][] = array ( 'fieldName' => $field_name, 'value' => $field_value, 'type' => $field_type );
-    
     }
   
-    protected function processImportField ($table_name, $field_name, $language_id, $field_value, $field_type = false) 
+    protected function importProcessField ($table_name, $field_name, $language_id, $field_value, $field_type = false) 
     {
         if ($language_id == 0) {
             $import_table_name = $table_name;
@@ -606,7 +625,7 @@ abstract class DbIoHandler extends base
             $this->debugMessage ("[*] process_input_field ($import_table_name, $field_name, $language_id, $field_value): Can't resolve field type, ignoring.", self::DBIO_WARNING);
       
         } else {
-            $this->addImportField ($import_table_name, $field_name, $field_value, $field_type);
+            $this->importAddField ($import_table_name, $field_name, $field_value, $field_type);
       
         }
     }
@@ -614,30 +633,13 @@ abstract class DbIoHandler extends base
     protected function importFieldCheck ($field_name) 
     {
         return $field_name;
-    
     }
   
-    protected function exportGetSql ($sql_limit = '') 
-    {
-        if (!isset ($this->export_language) || !isset ($this->export['select'])) {
-            trigger_error ('Export aborted: dbIO export sequence error; not previously initialized.', E_USER_ERROR);
-            exit ();
-      
-         }
-        $export_sql = 'SELECT ' . $this->export['select'] . ' FROM ' . $this->export['from'];
-        if ($this->export['where'] != '') {
-            $export_sql .= ' WHERE ' . $this->export['where'];
-      
-        }
-        if ($this->export['order_by'] != '') {
-            $export_sql .= ' ORDER BY ' . $this->export['order_by'];
-      
-        }
-        return $export_sql . " $sql_limit";
-    
-    }
+// ----------------------------------------------------------------------------------
+//                      P R I V A T E   F U N C T I O N S 
+// ----------------------------------------------------------------------------------
   
-    protected function initialize () 
+    private function initialize () 
     {
         $this->message = '';
 
@@ -667,16 +669,17 @@ abstract class DbIoHandler extends base
             $this->initializeSqlInputs ($table_name);
       
         }
-    }
+    }  //-END function initialize
   
     // -----
-    // Function, available for use by all helpers, to gather the pertinent bits of information about the specified table.
+    // Function to gather the pertinent bits of information about the specified table, taking into account any handler-
+    // specific field overrides (i.e. whether/not to include in header and/or data).
     //
     // NOTE: There's an override here for the products_description.products_id field.  It's marked (up to Zen Cart v1.5.5)
     // as being an auto-increment field, which has "special" interpretation by the dbIO processing.  If that field is found
     // within the processing, simply mark it as non-auto-increment; ZC1.5.5 and later already do this.
     //
-    protected function initializeTableFields ($table_name, $field_overrides) 
+    private function initializeTableFields ($table_name, $field_overrides) 
     {
         global $db;
         $this->tables[$table_name] = array ();
@@ -703,9 +706,9 @@ abstract class DbIoHandler extends base
           
             $table_info->MoveNext ();
         }   
-    }
+    }  //-END function initializeTableFields
   
-    protected function initializeSqlInputs ($table_name) 
+    private function initializeSqlInputs ($table_name) 
     {
         global $db;
         $this->tables[$table_name]['sql_update'] = array ();
@@ -729,15 +732,7 @@ abstract class DbIoHandler extends base
                 $uses_language = true;
             
             }
-    /*
-          if (strpos ($table_indexes, $field_name . ',') === false || $field_info['extra'] != 'auto_increment') {
-            if (!$field_info['nullable'] && $field_info['default'] === NULL) {
-              $required_fields .= ($field_name . ',');
-              $insert_data_array[$field_name] = NULL;
 
-            }
-          }
-    */
             if (isset ($this->config['tables'][$table_name]['insert_now']) && $this->config['tables'][$table_name]['insert_now'] == $field_name) {
                 $insert_data_array[$field_name] = 'now()';
             
@@ -757,11 +752,5 @@ abstract class DbIoHandler extends base
         $this->tables[$table_name]['sql_update']['required_fields'] = $required_fields;
         $this->tables[$table_name]['sql_update']['data'] = $update_data_array;   
     
-    }
-  
-// ----------------------------------------------------------------------------------
-//                      P R I V A T E   F U N C T I O N S 
-// ----------------------------------------------------------------------------------
-
-
+    }  //-END function initializeSqlInputs
 }
