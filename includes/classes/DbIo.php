@@ -48,7 +48,7 @@ if (!defined ('DBIO_CSV_ENCLOSURE')) define ('DBIO_CSV_ENCLOSURE', '"');
 if (!defined ('DBIO_CSV_ESCAPE')) define ('DBIO_CSV_ESCAPE', '\\');
 
 if (!defined ('DBIO_IMPORT_DATE_FORMAT')) define ('DBIO_IMPORT_DATE_FORMAT', 'm/d/y');      //-Possible values: 'm-d-y', 'd-m-y', 'y-m-d'
-if (!defined ('DBIO_CHARSET')) define ('DBIO_CHARSET', 'CP1252');                           //-Possible values: 'UTF-8', 'ISO-8859-1', 'ASCII', 'CP1252'
+if (!defined ('DBIO_CHARSET')) define ('DBIO_CHARSET', 'latin1');                           //-Possible values: 'utf8', 'latin1'
 if (!defined ('DBIO_MAX_EXECUTION_TIME')) define ('DBIO_MAX_EXECUTION_TIME', '60');         //-Number of seconds for script time-out
 
 class DbIo extends base 
@@ -228,7 +228,7 @@ class DbIo extends base
         $this->message = '';
         $import_file = DIR_FS_DBIO_IMPORT . $filename;
         if (!$this->initialized) {
-      $this->message = DBIO_MESSAGE_IMPORT_NOT_INITIALIZED;
+            $this->message = DBIO_MESSAGE_IMPORT_NOT_INITIALIZED;
             trigger_error ($this->message, E_USER_WARNING);
           
         } else {

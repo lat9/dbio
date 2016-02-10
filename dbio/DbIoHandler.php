@@ -13,7 +13,6 @@ if (!defined ('IS_ADMIN_FLAG')) {
 //
 define ('DBIO_MESSAGE_IMPORT_MISSING_HEADER', 'Import aborted: Missing header information for input file.');
 define ('DBIO_FORMAT_MESSAGE_IMPORT_MISSING_KEY', 'Import aborted: Missing key column (%s).');
-define ('DBIO_NO_IMPORT', '--none--');
 
 abstract class DbIoHandler extends base 
 {
@@ -21,10 +20,16 @@ abstract class DbIoHandler extends base
 //                                    C O N S T A N T S 
 // ----------------------------------------------------------------------------------
     // ----- Interface Constants -----
-    const DBIO_HANDLER_VERSION  = '0.0.0';
-    // ----- Message Severity -----
+    const DBIO_HANDLER_VERSION   = '0.0.0';
+    // ----- Field-Import Status Values -----
+    const DBIO_IMPORT_OK         = '--ok--';
+    const DBIO_NO_IMPORT         = '--none--';
+    const DBIO_SPECIAL_IMPORT    = '--special--';
+    const DBIO_UNKNOWN_VALUE     = '--unknown--';
+    // ----- Message Severity ----- ** Note ** This set of constants are bit-flags!
     const DBIO_WARNING           = 1;
     const DBIO_ERROR             = 2;
+    const DBIO_ACTIVITY          = 4;
     // ----- Handler configuration bit switches -----
     const DBIO_FLAG_NONE         = 0;       //- No special handling
     const DBIO_FLAG_PER_LANGUAGE = 1;       //- Field is handled once per language
@@ -51,6 +56,12 @@ abstract class DbIoHandler extends base
           
         }
         unset ($languages);
+        
+        if (!class_exists ('Encoding')) {
+            require (DIR_FS_DBIO . 'Encoding.php');
+
+        }       
+        $this->encoding = new ForceUTF8\Encoding;
         
         $this->setHandlerConfiguration ();
         
@@ -124,17 +135,18 @@ abstract class DbIoHandler extends base
             error_log (date (DBIO_DEBUG_DATE_FORMAT) . ": $message\n", 3, $this->debug_log_file);
       
         }
-        switch ($severity) {
-            case self::DBIO_WARNING:
-                $this->stats['warnings']++;
-                trigger_error ($message, E_USER_WARNING);
-                break;
-            case self::DBIO_ERROR:
-                $this->stats['errors']++;
-                trigger_error ($message, E_USER_ERROR);
-                break;
-            default:
-                break;
+        if ($severity & self::DBIO_WARNING) {
+            $this->stats['warnings']++;
+            trigger_error ($message, E_USER_WARNING);
+            
+        } elseif ($severity & self::DBIO_ERROR) {
+            $this->stats['errors']++;
+            trigger_error ($message, E_USER_ERROR);
+            
+        }
+        if (($severity & self::DBIO_ACTIVITY) && function_exists ('zen_record_admin_activity')) {
+            zen_record_admin_activity ($message, ($severity & self::DBIO_ERROR) ? 'error' : (($severity & self::DBIO_WARNING) ? 'warning' : 'info'));
+            
         }
     }
     
@@ -261,6 +273,7 @@ abstract class DbIoHandler extends base
     public function exportPrepareFields (array $fields) 
     {
         $this->stats['record_count']++;
+        $fields = (DBIO_CHARSET === 'utf8') ? $this->encoding->toUTF8 ($fields) : $this->encoding->toWin1252 ($fields, ForceUTF8\Encoding::ICONV_TRANSLIT);
         return $fields;
     
     }
@@ -325,42 +338,58 @@ abstract class DbIoHandler extends base
             exit ();
         }
         if (!is_array ($header)) {
-            $this->debugMessage ('import_get_header: No header included, using generated default.');
+            $this->debugMessage ('importGetHeader: No header included, using generated default.');
             $header = $this->import['headers'];
           
         }
-        $this->debugMessage ("import_get_header, using headers:\n" . var_export ($header, true));
+        $this->debugMessage ("importGetHeader, using headers:\n" . var_export ($header, true));
         $this->import['table_names'] = array ();
         $this->import['language_id'] = array ();
         $this->import['header_field_count'] = 0;
         $this->import['key_index'] = false;
         $key_index = 0;
         foreach ($header as &$current_field) {
-            $table_name = DBIO_NO_IMPORT;
+            $table_name = self::DBIO_NO_IMPORT;
             $field_language_id = 0;
-            if (strpos ($current_field, 'v_') !== 0) {
-                $current_field = DBIO_NO_IMPORT;
+            if (strpos ($current_field, 'v_') !== 0 || strlen ($current_field) < 3) {
+                $current_field = self::DBIO_NO_IMPORT;
             
             } else {
-                $current_field = $this->importFieldCheck (substr ($current_field, 2));
-                if ($current_field != DBIO_NO_IMPORT) {
+                $current_field = substr ($current_field, 2);  //-Strip off leading 'v_'
+                $current_field_status = $this->importFieldCheck ($current_field);
+                if ($current_field_status == self::DBIO_NO_IMPORT ) {
+                    $current_field = self::DBIO_NO_IMPORT;
+                    
+                } elseif ($current_field_status == self::DBIO_SPECIAL_IMPORT) {
+                    $table_name = self::DBIO_SPECIAL_IMPORT;
+                    
+                } else {
+                    $field_found = false;
                     foreach ($this->tables as $database_table_name => $table_info) {
                         if ($table_info['uses_language']) {
+                            $field_language_code = substr ($current_field, -2);
+                            $field_name = substr ($current_field, 0, -3);
+                            if ($field_name == '') {
+                                $current_field = self::DBIO_NO_IMPORT;
+                                break;
+                            }
                             foreach ($this->languages as $language_code => $language_id) {
-                                $language_suffix = '_' . (int)$language_id;
-                                $field_name = (strlen ($current_field) > strlen ($language_suffix)) ? substr ($current_field, 0, -strlen ($language_suffix)) : DBIO_NO_IMPORT;
+                                if ($field_language_code != $language_code) {
+                                    continue;
+                                }
                                 if (array_key_exists ($field_name, $table_info['fields'])) {
                                     $table_name = $database_table_name;
                                     $field_language_id = $language_id;
                                     $current_field = $field_name;
+                                    $field_found = true;
                                     break;
                                 }
                             }
-                            if ($table_name != DBIO_NO_IMPORT) {
-                                break;
-                            }
                         } elseif (array_key_exists ($current_field, $table_info['fields'])) {
                             $table_name = $database_table_name;
+                            $field_found = true;
+                        }
+                        if ($field_found) {
                             break;
                         }
                     }
@@ -372,12 +401,13 @@ abstract class DbIoHandler extends base
             }
             $this->import['table_names'][] = $table_name;
             $this->import['language_id'][] = $field_language_id;
-            if ($current_field != DBIO_NO_IMPORT) {
+            if ($current_field != self::DBIO_NO_IMPORT) {
                 $this->import['header_field_count']++;
             }  
             $key_index++;
           
         }
+        $this->debugMessage ('importGetHeaders: Processing complete.' . var_export ($header, true));
         $this->import['headers'] = $header;
         $this->import['header_columns'] = count ($header);
         
@@ -461,7 +491,7 @@ abstract class DbIoHandler extends base
                 $language_id = $this->import['language_id'][$data_index];
                 $data_index++;
             
-                if ($field_name == DBIO_NO_IMPORT) {
+                if ($field_name == self::DBIO_NO_IMPORT) {
                     continue;
                 }
                 $this->importProcessField ($table_name, $field_name, $language_id, $current_element);
@@ -469,11 +499,11 @@ abstract class DbIoHandler extends base
             }
 
             // -----
-            // If the record didn't have errors preventing its insert ...
+            // If the record didn't have errors preventing its insert/update ...
             //
             if ($this->importFinalizeFields ($data) !== false) {
                 foreach ($this->import_sql_data as $database_table => $sql_data_array) {
-                    if ($database_table != DBIO_NO_IMPORT) {
+                    if ($database_table != self::DBIO_NO_IMPORT) {
                         $table_name = $database_table;
                         $where_clause = $this->import['where_clause'];
                         $capture_key_value = ($this->import['action'] == 'insert' && $this->config['key']['table'] == $table_name);
@@ -507,6 +537,7 @@ abstract class DbIoHandler extends base
                         }
                     }
                 }
+                $this->importRecordPostProcess ($key_value);
             }
         }
     }
@@ -538,6 +569,10 @@ abstract class DbIoHandler extends base
     {
         return $sql_data_array;
     }
+    
+    protected function importRecordPostProcess ($key_value) 
+    {
+    }        
   
     protected function importAddField ($table_name, $field_name, $field_value, $field_type) 
     {
@@ -549,90 +584,94 @@ abstract class DbIoHandler extends base
   
     protected function importProcessField ($table_name, $field_name, $language_id, $field_value, $field_type = false) 
     {
-        if ($language_id == 0) {
-            $import_table_name = $table_name;
-            if (!isset ($this->import_sql_data[$table_name])) {
-                $this->import_sql_data[$table_name] = array ();
-        
-            }
-        } else {
-            $import_table_name = "$table_name^$language_id";
-            if (!isset ($this->import_sql_data[$import_table_name])) {
-                $this->import_sql_data[$import_table_name] = array ();
-            }
-        }
-        if ($field_type === false) {
-            if (isset ($this->tables[$table_name]) && isset ($this->tables[$table_name]['fields'][$field_name])) {
-                $valid_string_field = false;
-                switch ($this->tables[$table_name]['fields'][$field_name]['data_type']) {
-                    case 'int':
-                    case 'smallint':
-                    case 'mediumint':
-                    case 'bigint':
-                    case 'tinyint':
-                        $field_type = 'integer';
-                        if ($this->import['check_values'] && !ctype_digit ($field_value)) {
-                            $this->debugMessage ("[*] $import_table_name.$field_name: Value ($field_value) is not an integer", self::DBIO_WARNING);
-              
-                        }
-                        break;
-                    case 'float':
-                    case 'decimal':
-                        $field_type = 'float';
-                        if ($this->import['check_values'] && !(ctype_digit (str_replace ('.', '', $field_value) && substr_count ($field_value, '.') <= 1))) {
-                            $this->debugMessage ("[*] $import_table_name.$field_name: Value ($field_value) is not a floating-point value.", self::DBIO_WARNING);
-              
-                        }
-                        break;
-                    case 'date':
-                    case 'datetime':
-                        $field_type = 'date';
-                        if ($this->import['check_values']) {
-                        }
-                        break;
-                    case 'char':
-                    case 'text':
-                    case 'varchar':
-                    case 'mediumtext':
-                        $valid_string_field = true;  //-Indicate that a value string-type field was found and fall through to common processing
-                    default:
-                        $field_type = 'string';
-                        if (!$valid_string_field) {
-                            $message = "Unknown datatype (" . $this->tables[$table_name]['fields'][$field_name]['data_type'] . ") for $table_name::$field_name on line #" . $this->stats['record_count'];
-                            $this->debugMessage ("[*] process_input_field: $message", self::DBIO_WARNING);
-              
-                        }
-                        if ($this->import['check_values']) {
-                            $field_value = htmlentities ($field_value, ENT_COMPAT, DBIO_CHARSET, false);
-                            if (trim ($field_value) == '') {
-                                $encoded_field_value = mb_convert_encoding ($field_value, DBIO_CHARSET, CHARSET);
-                                if (mb_substr_count ($encoded_field_value, DBIO_CHARSET) != 0) {
-                                    $message = "Invalid character(s) detected in field $table_name::$field_name: $encoded_field_value on line #" . $this->stats['record_count'];
-                                    $this->debugMessage ("[*] process_input_field: $message" , self::DBIO_WARNING);
-                  
-                                }
-                                $field_value = $encoded_field_value;
-                
-                            }
-                            $field_value = html_entity_decode ($field_value, ENT_COMPAT, CHARSET);
-              
-                        }
-                        break;
+        $this->debugMessage ("importProcessField ($table_name, $field_name, $language_id, $field_value, $field_type)");
+        if ($table_name == self::DBIO_SPECIAL_IMPORT) {
+            $this->importAddField ($table_name, $field_name, $field_value, $field_type);
+            
+        } elseif ($table_name != self::DBIO_NO_IMPORT) {
+            if ($language_id == 0) {
+                $import_table_name = $table_name;
+                if (!isset ($this->import_sql_data[$table_name])) {
+                    $this->import_sql_data[$table_name] = array ();
+            
+                }
+            } else {
+                $import_table_name = "$table_name^$language_id";
+                if (!isset ($this->import_sql_data[$import_table_name])) {
+                    $this->import_sql_data[$import_table_name] = array ();
                 }
             }
-        }
-        if ($field_type === false) {
-            $this->debugMessage ("[*] process_input_field ($import_table_name, $field_name, $language_id, $field_value): Can't resolve field type, ignoring.", self::DBIO_WARNING);
-      
-        } else {
-            $this->importAddField ($import_table_name, $field_name, $field_value, $field_type);
-      
+            if ($field_type === false) {
+                if (isset ($this->tables[$table_name]) && isset ($this->tables[$table_name]['fields'][$field_name])) {
+                    $valid_string_field = false;
+                    switch ($this->tables[$table_name]['fields'][$field_name]['data_type']) {
+                        case 'int':
+                        case 'smallint':
+                        case 'mediumint':
+                        case 'bigint':
+                        case 'tinyint':
+                            $field_type = 'integer';
+                            if ($this->import['check_values'] && !ctype_digit ($field_value)) {
+                                $this->debugMessage ("[*] $import_table_name.$field_name: Value ($field_value) is not an integer", self::DBIO_WARNING);
+                  
+                            }
+                            break;
+                        case 'float':
+                        case 'decimal':
+                            $field_type = 'float';
+                            if ($this->import['check_values'] && !(ctype_digit (str_replace ('.', '', $field_value)) && substr_count ($field_value, '.') <= 1)) {
+                                $this->debugMessage ("[*] $import_table_name.$field_name: Value ($field_value) is not a floating-point value.", self::DBIO_WARNING);
+                  
+                            }
+                            break;
+                        case 'date':
+                        case 'datetime':
+                            $field_type = 'date';
+                            if ($this->import['check_values']) {
+                            }
+                            break;
+                        case 'char':
+                        case 'text':
+                        case 'varchar':
+                        case 'mediumtext':
+                            $valid_string_field = true;  //-Indicate that a value string-type field was found and fall through to common processing
+                        default:
+                            $field_type = 'string';
+                            if (!$valid_string_field) {
+                                $message = "Unknown datatype (" . $this->tables[$table_name]['fields'][$field_name]['data_type'] . ") for $table_name::$field_name on line #" . $this->stats['record_count'];
+                                $this->debugMessage ("[*] importProcessField: $message", self::DBIO_WARNING);
+                  
+                            }
+                            if (strtolower (DB_CHARSET) == 'utf8') {
+                                $field_value = $this->encoding->toUTF8 ($field_value);
+                            } else {
+                                $field_value = $this->encoding->toLatin1 ($field_value);
+                            }
+                            break;
+                    }
+                }
+            }
+            if ($field_type === false) {
+                $this->debugMessage ("[*] importProcessField ($import_table_name, $field_name, $language_id, $field_value): Can't resolve field type, ignoring.", self::DBIO_WARNING);
+          
+            } else {
+                $this->importAddField ($import_table_name, $field_name, $field_value, $field_type);
+          
+            }
         }
     }
-  
+
+    // -----
+    // This function, called for each-and-every data-element being imported, can return one of three class constants:
+    //
+    // - DBIO_IMPORT_OK ........ The field has no special-handling requirements.
+    // - DBIO_NO_IMPORT ........ The field's value should not set directly to the database for the import; implying
+    //                           that the field is calculated separately by the handler's processing.
+    // - DBIO_SPECIAL_IMPORT ... The field requires special-handling by the handler to create the associated database elements.
+    //
     protected function importFieldCheck ($field_name) 
     {
-        return $field_name;
+        return self::DBIO_IMPORT_OK;
     }
   
 // ----------------------------------------------------------------------------------
@@ -730,16 +769,12 @@ abstract class DbIoHandler extends base
         foreach ($this->tables[$table_name]['fields'] as $field_name => $field_info) {
             if ($field_name == 'language_id' || $field_name == 'languages_id') {
                 $uses_language = true;
-            
             }
-
             if (isset ($this->config['tables'][$table_name]['insert_now']) && $this->config['tables'][$table_name]['insert_now'] == $field_name) {
                 $insert_data_array[$field_name] = 'now()';
-            
             }
             if (isset ($this->config['tables'][$table_name]['update_now']) && $this->config['tables'][$table_name]['update_now'] == $field_name) {
                 $update_data_array[$field_name] = 'now()';
-            
             }
         }
         $this->tables[$table_name]['uses_language'] = $uses_language;
