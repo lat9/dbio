@@ -8,12 +8,6 @@ if (!defined ('IS_ADMIN_FLAG')) {
   
 }
 
-// -----
-// These definitions will, eventually, be migrated to language files.
-//
-define ('DBIO_MESSAGE_IMPORT_MISSING_HEADER', 'Import aborted: Missing header information for input file.');
-define ('DBIO_FORMAT_MESSAGE_IMPORT_MISSING_KEY', 'Import aborted: Missing key column (%s).');
-
 abstract class DbIoHandler extends base 
 {
 // ----------------------------------------------------------------------------------
@@ -58,7 +52,7 @@ abstract class DbIoHandler extends base
         unset ($languages);
         
         if (!class_exists ('Encoding')) {
-            require (DIR_FS_DBIO . 'Encoding.php');
+            require (DIR_FS_DBIO_CLASSES . 'Encoding.php');
 
         }       
         $this->encoding = new ForceUTF8\Encoding;
@@ -66,6 +60,13 @@ abstract class DbIoHandler extends base
         $this->setHandlerConfiguration ();
         
         $this->initialize ();
+    }
+    
+    // -----
+    // Returns the current version of the DbIoHandler class.
+    //
+    public function getHandlerVersion () {
+        return self::DBIO_HANDLER_VERSION;
     }
 
     // -----

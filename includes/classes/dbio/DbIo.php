@@ -8,35 +8,6 @@ if (!defined ('IS_ADMIN_FLAG')) {
   
 }
 
-// ----
-// These definitions are used by this sequencing class as well as the report-specific handlers.
-//
-define ('DBIO_INVALID_CHAR_REPLACEMENT', 167); //-Use the "section symbol" (§) as the invalid-character replacement
-
-// -----
-// These definitions will, eventually, be migrated to an /extra_datafiles file.
-//
-if (!defined ('DIR_FS_DBIO')) define ('DIR_FS_DBIO', DIR_FS_CATALOG . 'dbio/');
-define ('DIR_FS_DBIO_IMPORT', DIR_FS_DBIO . 'import/');
-define ('DIR_FS_DBIO_EXPORT', DIR_FS_DBIO . 'export/');
-define ('DIR_FS_DBIO_PROCESSED', DIR_FS_DBIO . 'processed/');
-
-// -----
-// These definitions will, eventually, be migrated to language files.
-//
-define ('DBIO_FORMAT_TEXT_NO_DESCRIPTION', 'The selected dbIO handler has no description for the language code "%s".');
-define ('DBIO_MESSAGE_NO_HANDLERS_FOUND', 'No dbIO handlers were found; no report-generation is possible.');
-define ('DBIO_FORMAT_MESSAGE_NO_HANDLER', 'Missing dbIO handler class file %s.');
-define ('DBIO_FORMAT_MESSAGE_NO_CLASS', 'Missing dbIO handler class named "%1$s" in handler file %2$s.');
-define ('DBIO_MESSAGE_EXPORT_NOT_INITIALIZED', 'Export aborted: No handler previously specified.');
-define ('DBIO_MESSAGE_IMPORT_NOT_INITIALIZED', 'Import aborted: No handler previously specified.');
-define ('DBIO_FORMAT_MESSAGE_EXPORT_NO_FP', 'Export aborted. Failure creating output file %s.');
-define ('DBIO_EXPORT_NOTHING_TO_DO', 'dbIO Export: No matching fields were found.');
-define ('DBIO_FORMAT_MESSAGE_IMPORT_FILE_MISSING', 'Import aborted:  Missing input file (%s).');
-define ('DBIO_WARNING_ENCODING_ERROR', 'dbIO Import: Could not encode the input for ' . CHARSET . '.');
-define ('DBIO_ERROR_NO_HANDLER', 'dbIO Export. No dbIO helper is configured.');
-define ('DBIO_ERROR_EXPORT_NO_LANGUAGE', 'dbIO Export.  The language code "%s" is not configured for the store.');
-
 // -----
 // These definitions will, eventually, be migrated to admin-level configuration values.
 //
@@ -57,6 +28,13 @@ class DbIo extends base
     {
         $this->message = '';
         $this->file_suffix = date ('Ymd-His-') . mt_rand (1000,999999);
+        
+        $message_file_name = DIR_FS_CATALOG . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/' . FILENAME_DBIO_MESSAGES;
+        if (!file_exists ($message_file_name)) {
+            trigger_error ("Missing dbIO message file ($message_file_name)", E_USER_WARNING);
+        } else {
+            require ($message_file_name);
+        }
 
         mb_internal_encoding (CHARSET);
         ini_set ('mbstring.substitute_character', DBIO_INVALID_CHAR_REPLACEMENT);
@@ -79,11 +57,11 @@ class DbIo extends base
     //
     public function getAvailableHandlers () 
     {
-        $handlers = glob (DIR_FS_DBIO . 'DbIo*Handler.php');
+        $handlers = glob (DIR_FS_DBIO_CLASSES . 'DbIo*Handler.php');
         $handler_info = array ();
         if (is_array ($handlers)) {
             foreach ($handlers as $current_handler) {
-                $handler_class = str_replace (array (DIR_FS_DBIO, '.php'), '', $current_handler);
+                $handler_class = str_replace (array (DIR_FS_DBIO_CLASSES, '.php'), '', $current_handler);
                 if ($handler_class != 'DbIoHandler') {
                     require $current_handler;
                     $handler = new $handler_class ($this->file_suffix);
@@ -114,10 +92,10 @@ class DbIo extends base
         $this->dbio_type = $dbio_type;   
         if ($this->dbio_type != '') {
             if (!class_exists ('DbIoHandler')) {
-                require (DIR_FS_DBIO . 'DbIoHandler.php');
+                require (DIR_FS_DBIO_CLASSES . 'DbIoHandler.php');
             }
             $handler_classname = 'DbIo' . $dbio_type . 'Handler';
-            $dbio_handler = DIR_FS_DBIO . $handler_classname . '.php';
+            $dbio_handler = DIR_FS_DBIO_CLASSES . $handler_classname . '.php';
             if (!file_exists ($dbio_handler)) {
                 $this->message = sprintf (DBIO_FORMAT_MESSAGE_NO_HANDLER, $dbio_handler);
                 trigger_error ($this->message, E_USER_WARNING);
