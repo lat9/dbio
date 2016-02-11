@@ -154,8 +154,8 @@ abstract class DbIoHandler extends base
     }
     
     // -----
-    // Initialize the dbIO export handling.
-    //
+    // Initialize the dbIO export handling. 
+    // 
     public function exportInitialize ($language = 'all') 
     {
         $initialized = false;
@@ -166,6 +166,12 @@ abstract class DbIoHandler extends base
         $this->message = '';
         $this->stats['action'] = "export-$language";
         
+        // -----
+        // For the export to be successfully initialized:
+        //
+        // 1) The current dbIO handler must have included its 'config' section.
+        // 2) The language requested for the export must be present in the current Zen Cart's database
+        //        
         if (!isset ($this->config)) {
             $this->message = DBIO_ERROR_NO_HANDLER;
             trigger_error ($this->message, E_USER_ERROR);
@@ -174,6 +180,11 @@ abstract class DbIoHandler extends base
             $this->message = sprintf (DBIO_ERROR_EXPORT_NO_LANGUAGE, $language);
             
         } else {
+            // -----
+            // Since those pre-conditions have been met, the majority of the export's initialization
+            // requires the breaking-down of the current dbIO handler's configuration into data elements
+            // that can be easily parsed during each record's output.
+            //
             $initialized = true;
             $this->export_language = $language;
             $this->export = array ();
@@ -242,6 +253,13 @@ abstract class DbIoHandler extends base
         return $initialized;
     }
   
+    // -----
+    // Gets and returns the header-record for the current export.  This is driven by whether the current dbIO handler's configuration
+    // indicates that a header-record is to be included in the export.
+    //
+    // If no header is to be returned, the function returns (bool)false.  Otherwise, the exported record-count is incremented by 1 (to
+    // reflect the header's output) and the array of header titles is returned to the caller.
+    //
     public function exportGetHeader () 
     {
         $header = false;
@@ -254,6 +272,9 @@ abstract class DbIoHandler extends base
     
     }
  
+    // -----
+    // If properly initialized, creates and returns the SQL query associated with the current export.
+    //
     public function exportGetSql ($sql_limit = '') 
     {
         if (!isset ($this->export_language) || !isset ($this->export['select'])) {
@@ -274,6 +295,10 @@ abstract class DbIoHandler extends base
     
     }
   
+    // -----
+    // This function, called just prior to writing each exported record, increments the count of records exported and
+    // also makes sure that the encoding for the output is based on the character-set specified.
+    //
     public function exportPrepareFields (array $fields) 
     {
         $this->stats['record_count']++;
@@ -295,9 +320,11 @@ abstract class DbIoHandler extends base
         }
         $this->import = array ();
         $this->import['operation'] = $operation;
-        $this->import['check_values'] = ($operation == 'check' || $operation == 'run-check');
+        $this->check_values = ($operation == 'check' || $operation == 'run-check');
         $this->stats['record_count'] = ($this->config['include_header']) ? 1 : 0;
         $this->stats['action'] = "import-$language-$operation";
+        
+        $this->charset_is_utf8 = (mb_strtolower (CHARSET) == 'utf-8');
         
         $this->import['headers'] = array ();
         foreach ($this->config['tables'] as $config_table_name => $config_table_info) {
@@ -468,12 +495,14 @@ abstract class DbIoHandler extends base
                                                WHERE " . $this->config['key']['match_field'] . " = '" . $db->prepare_input ($data[$key_index]) . "' LIMIT 1");
             if ($data_key_check->EOF) {
                 $this->import['action'] = 'insert';
+                $this->import_is_insert = true;
                 $this->import['where_clause'] = '';
                 $this->stats['inserts']++;
                 $key_value = false;
             
             } else {
                 $this->import['action'] = 'update';
+                $this->import_is_insert = false;
                 $this->stats['updates']++;
                 $key_value = $data_key_check->fields['key_value'];
                 $this->import['where_clause'] = $db->bindVars ($this->config['key']['key_field'] . ' = :key_value:', ':key_value:', $key_value, $this->config['key']['key_field_type']);
@@ -483,7 +512,7 @@ abstract class DbIoHandler extends base
             // -----
             // Loop, processing each 'column' of data into its respective database field(s).  At the end of this processing,
             // we'll have a couple of sql-data arrays to be used as input to the database 'perform' function; that function will
-            // handle any conversions and quoting required.
+            // handle any conversions and quote-insertions required.
             //
             $data_index = 0;
             $this->import_sql_data = array ();
@@ -511,18 +540,16 @@ abstract class DbIoHandler extends base
                     if ($database_table != self::DBIO_NO_IMPORT) {
                         $table_name = $database_table;
                         $where_clause = $this->import['where_clause'];
-                        $capture_key_value = ($this->import['action'] == 'insert' && $this->config['key']['table'] == $table_name);
+                        $capture_key_value = ($this->import_is_insert && $this->config['key']['table'] == $table_name);
 
                         if (mb_strpos ($table_name, '^') !== false) {
                             $language_tables = explode ('^', $table_name);
                             $table_name = $language_tables[0];
                             $language_id = $language_tables[1];
-                            if ($this->import['action'] == 'update') {
-                                $where_clause .= " AND language_id = $language_id";
-                    
-                            } else {
+                            if ($this->import_is_insert) {
                                 $sql_data_array[] = array ( 'fieldName' => $this->config['tables'][$table_name]['language_field'], 'value' => $language_id, 'type' => 'integer' );
-                    
+                            } else {
+                                $where_clause .= " AND language_id = $language_id";
                             }
                         }
                 
@@ -536,7 +563,6 @@ abstract class DbIoHandler extends base
                                 $db->perform ($table_name, $sql_data_array, $this->import['action'], $where_clause);
                                 if ($capture_key_value) {
                                     $key_value = $db->insert_ID ();
-                      
                                 }
                             }
                         }
@@ -562,7 +588,7 @@ abstract class DbIoHandler extends base
     //
     protected function prettify (array $data) 
     {
-        return str_replace (array ("',\n", "=> \n", "array (\n", "0,\n", '  '), array("',", "=> ", "array (", "0,", ' '), var_export ($data, true));
+        return mb_str_replace (array ("',\n", "=> \n", "array (\n", "0,\n", '  '), array("',", "=> ", "array (", "0,", ' '), var_export ($data, true));
     }
 
     protected function importFinalizeFields ($data) 
@@ -598,7 +624,6 @@ abstract class DbIoHandler extends base
                 $import_table_name = $table_name;
                 if (!isset ($this->import_sql_data[$table_name])) {
                     $this->import_sql_data[$table_name] = array ();
-            
                 }
             } else {
                 $import_table_name = "$table_name^$language_id";
@@ -616,7 +641,7 @@ abstract class DbIoHandler extends base
                         case 'bigint':
                         case 'tinyint':
                             $field_type = 'integer';
-                            if ($this->import['check_values'] && !ctype_digit ($field_value)) {
+                            if ($this->check_values && !ctype_digit ($field_value)) {
                                 $this->debugMessage ("[*] $import_table_name.$field_name: Value ($field_value) is not an integer", self::DBIO_WARNING);
                   
                             }
@@ -624,7 +649,7 @@ abstract class DbIoHandler extends base
                         case 'float':
                         case 'decimal':
                             $field_type = 'float';
-                            if ($this->import['check_values'] && !(ctype_digit (str_replace ('.', '', $field_value)) && mb_substr_count ($field_value, '.') <= 1)) {
+                            if ($this->check_values && !(ctype_digit (mb_str_replace ('.', '', $field_value)) && mb_substr_count ($field_value, '.') <= 1)) {
                                 $this->debugMessage ("[*] $import_table_name.$field_name: Value ($field_value) is not a floating-point value.", self::DBIO_WARNING);
                   
                             }
@@ -632,7 +657,7 @@ abstract class DbIoHandler extends base
                         case 'date':
                         case 'datetime':
                             $field_type = 'date';
-                            if ($this->import['check_values']) {
+                            if ($this->check_values) {
                             }
                             break;
                         case 'char':
@@ -647,7 +672,7 @@ abstract class DbIoHandler extends base
                                 $this->debugMessage ("[*] importProcessField: $message", self::DBIO_WARNING);
                   
                             }
-                            if (mb_strtolower (CHARSET) == 'utf-8') {
+                            if ($this->charset_is_utf8) {
                                 $field_value = $this->encoding->toUTF8 ($field_value);
                             } else {
                                 $field_value = $this->encoding->toLatin1 ($field_value);
