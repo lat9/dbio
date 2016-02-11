@@ -41,7 +41,7 @@ abstract class DbIoHandler extends base
         $this->debug = (DBIO_DEBUG == 'true');
         $this->debug_log_file = DIR_FS_LOGS . '/dbio-' . $log_file_suffix . '.log';
         
-        $this->stats = array ( 'errors' => 0, 'warnings' => 0, 'record_count' => 0, 'inserts' => 0, 'updates' => 0, 'start_time' => 0, 'stop_time' => 0 );
+        $this->stats = array ( 'errors' => 0, 'warnings' => 0, 'record_count' => 0, 'inserts' => 0, 'updates' => 0 );
         
         $this->debugMessage ('Configured CHARSET (' . CHARSET . '), DB_CHARSET (' . DB_CHARSET . '), DBIO_CHARSET (' . DBIO_CHARSET . '), PHP multi-byte settings: ' . var_export (mb_get_info (), true));
         
@@ -81,16 +81,19 @@ abstract class DbIoHandler extends base
     //
     public function stopTimer () 
     {
-        $this->stats['stop_time'] = microtime (true);
+        $stop_time = microtime (true);
+        $this->stats['parse_time'] = $stop_time - $this->stats['start_time'];
+        unset ($this->stats['start_time']);
+        $this->stats['memory_usage'] = memory_get_usage ();
+        $this->stats['memory_peak_usage'] = memory_get_peak_usage ();
     }
   
     // -----
-    // Get the script's parse time, returned as a floating-point value identifying the number of seconds (a floating-point value).  The value is
-    // returned as 0 if the timer was either not started or not stopped.
+    // Get the script's statistics, returned as an array of information.
     //
-    public function getParseTime () 
+    public function getStatsArray () 
     {
-        return ($this->stats['start_time'] === 0 || $this->stats['stop_time'] === 0) ? 0 : ($this->stats['stop_time'] - $this->stats['start_time']);
+        return $this->stats;
     }
   
     // -----
@@ -161,6 +164,7 @@ abstract class DbIoHandler extends base
             $language = key ($this->languages);
         }
         $this->message = '';
+        $this->stats['action'] = "export-$language";
         
         if (!isset ($this->config)) {
             $this->message = DBIO_ERROR_NO_HANDLER;
@@ -205,7 +209,7 @@ abstract class DbIoHandler extends base
                         $first_language = false;
                   
                     }
-                    $this->export[$config_table_name]['select'] = substr ($this->export[$config_table_name]['select'], 0, -2);
+                    $this->export[$config_table_name]['select'] = mb_substr ($this->export[$config_table_name]['select'], 0, -2);
                 
                 } else {
                     foreach ($this->tables[$config_table_name]['fields'] as $current_field => $field_info) {
@@ -219,8 +223,8 @@ abstract class DbIoHandler extends base
                     }
                 }
             }
-            $this->export['from'] = ($this->export['from'] == '') ? '' : substr ($this->export['from'], 0, -2);
-            $this->export['select'] = ($this->export['select'] == '') ? '' : substr ($this->export['select'], 0, -2);
+            $this->export['from'] = ($this->export['from'] == '') ? '' : mb_substr ($this->export['from'], 0, -2);
+            $this->export['select'] = ($this->export['select'] == '') ? '' : mb_substr ($this->export['select'], 0, -2);
             
             if (isset ($this->config['additional_headers']) && is_array ($this->config['additional_headers'])) {
                 foreach ($this->config['additional_headers'] as $header_value => $flags) {
@@ -273,7 +277,7 @@ abstract class DbIoHandler extends base
     public function exportPrepareFields (array $fields) 
     {
         $this->stats['record_count']++;
-        $fields = (DBIO_CHARSET === 'utf8') ? $this->encoding->toUTF8 ($fields) : $this->encoding->toWin1252 ($fields, ForceUTF8\Encoding::ICONV_TRANSLIT);
+        $fields = (DBIO_CHARSET === 'utf8') ? $this->encoding->toUTF8 ($fields) : $this->encoding->toWin1252 ($fields, ForceUTF8\Encoding::ICONV_IGNORE_TRANSLIT);
         return $fields;
     
     }
@@ -293,6 +297,7 @@ abstract class DbIoHandler extends base
         $this->import['operation'] = $operation;
         $this->import['check_values'] = ($operation == 'check' || $operation == 'run-check');
         $this->stats['record_count'] = ($this->config['include_header']) ? 1 : 0;
+        $this->stats['action'] = "import-$language-$operation";
         
         $this->import['headers'] = array ();
         foreach ($this->config['tables'] as $config_table_name => $config_table_info) {
@@ -351,11 +356,11 @@ abstract class DbIoHandler extends base
         foreach ($header as &$current_field) {
             $table_name = self::DBIO_NO_IMPORT;
             $field_language_id = 0;
-            if (strpos ($current_field, 'v_') !== 0 || strlen ($current_field) < 3) {
+            if (mb_strpos ($current_field, 'v_') !== 0 || strlen ($current_field) < 3) {
                 $current_field = self::DBIO_NO_IMPORT;
             
             } else {
-                $current_field = substr ($current_field, 2);  //-Strip off leading 'v_'
+                $current_field = mb_substr ($current_field, 2);  //-Strip off leading 'v_'
                 $current_field_status = $this->importFieldCheck ($current_field);
                 if ($current_field_status == self::DBIO_NO_IMPORT ) {
                     $current_field = self::DBIO_NO_IMPORT;
@@ -367,8 +372,8 @@ abstract class DbIoHandler extends base
                     $field_found = false;
                     foreach ($this->tables as $database_table_name => $table_info) {
                         if ($table_info['uses_language']) {
-                            $field_language_code = substr ($current_field, -2);
-                            $field_name = substr ($current_field, 0, -3);
+                            $field_language_code = mb_substr ($current_field, -2);
+                            $field_name = mb_substr ($current_field, 0, -3);
                             if ($field_name == '') {
                                 $current_field = self::DBIO_NO_IMPORT;
                                 break;
@@ -508,7 +513,7 @@ abstract class DbIoHandler extends base
                         $where_clause = $this->import['where_clause'];
                         $capture_key_value = ($this->import['action'] == 'insert' && $this->config['key']['table'] == $table_name);
 
-                        if (strpos ($table_name, '^') !== false) {
+                        if (mb_strpos ($table_name, '^') !== false) {
                             $language_tables = explode ('^', $table_name);
                             $table_name = $language_tables[0];
                             $language_id = $language_tables[1];
@@ -619,7 +624,7 @@ abstract class DbIoHandler extends base
                         case 'float':
                         case 'decimal':
                             $field_type = 'float';
-                            if ($this->import['check_values'] && !(ctype_digit (str_replace ('.', '', $field_value)) && substr_count ($field_value, '.') <= 1)) {
+                            if ($this->import['check_values'] && !(ctype_digit (str_replace ('.', '', $field_value)) && mb_substr_count ($field_value, '.') <= 1)) {
                                 $this->debugMessage ("[*] $import_table_name.$field_name: Value ($field_value) is not a floating-point value.", self::DBIO_WARNING);
                   
                             }
@@ -642,7 +647,7 @@ abstract class DbIoHandler extends base
                                 $this->debugMessage ("[*] importProcessField: $message", self::DBIO_WARNING);
                   
                             }
-                            if (strtolower (DB_CHARSET) == 'utf8') {
+                            if (mb_strtolower (CHARSET) == 'utf-8') {
                                 $field_value = $this->encoding->toUTF8 ($field_value);
                             } else {
                                 $field_value = $this->encoding->toLatin1 ($field_value);

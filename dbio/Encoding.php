@@ -43,6 +43,7 @@ class Encoding {
 
   const ICONV_TRANSLIT = "TRANSLIT";
   const ICONV_IGNORE = "IGNORE";
+  const ICONV_IGNORE_TRANSLIT = "IGNORE_TRANSLIT";  //-20160210-lat9-added
   const WITHOUT_ICONV = "";
 
   protected static $win1252ToUtf8 = array(
@@ -340,7 +341,7 @@ class Encoding {
          str_replace(array_keys(self::$utf8ToWin1252), array_values(self::$utf8ToWin1252), self::toUTF8($text))
        );
     } else {
-       $o = iconv("UTF-8", "Windows-1252" . ($option == self::ICONV_TRANSLIT ? '//TRANSLIT' : ($option == self::ICONV_IGNORE ? '//IGNORE' : '')), $text);
+       $o = iconv("UTF-8", "Windows-1252" . ($option == self::ICONV_IGNORE_TRANSLIT ? '//IGNORE//TRANSLIT' : ($option == self::ICONV_TRANSLIT ? '//TRANSLIT' : ($option == self::ICONV_IGNORE ? '//IGNORE' : ''))), $text);
     }
     return $o;
   }

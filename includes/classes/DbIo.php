@@ -260,10 +260,6 @@ class DbIo extends base
         return $completion_code;
     }
 
-/*
-** $value = iconv('Windows-1252', 'UTF-8//IGNORE//TRANSLIT', $value);
-*/
-  
     // -----
     // Redirect any debug-messages from this level of processing to the handler's message handling, so that
     // all messages for a given import are recorded in a single location.
