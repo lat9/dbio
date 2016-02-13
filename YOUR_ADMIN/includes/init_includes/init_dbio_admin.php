@@ -7,8 +7,8 @@ if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
 }
 
-define('DBIO_CURRENT_VERSION', '0.0.0');
-define('DBIO_CURRENT_UPDATE_DATE', '2016-02-11');
+define('DBIO_CURRENT_VERSION', '0.0.1');
+define('DBIO_CURRENT_UPDATE_DATE', '2016-02-13');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
 
@@ -51,11 +51,18 @@ if (!defined ('DBIO_MODULE_VERSION')) {
 
     $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'Maximum Execution Time (seconds)', 'DBIO_MAX_EXECUTION_TIME', '60', 'Enter the maximum execution time for a dbIO operation, in seconds.', $cgi, 20, now(), NULL, NULL)");
 
+    $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'Split File: Record Count', 'DBIO_SPLIT_RECORD_COUNT', '2000', 'Sometimes, splitting a .csv file into multiple, smaller files can help if your server is timing out on an <em>import</em> operation or if an exported .csv is too large to download in a single chunk.  Enter the number of records (default: 2000) at which to split these files using the <em>dbIO Manager</em>.', $cgi, 25, now(), NULL, NULL)");    
+
     $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'Enable Debug?', 'DBIO_DEBUG', 'false', 'Identify whether or not the dbIO debug is to be enabled.  When enabled, a <em>dbio-*.log</em> file is written to your store\'s /logs folder.', $cgi, 600, now(), NULL, 'zen_cfg_select_option(array(\'true\', \'false\'),')");
 
     $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'Debug Date Format', 'DBIO_DEBUG_DATE_FORMAT', 'Y-m-d H:i:s', 'Enter the formatting string used to timestamp all dbIO log entries.', $cgi, 601, now(), NULL, NULL)");
     
     define ('DBIO_MODULE_VERSION', $version_release_date);
+} else {
+    if (!defined ('DBIO_SPLIT_RECORD_COUNT')) {
+        $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'Split File: Record Count', 'DBIO_SPLIT_RECORD_COUNT', '2000', 'Sometimes, splitting a .csv file into multiple, smaller files can help if your server is timing out on an <em>import</em> operation or if an exported .csv is too large to download in a single chunk.<br /><br />Enter the number of records (default: 2000) at which to split these files using the <em>dbIO Manager</em>.', $cgi, 25, now(), NULL, NULL)");    
+
+    }
 }
 
 // -----

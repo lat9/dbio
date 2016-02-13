@@ -59,6 +59,8 @@ class DbIo extends base
                     $handler_info[$dbio_type] = array ( 
                         'description' => $handler->getHandlerDescription (), 
                         'class_name' => $handler_class,
+                        'is_export_only' => $handler->isExportOnly (),
+                        'is_header_included' => $handler->isHeaderIncluded (),
                     );
                 }
             }

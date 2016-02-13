@@ -43,7 +43,7 @@ if (!$ok_to_proceed) {
             foreach ($files_check as $current_csv_file) {
                 $file_stats = stat ($current_csv_file);
                 $current_csv_filename = str_replace (DIR_FS_DBIO, '', $current_csv_file);
-                if (!preg_match ("~^dbio\.($handler_name_list)\.(.*)\.csv$~", $current_csv_filename)) {
+                if (!preg_match ("~^dbio\.($handler_name_list)\.(.*)\.csv$~", $current_csv_filename, $matches)) {
                     continue;
                 }
                 $filename_hash = md5 ($current_csv_file);
@@ -52,6 +52,9 @@ if (!$ok_to_proceed) {
                     'filename_only' => $current_csv_filename,
                     'last_modified' => $file_stats[9],
                     'bytes' => $file_stats[7],
+                    'handler_name' => $matches[1],
+                    'is_export_only' => (isset ($dbio_handlers[$matches[1]])) ? $dbio_handlers[$matches[1]]['is_export_only'] : false,
+                    'is_header_included' => (isset ($dbio_handlers[$matches[1]])) ? $dbio_handlers[$matches[1]]['is_header_included'] : false,
                 );
             }
         }
@@ -59,20 +62,142 @@ if (!$ok_to_proceed) {
         
         $action = (isset ($_GET['action'])) ? $_GET['action'] : '';
         switch ($action) {
-            case 'process':
-                if (!isset ($_POST['handler_name']) || !isset ($_POST['report_action']) || !in_array ($_POST['report_action'], array ('import', 'export'))) {
-                    $error_message = DBIO_FORM_SUBMISSION_ERROR;
-                } elseif ($_POST['report_action'] == 'export') {
+            case 'export':
+                if (!isset ($_POST['handler'])) {
+                    $messageStack->add_session (DBIO_FORM_SUBMISSION_ERROR);
+                } else {
                     unset ($dbio);
-                    $dbio = new DbIo ($_POST['handler_name']);
+                    $dbio = new DbIo ($_POST['handler']);
                     $export_info = $dbio->dbioExport ('file');
                     if ($export_info['status'] === false) {
-                        $error_message = $dbio->getMessage ();
+                        $messageStack->add_session ($dbio->getMessage ());
                     } else {
-                        $info_message = sprintf (DBIO_MGR_EXPORT_SUCCESSFUL, $_POST['handler_name'], $export_info['export_filename']);
+                        $messageStack->add_session (sprintf (DBIO_MGR_EXPORT_SUCCESSFUL, $_POST['handler'], $export_info['export_filename']), 'success');
                     }
-                } else {
                 }
+                zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER));
+                break;
+            case 'delete':
+                if (!(isset ($_POST['filename_hash']) && isset ($dbio_files[$_POST['filename_hash']]))) {
+                    $messageStack->add_session (DBIO_FORM_SUBMISSION_ERROR);
+                } else {
+                    $delete_filename = $dbio_files[$_POST['filename_hash']]['full_filepath'];
+                    if (!is_writeable ($delete_filename) || !unlink ($delete_filename)) {
+                        $messageStack->add_session (sprintf (ERROR_CANT_DELETE_FILE, $delete_filename));
+                    } else {
+                        $messageStack->add_session (sprintf (SUCCESS_FILE_DELETED, $delete_filename), 'success');
+                    }
+                }
+                zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER));
+                break;
+            case 'split':
+                if (!(isset ($_POST['filename_hash']) && isset ($dbio_files[$_POST['filename_hash']]))) {
+                    $messageStack->add_session (DBIO_FORM_SUBMISSION_ERROR);
+                } else {
+                    $split_filename = $dbio_files[$_POST['filename_hash']]['full_filepath'];
+                    if (!is_readable ($split_filename) || ($fp = fopen ($split_filename, "r")) === false) {
+                        $messageStack->add_session (sprintf (ERROR_CANT_SPLIT_FILE_OPEN_ERROR, $split_filename));
+                    } else {
+                        $split_count = 0;
+                        $record_count = 0;
+                        $header_record = false;
+                        $split_error = false;
+                        $files_created = array ();
+                        $header_included = $dbio_files[$_POST['filename_hash']]['is_header_included'];
+                        $split_file_info = pathinfo ($split_filename);
+                        $chunk_filename = $split_file_info['dirname'] . '/' . $split_file_info['filename'];
+                        $chunk_extension = '.' . $split_file_info['extension'];
+                        unset ($split_file_info);
+                        while (($data = fgetcsv ($fp)) !== false) {
+                            if ($record_count == 0 && $header_included) {
+                                $header_record = $data;
+                            }
+                            if ($record_count == 0 || $record_count > DBIO_SPLIT_RECORD_COUNT) {
+                                if (isset ($fp_out)) {
+                                    fclose ($fp_out);
+                                }
+                                $split_count++;
+                                $out_filename = $chunk_filename . ".part-$split_count" . $chunk_extension;
+                                $fp_out = fopen ($out_filename, "w");
+                                if ($fp_out === false) {
+                                    $split_error = true;
+                                    $messageStack->add_session (sprintf (ERROR_CREATING_SPLIT_FILE, $out_filename));
+                                    break;
+                                }
+                                $files_created[] = $out_filename;
+                                $record_count = 0;
+                                if ($header_included) {
+                                    $record_count++;
+                                    if (fputcsv ($fp_out, $header_record) === false) {
+                                        $split_error = true;
+                                        $messageStack->add_session (sprintf (ERROR_WRITING_SPLIT_FILE, $out_filename, $record_count));
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!($record_count == 0 && $header_included)) {
+                                $record_count++;
+                                if (fputcsv ($fp_out, $data) === false) {
+                                    $split_error = true;
+                                    $messageStack->add_session (sprintf (ERROR_WRITING_SPLIT_FILE, $out_filename, $record_count));
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (isset ($fp_out) && $fp_out !== false) {
+                            fclose ($fp_out);
+                        }
+                        if (!$split_error && !feof ($fp)) {
+                            $messageStack->add_session (sprintf (ERROR_SPLIT_INPUT_NOT_AT_EOF, $split_filename));
+                            $split_error = true;
+                        }
+                        fclose ($fp);
+                        
+                        if (!$split_error && $split_count == 1) {
+                            $messageStack->add_session (sprintf (WARNING_FILE_TOO_SMALL_TO_SPLIT, $split_filename, $record_count), 'caution');
+                            $split_error = true;
+                        } else {
+                            $messageStack->add_session (sprintf (FILE_SUCCESSFULLY_SPLIT, $split_filename, $split_count), 'success');
+                        }
+                        
+                        if ($split_error) {
+                            foreach ($files_created as $file_to_remove) {
+                                unlink ($file_to_remove);
+                            }
+                        }
+                    }
+                }
+                zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER));
+                break;
+            case 'download':
+                if (isset ($_POST['filename_hash']) && isset ($dbio_files[$_POST['filename_hash']])) {
+                    $download_filename = $dbio_files[$_POST['filename_hash']]['full_filepath'];
+                    $fp = fopen ($download_filename, 'r');
+                    if ($fp === false) {
+                        $_SESSION['dbio_message'] = array ( 'error', sprintf (DBIO_CANT_OPEN_FILE, $download_filename) );
+                    } else {
+                        if (strpos ($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false) {
+                            header('Content-Type: "application/octet-stream"');
+                            header('Content-Disposition: attachment; filename="' . $dbio_files[$_POST['filename_hash']]['filename_only'] . '"');
+                            header('Expires: 0');
+                            header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+                            header("Content-Transfer-Encoding: binary");
+                            header('Pragma: public');
+                            header("Content-Length: " . $dbio_files[$_POST['filename_hash']]['bytes']);
+                        } else {
+                            header('Content-Type: "application/octet-stream"');
+                            header('Content-Disposition: attachment; filename="' . $dbio_files[$_POST['filename_hash']]['filename_only'] . '"');
+                            header("Content-Transfer-Encoding: binary");
+                            header('Expires: 0');
+                            header('Pragma: no-cache');
+                            header("Content-Length: " . $dbio_files[$_POST['filename_hash']]['bytes']);
+                        }
+                        fpassthru ($fp);
+                        fclose ($fp);
+                    }
+                 }
+                zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER));
                 break;
              default:
                 $action = '';
@@ -91,13 +216,17 @@ if (!$ok_to_proceed) {
 <link rel="stylesheet" type="text/css" href="includes/cssjsmenuhover.css" media="all" id="hoverJS">
 <style type="text/css">
 <!--
-#file-list { display: table; border-collapse: collapse; border: 1px solid #ddd; }
+input[type="submit"] { cursor: pointer; }
 #main-wrapper { text-align: center; padding: 1em; }
+#configuration { float: right; }
 #message { border: 2px solid #ddd; display: inline-block; padding: 0.5em; border-radius: 0.75em; }
 #message.error { border-color: red; }
 #message.info { border-color: green; }
+#reports { float: left; }
 #reports-instr { padding-bottom: 0.5em; }
 #reports-list { padding-left: 0.5em; }
+#file-list { display: table; border-collapse: collapse; border: 1px solid #ddd; margin-top: 1em; }
+#submit-report { text-align: right; margin: 0.5em 0; }
 .buttonLink, .buttonLink:link, .buttonLink:hover, input.buttonLink { 
   background-color:white;
   border:1px solid #003366;
@@ -121,26 +250,36 @@ a.buttonLink:hover { background-color: #dcdcdc; }
 .odd, .file-row-header { background-color: #ebebeb; }
 .instructions { font-size: 12px; padding-bottom: 10px; padding-top: 10px; }
 .name-input { width: 90%; }
+.config-list { float: right; }
+.config-group { list-style-type: none; text-align: right; padding: 0; }
+.config-title { }
+.config-value { padding-left: 0.5em; display: inline-block; width: 7em; }
 .input { display: inline-block; }
 .input-label { float: left; text-align: right; font-weight: bold; padding-right: 0.5em; }
 .input-field { float: left; text-align: left; }
-.file-row-header { font-weight: bold; }
+.file-row-header, .config-header { font-weight: bold; }
 .file-row, .file-row-header { display: table-row; }
-.file-item { display: table-cell; padding: 0.5em; border: 1px solid #ddd; }
+.file-item{ display: table-cell; padding: 0.5em; border: 1px solid #ddd; }
 .file-row:hover { background-color: #ccccff; }
+div.export-only span { color: red; font-weight: bold; }
 -->
 </style>
 <script type="text/javascript" src="includes/menu.js"></script>
 <script type="text/javascript">
-  <!--
-  function init()
-  {
-    cssjsmenu('navbar');
-    if (document.getElementById) {
-      var kill = document.getElementById('hoverJS');
-      kill.disabled = true;
+    <!--
+    function init()
+    {
+        cssjsmenu('navbar');
+        if (document.getElementById) {
+            var kill = document.getElementById('hoverJS');
+            kill.disabled = true;
+        }
     }
-  }
+  
+    function deleteConfirm () 
+    {
+        return confirm( '<?php echo JS_MESSAGE_OK2DELETE; ?>' );
+    }
   // -->
 </script>
 </head>
@@ -160,8 +299,52 @@ if (!$ok_to_proceed || $error_message !== '') {
     <div id="message" class="info"><?php echo $info_message; ?></div>
 <?php
     }
+    $config_check = $db->Execute ("SELECT configuration_group_id FROM " . TABLE_CONFIGURATION_GROUP . " WHERE configuration_group_title = 'Database I/O Manager Settings' LIMIT 1");
+    $configuration_group_id = ($config_check->EOF) ? 0 : $config_check->fields['configuration_group_id'];
 ?>
-    <div id="main-contents"><?php echo zen_draw_form ('dbio', FILENAME_DBIO_MANAGER, 'action=process'); ?>
+    <div id="main-contents"><?php echo zen_draw_form ('dbio', FILENAME_DBIO_MANAGER, 'action=export'); ?>
+        <div id="configuration">
+            <div id="configuration-info">This section shows the current settings that affect the <em>dbIO Manager</em>'s operation.  The <em>dbIO Settings</em> values can be changed by clicking <a href="<?php echo zen_href_link (FILENAME_CONFIGURATION, "gID=$configuration_group_id"); ?>">here</a>.</div>
+<?php
+    unset ($config_check, $configuration_group_id);
+    $dbio_configuration = array (
+        'dbIO Settings' => array (
+            'CSV: Delimiter' => DBIO_CSV_DELIMITER,
+            'CSV: Enclosure' => DBIO_CSV_ENCLOSURE,
+            'CSV: Escape' => DBIO_CSV_ESCAPE,
+            'CSV: Encoding' => DBIO_CHARSET,
+            'CSV: Import Date Format' => DBIO_IMPORT_DATE_FORMAT,
+            'Maximum Execution Time' => DBIO_MAX_EXECUTION_TIME,
+            'Split Record Count' => DBIO_SPLIT_RECORD_COUNT,
+            'Debug Enabled' => DBIO_DEBUG,
+            'Display/Log Date Format' => DBIO_DEBUG_DATE_FORMAT,
+        ),
+        'System Settings' => array (
+            'Maximum Upload File Size' => ini_get ('upload_max_filesize'),
+           'Internal Character Encoding' => CHARSET,
+           'Database Character Encoding' => DB_CHARSET,
+           'Default Language' => DEFAULT_LANGUAGE,
+        ),
+    );
+    foreach ($dbio_configuration as $config_group_name => $config_values) {
+?>
+            <div class="config-list">
+                <div class="config-header"><?php echo $config_group_name; ?></div>
+                <ul class="config-group">
+<?php
+        foreach ($config_values as $config_title => $config_value) {
+?>
+                    <li class="config-item"><span class="config-title"><?php echo $config_title; ?>:</span><span class="config-value"><?php echo $config_value; ?></span></li>
+<?php
+        }
+?>
+                </ul>
+            </div>
+            <div class="clearBoth"></div>
+<?php
+    }
+?>
+        </div>
         <div id="reports" class="left">
             <div id="reports-instr">The following import/export options are available:</div>
             <div id="reports-list">
@@ -171,7 +354,9 @@ if (!$ok_to_proceed || $error_message !== '') {
     }
 ?>
             </div>
-        </div>
+            <div id="submit-report"><?php echo zen_draw_input_field ('export_button', BUTTON_EXPORT, 'title="' . BUTTON_EXPORT_TITLE . '"', false, 'submit'); ?></div>
+        </div></form>
+        
         <div id="file-list">
 <?php
     if (!is_array ($dbio_files) || count ($dbio_files) == 0) {
@@ -191,16 +376,35 @@ if (!$ok_to_proceed || $error_message !== '') {
             </div>
 <?php
         $even_odd = 'even';
+        $button_split_title = sprintf (BUTTON_SPLIT_TITLE, (int)DBIO_SPLIT_RECORD_COUNT);
         foreach ($dbio_files as $name_hash => $file_info) {
 ?>
             <div class="file-row <?php echo $even_odd; ?>">
                 <div class="file-item left"><?php echo $file_info['filename_only']; ?></div>
                 <div class="file-item"><?php echo $file_info['bytes']; ?></div>
                 <div class="file-item"><?php echo date (DBIO_DEBUG_DATE_FORMAT, $file_info['last_modified']); ?></div>
-                <div class="file-item">&nbsp;</div>
-                <div class="file-item">&nbsp;</div>
-                <div class="file-item">&nbsp;</div>
-                <div class="file-item">&nbsp;</div>
+                <div class="file-item"><?php echo zen_draw_form ('split_form', FILENAME_DBIO_MANAGER, 'action=split') . zen_draw_hidden_field ('filename_hash', $name_hash); ?>
+                    <div class="file-button"><?php echo zen_draw_input_field ('split_button', BUTTON_SPLIT, 'title="' . $button_split_title . '"', false, 'submit'); ?></div>
+                </form></div>
+                <div class="file-item"><?php echo zen_draw_form ('split_form', FILENAME_DBIO_MANAGER, 'action=delete') . zen_draw_hidden_field ('filename_hash', $name_hash); ?>
+                    <div class="file-button"><?php echo zen_draw_input_field ('delete_button', DBIO_BUTTON_DELETE, 'title="' . DBIO_BUTTON_DELETE_TITLE . '" onclick="return deleteConfirm ();"', false, 'submit'); ?></div>
+                </form></div>
+                <div class="file-item"><?php echo zen_draw_form ('import_form', FILENAME_DBIO_MANAGER, 'action=import') . zen_draw_hidden_field ('filename_hash', $name_hash); ?>
+<?php
+            if ($file_info['is_export_only']) {
+?>
+                    <div class="export-only"><span title="<?php echo sprintf (TEXT_IS_EXPORT_ONLY, $file_info['handler_name']); ?>">&empty;</span></div>
+<?php
+            } else {
+?>
+                    <div class="file-button"><?php echo zen_draw_input_field ('import_button', BUTTON_IMPORT, 'title="' . BUTTON_IMPORT_TITLE . '"', false, 'submit'); ?></div>
+<?php
+            }
+?>
+                </form></div>
+                <div class="file-item"><?php echo zen_draw_form ('import_form', FILENAME_DBIO_MANAGER, 'action=download') . zen_draw_hidden_field ('filename_hash', $name_hash); ?>
+                    <div class="file-button"><?php echo zen_draw_input_field ('download_button', DBIO_BUTTON_DOWNLOAD, 'title="' . DBIO_BUTTON_DOWNLOAD_TITLE . '"', false, 'submit'); ?></div>
+                </form></div>
             </div>
 <?php
             $even_odd = ($even_odd == 'even') ? 'odd' : 'even';
@@ -208,7 +412,7 @@ if (!$ok_to_proceed || $error_message !== '') {
     }
 ?>
         </div>
-    </form></div>
+    </div>
 <?php
 }  //-END processing, configuration OK
 ?>

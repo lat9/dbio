@@ -120,7 +120,14 @@ abstract class DbIoHandler extends base
     {
         return $this->config['include_header'];
     }
-  
+    
+    // -----
+    // Return the indication as to whether the dbIO handler is export-only.
+    //
+    public function isExportOnly ()
+    {
+        return $this->config['export_only'];
+    }
   
     // -----
     // Return the current CSV parameters.
@@ -732,7 +739,7 @@ abstract class DbIoHandler extends base
         if (!isset ($this->config['escape'])) {
             $this->config['escape'] = DBIO_CSV_ESCAPE;
         }
-        $this->config['export_only'] = (isset ($this->config['export_only']));
+        $this->config['export_only'] = (isset ($this->config['export_only']) && $this->config['export_only'] === true);
 
         $this->tables = array ();
         foreach ($this->config['tables'] as $table_name => $table_info) {
