@@ -8,20 +8,6 @@ if (!defined ('IS_ADMIN_FLAG')) {
   
 }
 
-// -----
-// These definitions will, eventually, be migrated to admin-level configuration values.
-//
-if (!defined ('DBIO_DEBUG')) define ('DBIO_DEBUG', 'true');                                 //-Either 'true' or 'false'
-if (!defined ('DBIO_DEBUG_DATE_FORMAT')) define ('DBIO_DEBUG_DATE_FORMAT', 'Y-m-d H:i:s');  //-Date format used on the dbio log-output
-
-if (!defined ('DBIO_CSV_DELIMITER')) define ('DBIO_CSV_DELIMITER', ',');
-if (!defined ('DBIO_CSV_ENCLOSURE')) define ('DBIO_CSV_ENCLOSURE', '"');
-if (!defined ('DBIO_CSV_ESCAPE')) define ('DBIO_CSV_ESCAPE', '\\');
-
-if (!defined ('DBIO_IMPORT_DATE_FORMAT')) define ('DBIO_IMPORT_DATE_FORMAT', 'm/d/y');      //-Possible values: 'm-d-y', 'd-m-y', 'y-m-d'
-if (!defined ('DBIO_CHARSET')) define ('DBIO_CHARSET', 'latin1');                           //-Possible values: 'utf8', 'latin1'
-if (!defined ('DBIO_MAX_EXECUTION_TIME')) define ('DBIO_MAX_EXECUTION_TIME', '60');         //-Number of seconds for script time-out
-
 class DbIo extends base 
 {
     public function __construct ($dbio_type = '') 
@@ -39,6 +25,10 @@ class DbIo extends base
         mb_internal_encoding (CHARSET);
         ini_set ('mbstring.substitute_character', DBIO_INVALID_CHAR_REPLACEMENT);
         ini_set ("auto_detect_line_endings", true);
+        
+        if (!class_exists ('DbIoHandler')) {
+            require (DIR_FS_DBIO_CLASSES . 'DbIoHandler.php');
+        }
 
         $this->initializeConfig ($dbio_type);
 
@@ -91,9 +81,6 @@ class DbIo extends base
 
         $this->dbio_type = $dbio_type;   
         if ($this->dbio_type != '') {
-            if (!class_exists ('DbIoHandler')) {
-                require (DIR_FS_DBIO_CLASSES . 'DbIoHandler.php');
-            }
             $handler_classname = 'DbIo' . $dbio_type . 'Handler';
             $dbio_handler = DIR_FS_DBIO_CLASSES . $handler_classname . '.php';
             if (!file_exists ($dbio_handler)) {
@@ -101,7 +88,9 @@ class DbIo extends base
                 trigger_error ($this->message, E_USER_WARNING);
             
             } else {
-                require ($dbio_handler);
+                if (!class_exists ($handler_classname)) {
+                    require ($dbio_handler);
+                }
                 if (!class_exists ($handler_classname)) {
                     $this->message = sprintf (DBIO_FORMAT_MESSAGE_NO_CLASS, $handler_classname, $dbio_handler);
                     trigger_error ($this->message, E_USER_WARNING);
@@ -138,8 +127,8 @@ class DbIo extends base
             $this->csv_parms = $this->handler->getCsvParameters ();
             $this->export_sql = $this->handler->exportGetSql ();
           
-            $this->export_filename = 'dbio.export.' . $this->dbio_type . '.' . $this->file_suffix . '.csv';
-            $this->export_fp = fopen (DIR_FS_DBIO_EXPORT . $this->export_filename, 'wb+');
+            $this->export_filename = 'dbio.' . $this->dbio_type . '.' . $this->file_suffix . '.csv';
+            $this->export_fp = fopen (DIR_FS_DBIO . $this->export_filename, 'wb+');
             if ($this->export_fp == false) {
                 $this->message = sprintf (DBIO_FORMAT_MESSAGE_EXPORT_NO_FP, DIR_FS_DBIO_EXPORT . $this->export_filename);
                 trigger_error ($this->message, E_USER_WARNING);
@@ -191,7 +180,7 @@ class DbIo extends base
         if (!$completion_code && $this->message == '') {
             $this->message = $this->handler->getHandlerMessage ();
         }
-        return $completion_code;
+        return array ( 'status' => $completion_code, 'export_filename' => $this->export_filename );
     }
   
     // -----
@@ -204,7 +193,7 @@ class DbIo extends base
     {
         $completion_code = false;
         $this->message = '';
-        $import_file = DIR_FS_DBIO_IMPORT . $filename;
+        $import_file = DIR_FS_DBIO . $filename;
         if (!$this->initialized) {
             $this->message = DBIO_MESSAGE_IMPORT_NOT_INITIALIZED;
             trigger_error ($this->message, E_USER_WARNING);

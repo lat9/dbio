@@ -51,7 +51,7 @@ abstract class DbIoHandler extends base
         }
         unset ($languages);
         
-        if (!class_exists ('Encoding')) {
+        if (!class_exists ('ForceUTF8\Encoding')) {
             require (DIR_FS_DBIO_CLASSES . 'Encoding.php');
 
         }       
@@ -59,7 +59,7 @@ abstract class DbIoHandler extends base
         
         $this->setHandlerConfiguration ();
         
-        $this->initialize ();
+        $this->initializeDbIo ();
     }
     
     // -----
@@ -100,9 +100,9 @@ abstract class DbIoHandler extends base
     // -----
     // Return the language-specific description for the handler.
     //
-    public function getHandlerDescription ($language = 'en') 
+    public function getHandlerDescription () 
     {
-        return (isset ($this->config) && isset ($this->config['description']) && isset ($this->config['description'][$language])) ? $this->config['description'][$language] : sprintf (DBIO_FORMAT_TEXT_NO_DESCRIPTION, $language);
+        return (isset ($this->config) && isset ($this->config['description'])) ? $this->config['description'] : array ( DEFAULT_LANGAGE => DBIO_FORMAT_TEXT_NO_DESCRIPTION );
     }
   
     // -----
@@ -709,7 +709,7 @@ abstract class DbIoHandler extends base
 //                      P R I V A T E   F U N C T I O N S 
 // ----------------------------------------------------------------------------------
   
-    private function initialize () 
+    private function initializeDbIo () 
     {
         $this->message = '';
 
@@ -732,6 +732,7 @@ abstract class DbIoHandler extends base
         if (!isset ($this->config['escape'])) {
             $this->config['escape'] = DBIO_CSV_ESCAPE;
         }
+        $this->config['export_only'] = (isset ($this->config['export_only']));
 
         $this->tables = array ();
         foreach ($this->config['tables'] as $table_name => $table_info) {

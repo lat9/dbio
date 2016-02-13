@@ -12,7 +12,7 @@ define ('DBIO_INVALID_CHAR_REPLACEMENT', 167); //-Use the "section symbol" (??) 
 // -----
 // Messages used by the DbIo class.
 //
-define ('DBIO_FORMAT_TEXT_NO_DESCRIPTION', 'The selected dbIO handler has no description for the language code "%s".');
+define ('DBIO_FORMAT_TEXT_NO_DESCRIPTION', 'This dbIO handler has not provided its description.');
 define ('DBIO_MESSAGE_NO_HANDLERS_FOUND', 'No dbIO handlers were found; no report-generation is possible.');
 define ('DBIO_FORMAT_MESSAGE_NO_HANDLER', 'Missing dbIO handler class file %s.');
 define ('DBIO_FORMAT_MESSAGE_NO_CLASS', 'Missing dbIO handler class named "%1$s" in handler file %2$s.');

@@ -8,16 +8,17 @@ if (!defined ('IS_ADMIN_FLAG')) {
   
 }
 
-if (!class_exists ('DbIoHandler')) {
-    require (DIR_FS_DBIO . 'DbIoHandler.php');
-
-}
-
 // -----
 // This dbIO class handles the customizations required for a basic Zen Cart product import/export.
 //
 class DbIoProductsHandler extends DbIoHandler 
-{   
+{
+    public function __construct ($log_file_suffix)
+    {
+        include (DIR_FS_CATALOG . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoProductsHandler.php');
+        parent::__construct ($log_file_suffix);
+    }
+    
     // -----
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the dbIO operations.
@@ -59,9 +60,7 @@ class DbIoProductsHandler extends DbIoHandler
                 'v_tax_class_title' => self::DBIO_FLAG_NONE,
                 'v_categories_name' => self::DBIO_FLAG_NONE,
             ),
-            'description' => array (
-                'en' => "This report-format supports import/export of all fields within the <code>products</code> and <code>products_description</code> tables, the basic product information.",
-            ),
+            'description' => DBIO_PRODUCTS_DESCRIPTION,
         );
     } 
 
