@@ -61,6 +61,8 @@ class DbIoProductsHandler extends DbIoHandler
                 'v_categories_name' => self::DBIO_FLAG_NONE,
             ),
             'description' => DBIO_PRODUCTS_DESCRIPTION,
+            'export_filters' => array (
+            ),
         );
     } 
 
@@ -161,10 +163,6 @@ class DbIoProductsHandler extends DbIoHandler
         }
         return $field_status;
     }
-
-    protected function importFinalizeFields ($data) 
-    {
-    }
      
     // -----
     // This function handles any overall record post-processing required for the Products import, specifically
@@ -183,7 +181,7 @@ class DbIoProductsHandler extends DbIoHandler
         switch ($table_name) {
             case TABLE_PRODUCTS:
                 $import_this_field = true;
-                if ($this->import['action'] == 'insert') {
+                if ($this->import_is_insert) {
                     if ($field_name === 'products_date_added') {
                         $field_value = 'now()';
                         $field_type = 'noquotestring';
@@ -238,7 +236,7 @@ class DbIoProductsHandler extends DbIoHandler
                             $tax_class_check_sql = "SELECT tax_class_id FROM " . TABLE_TAX_CLASS . " WHERE tax_class_title = :tax_class_title: LIMIT 1";
                             $tax_class_check = $db->Execute ($db->bindVars ($tax_class_check_sql, ':tax_class_title:', $field_value, 'string'));
                             if ($tax_class_check->EOF) {
-                                $this->debugMessage ('[*] Import line #' . $this->import['record_count'] . ", undefined tax_class_title ($field_value).  Defaulting product to untaxed.", self::DBIO_WARNING);
+                                $this->debugMessage ('[*] Import line #' . $this->stats['record_count'] . ", undefined tax_class_title ($field_value).  Defaulting product to untaxed.", self::DBIO_WARNING);
                       
                             }
                             $tax_class_id = ($tax_class_check->EOF) ? 0 : $tax_class_check->fields['tax_class_id'];
@@ -261,18 +259,18 @@ class DbIoProductsHandler extends DbIoHandler
                             if (!$category_info->EOF) {
                                 $parent_category = $category_info->fields['categories_id'];
                               
-                            } elseif ($this->import['action'] == 'insert') {
+                            } elseif ($this->import_is_insert) {
                                 $categories_name_ok = false;
-                                $this->debugMessage ('[*] Product not inserted at line number ' . $this->import['record_count'] . ", no match found for categories_name ($current_category_name).", self::DBIO_WARNING);
+                                $this->debugMessage ('[*] Product not inserted at line number ' . $this->stats['record_count'] . ", no match found for categories_name ($current_category_name).", self::DBIO_WARNING);
                                 break;
                               
                             }
                         }
-                        if ($categories_name_ok && $this->import['action'] == 'insert') {
+                        if ($categories_name_ok && $this->import_is_insert) {
                             $category_check = $db->Execute ("SELECT categories_id FROM " . TABLE_CATEGORIES . " WHERE parent_id = $parent_category LIMIT 1", false, false, 0, true);
                             if (!$category_check->EOF) {
                                 $categories_name_ok = false;
-                                $this->debugMessage ("[*] Product not inserted at line number " . $this->import['record_count'] . "; category ($field_name) has categories.", self::DBIO_WARNING);
+                                $this->debugMessage ("[*] Product not inserted at line number " . $this->stats['record_count'] . "; category ($field_name) has categories.", self::DBIO_WARNING);
 
                             } else {
                                 parent::importAddField (TABLE_PRODUCTS, 'master_categories_id', $parent_category, 'integer');
@@ -281,7 +279,7 @@ class DbIoProductsHandler extends DbIoHandler
                             }
                         }
                         if (!$categories_name_ok) {
-                            $this->import['record_ok'] = false;
+                            $this->record_ok = false;
                         }
                         break;
                     default:
@@ -306,25 +304,22 @@ class DbIoProductsHandler extends DbIoHandler
     // happens within this function and we set the return value to false to indicate to the parent processing that the
     // associated update has been already handled.
     //
-    protected function importUpdateRecordKey ($table_name, $sql_data_array, $products_id) 
+    protected function importUpdateRecordKey ($table_name, $sql_data_array, $products_id, $key_value_fields) 
     {
-        if ($products_id === false) {
-            if ($this->import['action'] != 'insert' || $table_name != TABLE_PRODUCTS) {
-            }
-        } else {
+        if ($products_id !== false) {
             global $db;
-            if ($this->import['action'] == 'insert') {
+            if ($this->import_is_insert) {
                 if ($table_name != TABLE_PRODUCTS) {
                     $sql_data_array[] = array ( 'fieldName' => 'products_id', 'value' => $products_id, 'type' => 'integer' );
               
                 }
-            } elseif ($table_name == TABLE_PRODUCTS_TO_CATEGORIES) {
+            } elseif ($table_name == TABLE_PRODUCTS_TO_CATEGORIES && $this->operation != 'check') {
+                if ($this->operation == 'check')
                 foreach ($sql_data_array as $next_category) {
                     $db->Execute ("INSERT IGNORE INTO $table_name (products_id, categories_id) VALUES ( $products_id, " . $next_category['value'] . ")");
               
                 }
                 $sql_data_array = false;
-
             }
         }
         return parent::importUpdateRecordKey ($table_name, $sql_data_array, $products_id);

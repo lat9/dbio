@@ -226,7 +226,7 @@ class DbIo extends base
             }
             $this->handler->stopTimer ();
         }
-        return $completion_code;
+        return array ( 'status' => $completion_code, 'message' => $this->message );
     }
 
     // -----

@@ -4,6 +4,7 @@
 // Copyright (c) 2016, Vinos de Frutas Tropicales.
 //
 define ('DIR_FS_DBIO', DIR_FS_CATALOG . 'dbio/');
+define ('DIR_FS_DBIO_LOGS', DIR_FS_DBIO . 'logs');
 
 define ('DIR_FS_DBIO_CLASSES', DIR_FS_CATALOG . DIR_WS_CLASSES . 'dbio/');
 

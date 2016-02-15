@@ -33,7 +33,7 @@ abstract class DbIoHandler extends base
     public function __construct ($log_file_suffix) 
     {
         $this->debug = (DBIO_DEBUG == 'true');
-        $this->debug_log_file = DIR_FS_LOGS . '/dbio-' . $log_file_suffix . '.log';
+        $this->debug_log_file = DIR_FS_DBIO_LOGS . '/dbio-' . $log_file_suffix . '.log';
         
         $this->stats = array ( 'errors' => 0, 'warnings' => 0, 'record_count' => 0, 'inserts' => 0, 'updates' => 0 );
         
@@ -197,7 +197,7 @@ abstract class DbIoHandler extends base
             $this->export_language = $language;
             $this->export = array ();
             $this->export['select'] = $this->export['from'] = $this->export['where'] = $this->export['order_by'] = '';
-            $this->export['headers'] = array ();
+            $this->headers = array ();
             foreach ($this->config['tables'] as $config_table_name => $config_table_info) {
                 $this->export['from'] .= $config_table_name;
                 $table_prefix = (isset ($config_table_info['short_name']) && $config_table_info['short_name'] != '') ? ($config_table_info['short_name'] . '.') : '';
@@ -220,7 +220,7 @@ abstract class DbIoHandler extends base
                         
                                 }
                                 if ($field_info['include_in_export'] === true) {
-                                    $this->export['headers'][] = 'v_' . $current_field . '_' . $language_code;
+                                    $this->headers[] = 'v_' . $current_field . '_' . $language_code;
                         
                                 }
                             }
@@ -235,7 +235,7 @@ abstract class DbIoHandler extends base
                         if ($field_info['include_in_export'] !== false) {
                             $this->export['select'] .= "$table_prefix$current_field, ";
                             if ($field_info['include_in_export'] === true) {
-                                $this->export['headers'][] = 'v_' . $current_field;
+                                $this->headers[] = 'v_' . $current_field;
                       
                             }
                         }
@@ -249,15 +249,17 @@ abstract class DbIoHandler extends base
                 foreach ($this->config['additional_headers'] as $header_value => $flags) {
                     if ($flags & self::DBIO_FLAG_PER_LANGUAGE) {
                         foreach ($this->languages as $language_code => $language_id) {
-                            $this->export['headers'][] = $header_value . '_' . $language_code;
+                            $this->headers[] = $header_value . '_' . $language_code;
                         }
                     } else {
-                        $this->export['headers'][] = $header_value;
+                        $this->headers[] = $header_value;
                     }
                 }
             }
         }
-        $this->debugMessage ("exportInitialize ($language), " . (($initialized) ? 'Successful' : ('Unsuccessful (' . $this->message . ')')));
+        $this->debugMessage ("exportInitialize ($language), " . (($initialized) ? 'Successful' : ('Unsuccessful (' . $this->message . ')')) . 
+                             "\nTables:\n" . var_export ($this->tables, true) . 
+                             "\nHeaders:\n" . var_export ($this->headers, true));
         return $initialized;
     }
   
@@ -273,11 +275,9 @@ abstract class DbIoHandler extends base
         $header = false;
         if ($this->config['include_header'] == true) {
             $this->stats['record_count']++;
-            $header = $this->export['headers'];
-      
+            $header = $this->headers;
         }
         return $header;
-    
     }
  
     // -----
@@ -299,8 +299,9 @@ abstract class DbIoHandler extends base
             $export_sql .= ' ORDER BY ' . $this->export['order_by'];
       
         }
-        return $export_sql . " $sql_limit";
-    
+        $export_sql .= " $sql_limit";
+        $this->debugMessage ("exportGetSql:\n$export_sql");
+        return $export_sql;
     }
   
     // -----
@@ -327,15 +328,65 @@ abstract class DbIoHandler extends base
             $language = key ($this->languages);
         }
         $this->import = array ();
-        $this->import['operation'] = $operation;
+        $this->operation = $operation;
         $this->check_values = ($operation == 'check' || $operation == 'run-check');
         $this->stats['record_count'] = ($this->config['include_header']) ? 1 : 0;
         $this->stats['action'] = "import-$language-$operation";
         
         $this->charset_is_utf8 = (mb_strtolower (CHARSET) == 'utf-8');
-        
-        $this->import['headers'] = array ();
+        $extra_select_clause = '';
+        if (!isset ($this->config['extra_keys'])) {
+            $short_name = $this->config['tables'][$this->config['key']['table']]['short_name'];
+            $from_clause = $this->config['key']['table'] . ' ' . $short_name;
+            $where_clause = $short_name . '.' . $this->config['key']['match_field'] . " = :match_value:";
+            $match_field_name = $this->config['key']['match_field'];
+            $key_field_type = $this->config['key']['match_field_type'];
+        } else {
+            if (!is_array ($this->config['extra_keys']) || count ($this->config['extra_keys']) !== 1) {
+               trigger_error ("Invalid 'extra_keys' configuration: " . var_export ($this->config, true), E_USER_ERROR);
+            }
+            $tables_used = array ();
+            $from_clause = '';
+            $where_clause = '';
+            foreach ($this->config['extra_keys'] as $record_key => $key_info) {
+                $match_field_name = $key_info['match_field'];
+                $key_field_type = $key_info['match_field_type'];
+                $short_name = $this->config['tables'][$key_info['table']]['short_name'];
+                if (!isset ($tables_used[$key_info['table']])) {
+                    if ($from_clause != '') {
+                        $from_clause .= ', ';
+                    }
+                    $from_clause .= $key_info['table'] . " $short_name";
+                    $table_array[] = $key_info['table'];
+                }
+                if ($where_clause != '') {
+                    $where_clause .= ' AND ';
+                }
+                if (isset ($key_info['match_field'])) {
+                    $where_clause .= "$short_name." . $key_info['match_field'] . ' = :match_value: ';
+                } else {
+                    trigger_error ('Missing match_field in extra_keys configuration; operation aborted.', E_USER_ERROR);
+                }
+            }
+            if (!isset ($tables_used[$this->config['key']['table']])) {
+                $from_clause .= ', ' . $this->config['key']['table'] . ' ' . $this->config['tables'][$this->config['key']['table']]['short_name'];
+            }
+            $match_info = $this->config['extra_keys'][$this->config['key']['extra_key_name']];
+            $match_key_sql_name = $this->config['tables'][$match_info['table']]['short_name'] . '.' . $match_info['key_field'];
+            $extra_select_clause .= ', ' . $match_key_sql_name;
+            $where_clause .= ' AND ' . $this->config['tables'][$this->config['key']['table']]['short_name'] . '.' . $this->config['key']['match_field'] . " = $match_key_sql_name";
+        }
+        $this->key_field_name = $match_field_name;
+        $this->key_field_type = $key_field_type;
+        $this->data_key_sql = "SELECT " . $this->config['tables'][$this->config['key']['table']]['short_name'] . '.' . $this->config['key']['key_field'] . " as key_value$extra_select_clause
+                                 FROM " . $from_clause . " 
+                                WHERE " . $where_clause . " LIMIT 1";
+                          
+        $this->headers = array ();
         foreach ($this->config['tables'] as $config_table_name => $config_table_info) {
+            if (isset ($config_table_info['import_extra_keys_only'])) {
+                continue;
+            }
             if ($this->tables[$config_table_name]['uses_language']) {
                 foreach ($this->languages as $language_code => $language_id) {
                     if ($language !== 'all' && $language != $language_code) {
@@ -343,14 +394,14 @@ abstract class DbIoHandler extends base
                     }
                     foreach ($this->tables[$config_table_name]['fields'] as $current_field => $field_info) {
                         if ($field_info['include_in_export'] === true) {
-                            $this->import['headers'][] = 'v_' . $current_field . '_' . $language_code;
+                            $this->headers[] = 'v_' . $current_field . '_' . $language_code;
                         }
                     }
                 }
             } else {
                 foreach ($this->tables[$config_table_name]['fields'] as $current_field => $field_info) {
                     if ($field_info['include_in_export'] === true) {
-                        $this->import['headers'][] = 'v_' . $current_field;
+                        $this->headers[] = 'v_' . $current_field;
                     }
                 }
             }
@@ -360,33 +411,36 @@ abstract class DbIoHandler extends base
             foreach ($this->config['additional_headers'] as $header_value => $flags) {
                 if ($flags & self::DBIO_FLAG_PER_LANGUAGE) {
                     foreach ($this->languages as $language_code => $language_id) {
-                        $this->import['headers'][] = $header_value . '_' . $language_code;
+                        $this->headers[] = $header_value . '_' . $language_code;
                     }
                 } else {
-                    $this->import['headers'][] = $header_value;
+                    $this->headers[] = $header_value;
                 }
             }
         }
-        return $this->import['headers'];
+        
+        $this->debugMessage ("importInitialize completed.\n" . var_export ($this, true));
+        return $this->headers;
         
     }
   
     public function importGetHeader ($header) 
     {
-        if (!isset ($this->import) || !isset ($this->import['headers'])) {
+        if (!isset ($this->headers)) {
             trigger_error ("Import aborted, sequencing error. Can't get the header before overall initialization.", E_USER_ERROR);
             exit ();
         }
         if (!is_array ($header)) {
             $this->debugMessage ('importGetHeader: No header included, using generated default.');
-            $header = $this->import['headers'];
+            $header = $this->headers;
           
         }
+
         $this->debugMessage ("importGetHeader, using headers:\n" . var_export ($header, true));
-        $this->import['table_names'] = array ();
-        $this->import['language_id'] = array ();
-        $this->import['header_field_count'] = 0;
-        $this->import['key_index'] = false;
+        $this->table_names = array ();
+        $this->language_id = array ();
+        $this->header_field_count = 0;
+        $this->key_index = false;
         $key_index = 0;
         foreach ($header as &$current_field) {
             $table_name = self::DBIO_NO_IMPORT;
@@ -434,35 +488,33 @@ abstract class DbIoHandler extends base
                         }
                     }
                 }
-                if ($this->config['key']['table'] == $table_name && $this->config['key']['match_field'] == $current_field) {
-                    $this->import['key_index'] = $key_index;
-              
-                }
             }
-            $this->import['table_names'][] = $table_name;
-            $this->import['language_id'][] = $field_language_id;
+           if ($this->key_field_name == $current_field) {
+                $this->key_index = $key_index;
+            }
+            $this->table_names[] = $table_name;
+            $this->language_id[] = $field_language_id;
             if ($current_field != self::DBIO_NO_IMPORT) {
-                $this->import['header_field_count']++;
+                $this->header_field_count++;
             }  
             $key_index++;
           
         }
-        $this->debugMessage ('importGetHeaders: Processing complete.' . var_export ($header, true));
-        $this->import['headers'] = $header;
-        $this->import['header_columns'] = count ($header);
-        
+        $this->headers = $header;
+        $this->header_columns = count ($header);   
         $initialization_complete = true;
-        if ($this->import['header_field_count'] == 0) {
+        
+        if ($this->header_field_count == 0) {
             $this->message = DBIO_MESSAGE_IMPORT_MISSING_HEADER;
             $initialization_complete = false;
           
-        } elseif ($this->import['key_index'] === false) {
-            $this->message = sprintf (DBIO_FORMAT_MESSAGE_IMPORT_MISSING_KEY, $this->config['key']['match_field']);
+        } elseif ($this->key_index === false) {
+            $this->message = sprintf (DBIO_FORMAT_MESSAGE_IMPORT_MISSING_KEY, "$key_table_name::$key_match_field");
             $initialization_complete = false;
           
         }
         if (!$initialization_complete) {
-            unset ($this->import['table_names']);
+            unset ($this->table_names);
         }
         return $initialization_complete;
     
@@ -474,7 +526,7 @@ abstract class DbIoHandler extends base
     public function importCsvRecord (array $data) 
     {
         global $db;
-        if (!isset ($this->import['table_names'])) {
+        if (!isset ($this->table_names)) {
             trigger_error ("Import aborted, sequencing error. Previous import-header initialization error.", E_USER_ERROR);
             exit ();
         }
@@ -482,102 +534,103 @@ abstract class DbIoHandler extends base
         // Indicate, initially, that the record is OK to import and increment the count of lines processed.  The last value
         // will be used in any debug-log information to note the location of any processing.
         //
-        $this->import['record_ok'] = true;
+        $this->record_ok = true;
         $this->stats['record_count']++;
         
         // -----
         // Determine the "key" value associated with the record.  If there are fewer columns of data than required to access
         // the key-index, the record is not imported.
         //
-        $key_index = $this->import['key_index'];
+        $key_index = $this->key_index;
         if (count ($data) < $key_index) {
             $this->debugMessage ('Data record at line #' . $this->import['record_count'] . ' not imported.  Column count (' . count ($data) . ') missing key column (' . $key_index . ').', self::DBIO_ERROR);
           
         } else {
-            // -----
-            // See if a record matching the field-to-match exists.  If there is one, we'll be updating the associated record;
-            // otherwise, we'll be inserting.
-            //      
-            $data_key_check = $db->Execute ("SELECT " . $this->config['key']['key_field'] . " as key_value 
-                                               FROM " . $this->config['key']['table'] . " 
-                                               WHERE " . $this->config['key']['match_field'] . " = '" . $db->prepare_input ($data[$key_index]) . "' LIMIT 1");
+            $data_key_sql = $db->bindVars ($this->data_key_sql, ':match_value:', $data[$key_index], $this->key_field_type);
+            $data_key_check = $db->Execute ($data_key_sql);
             if ($data_key_check->EOF) {
                 $this->import['action'] = 'insert';
                 $this->import_is_insert = true;
-                $this->import['where_clause'] = '';
                 $this->stats['inserts']++;
                 $key_value = false;
+                $key_value_fields = array ();
+                $this->import['where_clause'] = '';
             
             } else {
                 $this->import['action'] = 'update';
                 $this->import_is_insert = false;
                 $this->stats['updates']++;
-                $key_value = $data_key_check->fields['key_value'];
+                $key_value_fields = $data_key_check->fields;
+                $key_value = $key_value_fields['key_value'];
                 $this->import['where_clause'] = $db->bindVars ($this->config['key']['key_field'] . ' = :key_value:', ':key_value:', $key_value, $this->config['key']['key_field_type']);
             
             }
-          
-            // -----
-            // Loop, processing each 'column' of data into its respective database field(s).  At the end of this processing,
-            // we'll have a couple of sql-data arrays to be used as input to the database 'perform' function; that function will
-            // handle any conversions and quote-insertions required.
-            //
-            $data_index = 0;
-            $this->import_sql_data = array ();
-            foreach ($data as $current_element) {
-                if ($data_index > $this->import['header_columns']) {
-                    break;
-                }
-                $field_name = $this->import['headers'][$data_index];
-                $table_name = $this->import['table_names'][$data_index];
-                $language_id = $this->import['language_id'][$data_index];
-                $data_index++;
             
-                if ($field_name == self::DBIO_NO_IMPORT) {
-                    continue;
-                }
-                $this->importProcessField ($table_name, $field_name, $language_id, $current_element);
-
-            }
-
             // -----
-            // If the record didn't have errors preventing its insert/update ...
+            // Continue with the import action only if the record is still "OK" to process.
             //
-            if ($this->importFinalizeFields ($data) !== false) {
-                foreach ($this->import_sql_data as $database_table => $sql_data_array) {
-                    if ($database_table != self::DBIO_NO_IMPORT) {
-                        $table_name = $database_table;
-                        $where_clause = $this->import['where_clause'];
-                        $capture_key_value = ($this->import_is_insert && $this->config['key']['table'] == $table_name);
-
-                        if (mb_strpos ($table_name, '^') !== false) {
-                            $language_tables = explode ('^', $table_name);
-                            $table_name = $language_tables[0];
-                            $language_id = $language_tables[1];
-                            if ($this->import_is_insert) {
-                                $sql_data_array[] = array ( 'fieldName' => $this->config['tables'][$table_name]['language_field'], 'value' => $language_id, 'type' => 'integer' );
-                            } else {
-                                $where_clause .= " AND language_id = $language_id";
-                            }
-                        }
+            $this->import_sql_data = array ();
+            if ($this->importCheckKeyValue ($data[$key_index], $key_value, $key_value_fields) !== false) {
+                // -----
+                // Loop, processing each 'column' of data into its respective database field(s).  At the end of this processing,
+                // we'll have a couple of sql-data arrays to be used as input to the database 'perform' function; that function will
+                // handle any conversions and quote-insertions required.
+                //
+                $data_index = 0;
+                foreach ($data as $current_element) {
+                    if ($data_index > $this->header_columns) {
+                        break;
+                    }
+                    $field_name = $this->headers[$data_index];
+                    $table_name = $this->table_names[$data_index];
+                    $language_id =$this->language_id[$data_index];
+                    $data_index++;
                 
-                        if ($this->import['operation'] == 'check') {
-                            $this->debugMessage ("SQL for $table_name:\n" . $db->perform ($table_name, $sql_data_array, $this->import['action'], $where_clause, 'return') . "\n");
-                  
-                        } else {
-                            $sql_data_array = $this->importUpdateRecordKey ($table_name, $sql_data_array, $key_value);
+                    if ($field_name == self::DBIO_NO_IMPORT) {
+                        continue;
+                    }
+                    $this->importProcessField ($table_name, $field_name, $language_id, $current_element);
+
+                }
+
+                // -----
+                // If the record didn't have errors preventing its insert/update ...
+                //
+                if ($this->importFinalizeFields ($data) !== false) {
+                    foreach ($this->import_sql_data as $database_table => $sql_data_array) {
+                        if ($database_table != self::DBIO_NO_IMPORT) {
+                            $table_name = $database_table;
+                            $where_clause = $this->import['where_clause'];
+                            $capture_key_value = ($this->import_is_insert && $this->config['key']['table'] == $table_name);
+
+                            if (mb_strpos ($table_name, '^') !== false) {
+                                $language_tables = explode ('^', $table_name);
+                                $table_name = $language_tables[0];
+                                $language_id = $language_tables[1];
+                                if ($this->import_is_insert) {
+                                    $sql_data_array[] = array ( 'fieldName' => $this->config['tables'][$table_name]['language_field'], 'value' => $language_id, 'type' => 'integer' );
+                                } else {
+                                    $where_clause .= " AND language_id = $language_id";
+                                }
+                            }
+                            $sql_data_array = $this->importUpdateRecordKey ($table_name, $sql_data_array, $key_value, $key_value_fields);
                             if ($sql_data_array !== false) {
-                                $this->debugMessage ("Performing database " . $this->import['action'] . " for $table_name with where_clause = '$where_clause':\n" . $this->prettify ($sql_data_array) . "\n");
-                                $db->perform ($table_name, $sql_data_array, $this->import['action'], $where_clause);
-                                if ($capture_key_value) {
-                                    $key_value = $db->insert_ID ();
+                                if ($this->operation == 'check') {
+                                    $this->debugMessage ("SQL for $table_name:\n" . $db->perform ($table_name, $sql_data_array, $this->import['action'], $where_clause, 'return') . "\n");
+                          
+                                } else {
+                                    $this->debugMessage ("Performing database " . $this->import['action'] . " for $table_name with where_clause = '$where_clause':\n" . $this->prettify ($sql_data_array) . "\n");
+                                    $db->perform ($table_name, $sql_data_array, $this->import['action'], $where_clause);
+                                    if ($capture_key_value) {
+                                        $key_value = $db->insert_ID ();
+                                    }
                                 }
                             }
                         }
                     }
+                    $this->importRecordPostProcess ($key_value);
                 }
-                $this->importRecordPostProcess ($key_value);
-            }
+            }  //-Record is OK to continue processing
         }
     }
   
@@ -601,10 +654,15 @@ abstract class DbIoHandler extends base
 
     protected function importFinalizeFields ($data) 
     {
-        return $this->import['record_ok'];
+        return $this->record_ok;
+    }
+ 
+    protected function importCheckKeyValue ($data_value, $key_value, $key_value_fields) 
+    {
+        return $this->record_ok;
     }
   
-    protected function importUpdateRecordKey ($table_name, $sql_data_array, $key_value) 
+    protected function importUpdateRecordKey ($table_name, $sql_data_array, $key_value, $key_value_fields) 
     {
         return $sql_data_array;
     }
@@ -743,9 +801,8 @@ abstract class DbIoHandler extends base
 
         $this->tables = array ();
         foreach ($this->config['tables'] as $table_name => $table_info) {
-            $this->initializeTableFields ($table_name, (isset ($table_info['io_field_overrides']) && is_array ($table_info['io_field_overrides'])) ? $table_info['io_field_overrides'] : false);
+            $this->initializeTableFields ($table_name, $table_info);
             $this->initializeSqlInputs ($table_name);
-      
         }
     }  //-END function initialize
   
@@ -757,9 +814,12 @@ abstract class DbIoHandler extends base
     // as being an auto-increment field, which has "special" interpretation by the dbIO processing.  If that field is found
     // within the processing, simply mark it as non-auto-increment; ZC1.5.5 and later already do this.
     //
-    private function initializeTableFields ($table_name, $field_overrides) 
+    private function initializeTableFields ($table_name, $table_config)
     {
         global $db;
+        $this->debugMessage ("initializeTableFields for $table_name, table configuration\n" . var_export ($table_config, true));
+        $field_overrides = (isset ($table_config['io_field_overrides']) && is_array ($table_config['io_field_overrides'])) ? $table_config['io_field_overrides'] : false;
+        $export_key_field_only = (isset ($table_config['export_key_field_only'])) ? $table_config['export_key_field_only'] : false;
         $this->tables[$table_name] = array ();
         $this->tables[$table_name]['fields'] = array ();
         
@@ -777,7 +837,19 @@ abstract class DbIoHandler extends base
                 $table_info->fields['extra'] = '';
             }
             unset ($table_info->fields['column_name']);
-            $table_info->fields['include_in_export'] = (is_array ($field_overrides) && isset ($field_overrides[$column_name])) ? $field_overrides[$column_name] : true;
+            if ($export_key_field_only === true) {
+                if (isset ($table_config['key_field'])) {
+                    $table_info->fields['include_in_export'] = ($column_name == $table_config['key_field']);
+                } elseif ($column_name == $this->config['key']['key_field']) {
+                    $table_info->fields['include_in_export'] = 'no-header';
+                } elseif ($column_name == $this->config['key']['match_field']) {
+                    $table_info->fields['include_in_export'] = true;
+                } else {
+                    $table_info->fields['include_in_export'] = false;
+                }
+            } else {
+                $table_info->fields['include_in_export'] = ($field_overrides !== false && isset ($field_overrides[$column_name])) ? $field_overrides[$column_name] : true;
+            }
             $table_info->fields['nullable'] = ($table_info->fields['nullable'] === 'TRUE');
             $table_info->fields['sort_order'] = 0;
             $this->tables[$table_name]['fields'][$column_name] = $table_info->fields;
