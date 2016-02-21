@@ -39,6 +39,7 @@ define ('ERROR_SPLIT_INPUT_NOT_AT_EOF', 'An unknown error occurred reading the s
 define ('WARNING_FILE_TOO_SMALL_TO_SPLIT', 'The file (%1$s) contains too few records (%2$u) to split.');
 define ('FILE_SUCCESSFULLY_SPLIT', 'The file (%1$s) was successfully split into %2$u chunks.'); 
 
+define ('ERROR_FILE_IS_EXPORT_ONLY', 'The file (%s) was not imported.  It is associated with an <em>export-only</em> report.');
 define ('DBIO_MGR_EXPORT_SUCCESSFUL', 'Your <em>%1$s</em> export was successfully completed into %2$s.');
 
 define ('JS_MESSAGE_OK2DELETE', 'Are you sure you want to permanently remove the selected file from the server?');
