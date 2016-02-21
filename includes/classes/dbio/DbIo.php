@@ -25,13 +25,18 @@ class DbIo extends base
         mb_internal_encoding (CHARSET);
         ini_set ('mbstring.substitute_character', DBIO_INVALID_CHAR_REPLACEMENT);
         ini_set ("auto_detect_line_endings", true);
-        
-        if (!class_exists ('DbIoHandler')) {
-            require (DIR_FS_DBIO_CLASSES . 'DbIoHandler.php');
-        }
+               
+        spl_autoload_register (array ($this, 'autoloadDbIoClasses'));
 
         $this->initializeConfig ($dbio_type);
 
+    }
+    
+    protected function autoloadDbIoClasses ($class_name)
+    {
+        if (!class_exists ($class_name) && file_exists (DIR_FS_DBIO_CLASSES . $class_name . '.php')) {
+            require_once (DIR_FS_DBIO_CLASSES . $class_name . '.php');
+        }
     }
   
     // -----
@@ -39,7 +44,7 @@ class DbIo extends base
     //
     public function getMessage () 
     {
-        return ($this->message == '') ? $this->handler->get_handler_message () : $this->message;
+        return ($this->message == '') ? $this->handler->getHandlerMessage () : $this->message;
     }
   
     // -----
@@ -53,7 +58,6 @@ class DbIo extends base
             foreach ($handlers as $current_handler) {
                 $handler_class = str_replace (array (DIR_FS_DBIO_CLASSES, '.php'), '', $current_handler);
                 if ($handler_class != 'DbIoHandler') {
-                    require $current_handler;
                     $handler = new $handler_class ($this->file_suffix);
                     $dbio_type = str_replace (array ('DbIo', 'Handler'), '', $handler_class);
                     $handler_info[$dbio_type] = array ( 
@@ -90,9 +94,6 @@ class DbIo extends base
                 trigger_error ($this->message, E_USER_WARNING);
             
             } else {
-                if (!class_exists ($handler_classname)) {
-                    require ($dbio_handler);
-                }
                 if (!class_exists ($handler_classname)) {
                     $this->message = sprintf (DBIO_FORMAT_MESSAGE_NO_CLASS, $handler_classname, $dbio_handler);
                     trigger_error ($this->message, E_USER_WARNING);
