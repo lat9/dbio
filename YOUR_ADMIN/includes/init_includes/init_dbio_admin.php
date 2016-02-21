@@ -7,8 +7,8 @@ if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
 }
 
-define('DBIO_CURRENT_VERSION', '0.0.1');
-define('DBIO_CURRENT_UPDATE_DATE', '2016-02-13');
+define('DBIO_CURRENT_VERSION', '0.0.2');
+define('DBIO_CURRENT_UPDATE_DATE', '2016-02-21');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
 
@@ -90,7 +90,10 @@ $sql = "CREATE TABLE IF NOT EXISTS " . TABLE_DBIO_STATS . " (
     date_added datetime NOT NULL default '0001-01-01 00:00:00',
     PRIMARY KEY  (dbio_stats_id)
 ) ENGINE=MyISAM";
-$db->Execute($sql);
+$db->Execute ($sql);
+if (!$sniffer->field_exists (TABLE_DBIO_STATS, 'report_name')) {
+    $db->Execute ("ALTER TABLE " . TABLE_DBIO_STATS . " ADD report_name varchar(255) NOT NULL default '' AFTER dbio_stats_id");
+}
 
 // -----
 // Register the admin-level pages for use.
