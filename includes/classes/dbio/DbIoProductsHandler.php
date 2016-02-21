@@ -70,14 +70,14 @@ class DbIoProductsHandler extends DbIoHandler
     {
         $initialized = parent::exportInitialize ($language);
         if ($initialized) {
-            if ($this->export['where'] != '') {
-                $this->export['where'] .= ' AND ';
+            if ($this->where_clause != '') {
+                $this->where_clause .= ' AND ';
         
             }
 
             $export_language = ($this->export_language == 'all') ? 1 : $this->languages[$this->export_language];
-            $this->export['where'] .= "p.products_id = pd.products_id AND pd.language_id = $export_language";
-            $this->export['order_by'] .= 'p.products_id ASC';
+            $this->where_clause .= "p.products_id = pd.products_id AND pd.language_id = $export_language";
+            $this->order_by_clause .= 'p.products_id ASC';
 
             $this->export[TABLE_PRODUCTS_DESCRIPTION]['language_sql'] = 
                 'SELECT ' . $this->export[TABLE_PRODUCTS_DESCRIPTION]['select'] . 

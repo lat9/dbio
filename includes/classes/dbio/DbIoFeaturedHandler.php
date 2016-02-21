@@ -68,11 +68,11 @@ class DbIoFeaturedHandler extends DbIoHandler
     {
         $initialized = parent::exportInitialize ($language);
         if ($initialized) {
-            if ($this->export['where'] != '') {
-                $this->export['where'] .= ' AND ';
+            if ($this->where_clause != '') {
+                $this->where_clause .= ' AND ';
             }
-            $this->export['where'] .= "p.products_id = f.products_id";
-            $this->export['order_by'] .= 'f.products_id ASC';
+            $this->where_clause .= "p.products_id = f.products_id";
+            $this->order_by_clause .= 'f.products_id ASC';
         }
         return $initialized;
     }

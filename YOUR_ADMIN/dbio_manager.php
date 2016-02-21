@@ -239,7 +239,7 @@ if (!$ok_to_proceed) {
 hr { background: #333 linear-gradient(to right, #ccc, #333, #ccc) repeat scroll 0 0; border: 0 none; height: 1px; }
 input[type="submit"] { cursor: pointer; }
 #main-wrapper { text-align: center; padding: 1em; }
-#configuration { float: right; }
+#configuration { float: right; max-width: 400px; }
 #message { border: 2px solid #ddd; display: inline-block; padding: 0.5em; border-radius: 0.75em; }
 #message.error { border-color: red; }
 #message.info { border-color: green; }
@@ -265,6 +265,7 @@ a.buttonLink:hover { background-color: #dcdcdc; }
 .centered { text-align: center; }
 .right { text-align: right; }
 .left { text-align: left; }
+.float-left { float: left; }
 .smaller { font-size: smaller; }
 .error { color: red; }
 .even { }
@@ -380,7 +381,7 @@ if (!$ok_to_proceed || $error_message !== '') {
     }
 ?>
         </div>
-        <div id="reports" class="left">
+        <div id="reports" class="float-left left">
             <div id="reports-instr">The following <em>dbIO</em> options are available:</div>
             <div id="reports-list">
 <?php
@@ -390,9 +391,9 @@ if (!$ok_to_proceed || $error_message !== '') {
 ?>
             </div>
             <div id="submit-report"><?php echo zen_draw_input_field ('export_button', BUTTON_EXPORT, 'title="' . BUTTON_EXPORT_TITLE . '"', false, 'submit'); ?></div>
-        </div></form>
+        </div><div class="clearBoth"></div></form>
         
-        <div id="file-list"><?php echo zen_draw_form ('file_form', FILENAME_DBIO_MANAGER, 'action=file'); ?>
+        <div id="file-list" class="clearBoth"><?php echo zen_draw_form ('file_form', FILENAME_DBIO_MANAGER, 'action=file'); ?>
 <?php
     if (!is_array ($dbio_files) || count ($dbio_files) == 0) {
 ?>
