@@ -25,6 +25,7 @@ class DbIoProductsHandler extends DbIoHandler
     //
     protected function setHandlerConfiguration () 
     {
+        $this->stats['report_name'] = 'Products';
         $this->config = array (
             'version' => '0.0.0',
             'handler_version' => '0.0.0',

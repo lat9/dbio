@@ -35,7 +35,7 @@ abstract class DbIoHandler extends base
         $this->debug = (DBIO_DEBUG == 'true');
         $this->debug_log_file = DIR_FS_DBIO_LOGS . '/dbio-' . $log_file_suffix . '.log';
         
-        $this->stats = array ( 'errors' => 0, 'warnings' => 0, 'record_count' => 0, 'inserts' => 0, 'updates' => 0 );
+        $this->stats = array ( 'report_name' => self::DBIO_UNKNOWN_VALUE, 'errors' => 0, 'warnings' => 0, 'record_count' => 0, 'inserts' => 0, 'updates' => 0, 'date_added' => 'now()' );
         
         $this->debugMessage ('Configured CHARSET (' . CHARSET . '), DB_CHARSET (' . DB_CHARSET . '), DBIO_CHARSET (' . DBIO_CHARSET . '), PHP multi-byte settings: ' . var_export (mb_get_info (), true));
         
@@ -80,13 +80,17 @@ abstract class DbIoHandler extends base
     // -----
     // Stops a (presumed previously-set) timer, collecting the statistics for the duration.
     //
-    public function stopTimer () 
+    public function stopTimer ($record_statistics = true) 
     {
         $stop_time = microtime (true);
         $this->stats['parse_time'] = $stop_time - $this->stats['start_time'];
         unset ($this->stats['start_time']);
         $this->stats['memory_usage'] = memory_get_usage ();
         $this->stats['memory_peak_usage'] = memory_get_peak_usage ();
+        
+        if ($record_statistics === true) {
+            zen_db_perform (TABLE_DBIO_STATS, $this->stats);
+        }
     }
   
     // -----

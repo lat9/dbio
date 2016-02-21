@@ -25,6 +25,7 @@ class DbIoOrdersHandler extends DbIoHandler
     //
     protected function setHandlerConfiguration () 
     {
+        $this->stats['report_name'] = 'Orders';
         $this->config = array (
             'version' => '0.0.0',
             'handler_version' => '0.0.0',

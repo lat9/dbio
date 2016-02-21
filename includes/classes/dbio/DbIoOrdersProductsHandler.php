@@ -25,6 +25,7 @@ class DbIoOrdersProductsHandler extends DbIoHandler
     //
     protected function setHandlerConfiguration () 
     {
+        $this->stats['report_name'] = 'OrdersProducts';
         $this->config = array (
             'version' => '0.0.0',
             'handler_version' => '0.0.0',
@@ -55,7 +56,7 @@ class DbIoOrdersProductsHandler extends DbIoHandler
                     'products_name' => 'op',
                 ),
                 'where_clause' => 'o.orders_id = op.orders_id AND os.orders_status_id = o.orders_status AND os.language_id = ' . $_SESSION['languages_id'],
-                'order_by_clause' => 'o.orders_id DESC',
+                'order_by_clause' => 'o.orders_id ASC',
             ),
             'description' => DBIO_ORDERSPRODUCTS_DESCRIPTION,
         );

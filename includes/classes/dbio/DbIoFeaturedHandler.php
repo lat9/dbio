@@ -25,6 +25,7 @@ class DbIoFeaturedHandler extends DbIoHandler
     //
     protected function setHandlerConfiguration () 
     {
+        $this->stats['report_name'] = 'Featured';
         $this->config = array (
             'version' => '0.0.0',
             'handler_version' => '0.0.0',
