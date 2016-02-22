@@ -211,13 +211,13 @@ abstract class DbIoHandler extends base
             $this->export_language = $language;
             $this->select_clause = $this->from_clause = $this->where_clause = $this->order_by_clause = '';
             $this->headers = array ();
-            $this->tables = array ();
             
             // -----
             // If the current handler's configuration supports a fixed-list of output fields, retrieve the applicable
             // headers from the handler itself.
             //
             if (isset ($this->config['export_headers']) && is_array ($this->config['export_headers'])) {
+                $this->tables = array ();
                 $this->exportInitializeFixedHeaders ();
                 
             // -----
