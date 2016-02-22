@@ -1,6 +1,6 @@
 <?php
 // -----
-// Part of the DataBase Import/Export (aka dbIO) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
+// Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2015-2016, Vinos de Frutas Tropicales.
 //
 if (!defined ('IS_ADMIN_FLAG')) { 
@@ -17,7 +17,7 @@ class DbIo extends base
         
         $message_file_name = DIR_FS_CATALOG . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/' . FILENAME_DBIO_MESSAGES;
         if (!file_exists ($message_file_name)) {
-            trigger_error ("Missing dbIO message file ($message_file_name)", E_USER_WARNING);
+            trigger_error ("Missing DbIo message file ($message_file_name)", E_USER_WARNING);
         } else {
             require ($message_file_name);
         }
@@ -40,7 +40,7 @@ class DbIo extends base
     }
   
     // -----
-    // Returns the last message issued by the dbIO processing.
+    // Returns the last message issued by the DbIo processing.
     //
     public function getMessage () 
     {
@@ -48,7 +48,7 @@ class DbIo extends base
     }
   
     // -----
-    // Returns some basic information about the dbIO handlers available.
+    // Returns some basic information about the DbIo handlers available.
     //
     public function getAvailableHandlers () 
     {
@@ -65,6 +65,7 @@ class DbIo extends base
                         'class_name' => $handler_class,
                         'is_export_only' => $handler->isExportOnly (),
                         'is_header_included' => $handler->isHeaderIncluded (),
+                        'export_filters' => $handler->getExportFilters (),
                     );
                 }
             }
@@ -102,7 +103,7 @@ class DbIo extends base
                     $this->initialized = true;
                     $this->handler = new $handler_classname ($this->file_suffix);
                     if (!method_exists ($this->handler, 'debugMessage')) {
-                        trigger_error ("dbIO handler ($handler_classname) missing the \"debugMessage\" method; terminating.", E_USER_ERROR);
+                        trigger_error ("DbIo handler ($handler_classname) missing the \"debugMessage\" method; terminating.", E_USER_ERROR);
                         exit ();
                     }
                 }
@@ -112,7 +113,7 @@ class DbIo extends base
     }
   
     // -----
-    // Function that handles an export for the currently-active dbIO type.  The function takes an input that determines
+    // Function that handles an export for the currently-active DbIo type.  The function takes an input that determines
     // where the exported data "goes", either to a 'file' or 'download' to auto-download the generated .csv file.
     //
     public function dbioExport ($export_to = 'file', $language = 'all') 
@@ -129,18 +130,17 @@ class DbIo extends base
  
             $this->csv_parms = $this->handler->getCsvParameters ();
             $this->export_sql = $this->handler->exportGetSql ();
+            $export_info = $db->Execute ($this->export_sql);
+            if ($export_info->EOF) {
+                $this->message = DBIO_EXPORT_NOTHING_TO_DO;
           
-            $this->export_filename = 'dbio.' . $this->dbio_type . '.' . $this->file_suffix . '.csv';
-            $this->export_fp = fopen (DIR_FS_DBIO . $this->export_filename, 'wb+');
-            if ($this->export_fp == false) {
-                $this->message = sprintf (DBIO_FORMAT_MESSAGE_EXPORT_NO_FP, DIR_FS_DBIO_EXPORT . $this->export_filename);
-                trigger_error ($this->message, E_USER_WARNING);
-            
-            } else {
-                $export_info = $db->Execute ($this->export_sql);
-                if ($export_info->EOF) {
-                    $this->message = DBIO_EXPORT_NOTHING_TO_DO;
-              
+            } else {          
+                $this->export_filename = 'dbio.' . $this->dbio_type . '.' . $this->file_suffix . '.csv';
+                $this->export_fp = fopen (DIR_FS_DBIO . $this->export_filename, 'wb+');
+                if ($this->export_fp == false) {
+                    $this->message = sprintf (DBIO_FORMAT_MESSAGE_EXPORT_NO_FP, DIR_FS_DBIO_EXPORT . $this->export_filename);
+                    trigger_error ($this->message, E_USER_WARNING);
+                    
                 } else {
                     $this->debugMessage ('dbioExport: Begin CSV creation loop.');
                     ini_set ('max_execution_time', DBIO_MAX_EXECUTION_TIME);
@@ -176,7 +176,10 @@ class DbIo extends base
                     rewind ($this->export_fp);
                     fpassthru ($this->export_fp);
                 }
-                fclose ($this->export_fp);
+                if ($this->export_fp !== false) {
+                    fclose ($this->export_fp);
+		    $this->export_fp = false;
+                }
             }
             $this->handler->stopTimer ();
         }

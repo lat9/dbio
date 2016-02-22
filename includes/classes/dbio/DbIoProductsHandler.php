@@ -62,8 +62,6 @@ class DbIoProductsHandler extends DbIoHandler
                 'v_categories_name' => self::DBIO_FLAG_NONE,
             ),
             'description' => DBIO_PRODUCTS_DESCRIPTION,
-            'export_filters' => array (
-            ),
         );
     } 
 
