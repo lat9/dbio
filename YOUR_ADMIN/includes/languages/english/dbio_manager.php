@@ -1,13 +1,13 @@
 <?php
 // -----
-// Part of the DataBase Import/Export (aka dbIO) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
+// Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2016, Vinos de Frutas Tropicales.
 //
-define ('HEADING_TITLE', 'Database I/O (dbIO) Manager');
+define ('HEADING_TITLE', 'Database I/O (DbIo) Manager');
 
-define ('TEXT_IS_EXPORT_ONLY', "The '%s' dbIO handler does not support an import action.");
+define ('TEXT_IS_EXPORT_ONLY', "The '%s' DbIo handler does not support an import action.");
 
-define ('TEXT_FORMAT_CONFIG_INFO', 'This section shows the current settings that affect the <em>dbIO Manager</em>\'s operation.  The <em>dbIO Settings</em> values can be changed by clicking <a href="%s">here</a>.');
+define ('TEXT_FORMAT_CONFIG_INFO', 'This section shows the current settings that affect the <em>DbIo Manager</em>\'s operation.  The <em>DbIo Settings</em> values can be changed by clicking <a href="%s">here</a>.');
 define ('TEXT_DBIO_SETTINGS', 'DbIo Settings');
 define ('TEXT_CSV_DELIMITER', 'CSV: Delimiter');
 define ('TEXT_CSV_ENCLOSURE', 'CSV: Enclosure');
@@ -24,7 +24,7 @@ define ('TEXT_CHARSET', 'Internal Character Encoding');
 define ('TEXT_DB_CHARSET', 'Database Character Encoding');
 define ('TEXT_DEFAULT_LANGUAGE', 'Default Language');
 
-define ('TEXT_REPORTS_INSTRUCTIONS', 'The following <em>dbIO</em> options are available:');
+define ('TEXT_REPORTS_INSTRUCTIONS', 'The following <em>DbIo</em> options are available:');
 
 define ('BUTTON_EXPORT', 'Export');
 define ('BUTTON_EXPORT_TITLE', 'Click here to export database information, based on the selected report type.');
@@ -39,11 +39,11 @@ define ('BUTTON_IMPORT_TITLE', 'Click here to import the currently-selected file
 define ('DBIO_BUTTON_DOWNLOAD', 'Download');
 define ('DBIO_BUTTON_DOWNLOAD_TITLE', 'Click here to download the contents of the currently-selected file.');
 define ('BUTTON_EXPORT', 'Export');
-define ('BUTTON_EXPORT_TITLE', 'Click here to export the information associated with the selected dbIO report.');
+define ('BUTTON_EXPORT_TITLE', 'Click here to export the information associated with the selected DbIo report.');
 
 define ('TEXT_FILE_ACTION_INSTRUCTIONS', 'You can perform the following actions on the selected file.');
 
-define ('DBIO_FORMAT_CONFIGURATION_ERROR', 'The <em>dbIO Manager</em> does not support your installation, due to a mismatch between your DB_CHARSET (%1$s) and CHARSET (%2$s) values.');
+define ('DBIO_FORMAT_CONFIGURATION_ERROR', 'The <em>DbIo Manager</em> does not support your installation, due to a mismatch between your DB_CHARSET (%1$s) and CHARSET (%2$s) values.');
 define ('DBIO_FORM_SUBMISSION_ERROR', 'There were some missing values for your form\'s submission, please try again.');
 
 define ('TEXT_NO_DBIO_FILES_AVAILABLE', 'No import/export files available for the current handlers.');
