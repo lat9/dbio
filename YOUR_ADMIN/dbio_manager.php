@@ -239,14 +239,16 @@ if (!$ok_to_proceed) {
 hr { background: #333 linear-gradient(to right, #ccc, #333, #ccc) repeat scroll 0 0; border: 0 none; height: 1px; }
 input[type="submit"] { cursor: pointer; }
 #main-wrapper { text-align: center; padding: 1em; }
-#configuration { float: right; max-width: 400px; }
 #message { border: 2px solid #ddd; display: inline-block; padding: 0.5em; border-radius: 0.75em; }
 #message.error { border-color: red; }
 #message.info { border-color: green; }
-#reports { float: left; }
 #reports-instr { padding-bottom: 0.5em; }
 #reports-list { padding-left: 0.5em; }
-#file-list { display: table; border-collapse: collapse; border: 1px solid #ddd; margin-top: 1em; }
+#file-list, #top-block { display: table; border-collapse: collapse; border: 2px solid #ddd; margin-top: 1em; }
+#file-list { margin: 1em auto; }
+#configuration, #reports { display: table-cell; padding: 0.5em; }
+#configuration { padding-left: 1em; }
+#reports { padding-right: 1em; border-right: 2px solid #ddd; }
 #submit-report { text-align: right; margin: 0.5em 0; }
 .buttonLink, .buttonLink:link, .buttonLink:hover, input.buttonLink { 
   background-color:white;
@@ -272,17 +274,17 @@ a.buttonLink:hover { background-color: #dcdcdc; }
 .odd, .file-row-header { background-color: #ebebeb; }
 .instructions { font-size: 12px; padding-bottom: 10px; padding-top: 10px; }
 .name-input { width: 90%; }
-.config-list { float: right; }
-.config-group { list-style-type: none; text-align: right; padding: 0; }
+.config-list {  }
+.config-group { list-style-type: none; padding: 0; }
 .config-title { }
-.config-value { padding-left: 0.5em; display: inline-block; width: 7em; }
+.config-value { padding-left: 0.5em; font-weight: bold; }
 .input { display: inline-block; }
 .input-label { float: left; text-align: right; font-weight: bold; padding-right: 0.5em; }
 .input-field { float: left; text-align: left; }
 .file-row-header, .config-header { font-weight: bold; }
-.file-row, .file-row-header { display: table-row; }
+.file-row, .file-row-header, #top-block-row { display: table-row; }
 .file-row-caption { display: table-caption; border: 1px solid #ddd; padding: 0.5em; }
-.file-item{ display: table-cell; padding: 0.5em; border: 1px solid #ddd; }
+.file-item { display: table-cell; padding: 0.5em; border: 1px solid #ddd; }
 .file-row:hover { background-color: #ccccff; }
 div.export-only span { color: red; font-weight: bold; }
 -->
@@ -338,84 +340,87 @@ if (!$ok_to_proceed || $error_message !== '') {
     $config_check = $db->Execute ("SELECT configuration_group_id FROM " . TABLE_CONFIGURATION_GROUP . " WHERE configuration_group_title = 'Database I/O Manager Settings' LIMIT 1");
     $configuration_group_id = ($config_check->EOF) ? 0 : $config_check->fields['configuration_group_id'];
 ?>
-    <div id="main-contents"><?php echo zen_draw_form ('dbio', FILENAME_DBIO_MANAGER, 'action=export'); ?>
-        <div id="configuration">
-            <div id="configuration-info">This section shows the current settings that affect the <em>dbIO Manager</em>'s operation.  The <em>dbIO Settings</em> values can be changed by clicking <a href="<?php echo zen_href_link (FILENAME_CONFIGURATION, "gID=$configuration_group_id"); ?>">here</a>.</div>
-<?php
-    unset ($config_check, $configuration_group_id);
-    $dbio_configuration = array (
-        'dbIO Settings' => array (
-            'CSV: Delimiter' => DBIO_CSV_DELIMITER,
-            'CSV: Enclosure' => DBIO_CSV_ENCLOSURE,
-            'CSV: Escape' => DBIO_CSV_ESCAPE,
-            'CSV: Encoding' => DBIO_CHARSET,
-            'CSV: Import Date Format' => DBIO_IMPORT_DATE_FORMAT,
-            'Maximum Execution Time' => DBIO_MAX_EXECUTION_TIME,
-            'Split Record Count' => DBIO_SPLIT_RECORD_COUNT,
-            'Debug Enabled' => DBIO_DEBUG,
-            'Display/Log Date Format' => DBIO_DEBUG_DATE_FORMAT,
-        ),
-        'System Settings' => array (
-            'Maximum Upload File Size' => ini_get ('upload_max_filesize'),
-           'Internal Character Encoding' => CHARSET,
-           'Database Character Encoding' => DB_CHARSET,
-           'Default Language' => DEFAULT_LANGUAGE,
-        ),
-    );
-    foreach ($dbio_configuration as $config_group_name => $config_values) {
-?>
-            <div class="config-list">
-                <div class="config-header"><?php echo $config_group_name; ?></div>
-                <ul class="config-group">
-<?php
-        foreach ($config_values as $config_title => $config_value) {
-?>
-                    <li class="config-item"><span class="config-title"><?php echo $config_title; ?>:</span><span class="config-value"><?php echo $config_value; ?></span></li>
-<?php
-        }
-?>
-                </ul>
-            </div>
-            <div class="clearBoth"></div>
-<?php
-    }
-?>
-        </div>
-        <div id="reports" class="float-left left">
-            <div id="reports-instr">The following <em>dbIO</em> options are available:</div>
-            <div id="reports-list">
+    <div id="main-contents">
+        <div id="top-block"><div id="top-block-row"><?php echo zen_draw_form ('dbio', FILENAME_DBIO_MANAGER, 'action=export'); ?>
+            <div id="reports" class="left">
+                <div id="reports-instr"><?php echo TEXT_REPORTS_INSTRUCTIONS; ?></div>
+                <div id="reports-list">
 <?php
     foreach ($dbio_handlers as $handler_name => $handler_info) {
         echo zen_draw_radio_field ('handler', $handler_name, true) . '&nbsp;&nbsp;<strong>' . $handler_name . ':</strong>&nbsp;' . $handler_info['description'] . '<br />';
     }
 ?>
+                </div>
+                <div id="submit-report"><?php echo zen_draw_input_field ('export_button', BUTTON_EXPORT, 'title="' . BUTTON_EXPORT_TITLE . '"', false, 'submit'); ?></div>
             </div>
-            <div id="submit-report"><?php echo zen_draw_input_field ('export_button', BUTTON_EXPORT, 'title="' . BUTTON_EXPORT_TITLE . '"', false, 'submit'); ?></div>
-        </div><div class="clearBoth"></div></form>
+            
+            <div id="configuration">
+                <div id="configuration-info"><?php echo sprintf (TEXT_FORMAT_CONFIG_INFO, zen_href_link (FILENAME_CONFIGURATION, "gID=$configuration_group_id")); ?></div>
+<?php
+    unset ($config_check, $configuration_group_id);
+    $dbio_configuration = array (
+        TEXT_DBIO_SETTINGS => array (
+            TEXT_CSV_DELIMITER => DBIO_CSV_DELIMITER,
+            TEXT_CSV_ENCLOSURE => DBIO_CSV_ENCLOSURE,
+            TEXT_CSV_ESCAPE => DBIO_CSV_ESCAPE,
+            TEXT_CSV_ENCODING => DBIO_CHARSET,
+            TEXT_CSV_DATE_FORMAT => DBIO_IMPORT_DATE_FORMAT,
+            TEXT_MAX_EXECUTION => DBIO_MAX_EXECUTION_TIME,
+            TEXT_SPLIT_RECORD_COUNT => DBIO_SPLIT_RECORD_COUNT,
+            TEXT_DEBUG_ENABLED => DBIO_DEBUG,
+            TEXT_DATE_FORMAT => DBIO_DEBUG_DATE_FORMAT,
+        ),
+        TEXT_DBIO_SYSTEM_SETTINGS => array (
+           TEXT_MAX_UPLOAD_FILE_SIZE => ini_get ('upload_max_filesize'),
+           TEXT_CHARSET => CHARSET,
+           TEXT_DB_CHARSET => DB_CHARSET,
+           TEXT_DEFAULT_LANGUAGE => DEFAULT_LANGUAGE,
+        ),
+    );
+    foreach ($dbio_configuration as $config_group_name => $config_values) {
+?>
+                <div class="config-list">
+                    <div class="config-header"><?php echo $config_group_name; ?></div>
+                    <ul class="config-group">
+<?php
+        foreach ($config_values as $config_title => $config_value) {
+?>
+                        <li class="config-item"><span class="config-title"><?php echo $config_title; ?>:</span><span class="config-value"><?php echo $config_value; ?></span></li>
+<?php
+        }
+?>
+                    </ul>
+                </div>
+                <div class="clearBoth"></div>
+<?php
+    }
+?>
+            </div>
+        </form></div></div>
         
         <div id="file-list" class="clearBoth"><?php echo zen_draw_form ('file_form', FILENAME_DBIO_MANAGER, 'action=file'); ?>
 <?php
     if (!is_array ($dbio_files) || count ($dbio_files) == 0) {
 ?>
-            <div class="no-files">No import/export files available for the current handler.</div>
+            <div class="no-files"><?php echo TEXT_NO_DBIO_FILES_AVAILABLE; ?></div>
 <?php
     } else {
         $file_actions_array = array (
-            array ( 'id' => 'none', 'text' => 'Please Select' ),
-            array ( 'id' => 'split', 'text' => 'Split' ),
-            array ( 'id' => 'delete', 'text' => 'Delete' ),
-            array ( 'id' => 'import-run', 'text' => 'Import (Full)' ),
-            array ( 'id' => 'import-check', 'text' => 'Import (Check-only)' ),
-            array ( 'id' => 'download', 'text' => 'Download' ),
+            array ( 'id' => 'none', 'text' => DBIO_ACTION_PLEASE_SELECT ),
+            array ( 'id' => 'split', 'text' => DBIO_ACTION_SPLIT ),
+            array ( 'id' => 'delete', 'text' => DBIO_ACTION_DELETE ),
+            array ( 'id' => 'import-run', 'text' => DBIO_ACTION_FULL_IMPORT ),
+            array ( 'id' => 'import-check', 'text' => DBIO_ACTION_CHECK_IMPORT ),
+            array ( 'id' => 'download', 'text' => DBIO_ACTION_DOWNLOAD ),
         );
         $file_action = (isset ($_POST['file_action'])) ? $_POST['file_action'] : 'none';
 ?>
-            <div class="file-row-caption">Choose the action to be performed for the file selected below: <?php echo zen_draw_pull_down_menu ('file_action', $file_actions_array, $file_action, 'id="file-action"'); ?>&nbsp;&nbsp;<?php echo zen_draw_input_field ('go_button', DBIO_BUTTON_GO, 'title="' . DBIO_BUTTON_GO_TITLE . '" onclick="return checkSubmit ();"', false, 'submit'); ?><hr /><?php echo TEXT_FILE_ACTION_INSTRUCTIONS; ?></div>
+            <div class="file-row-caption"><?php echo TEXT_CHOOSE_ACTION . ' ' . zen_draw_pull_down_menu ('file_action', $file_actions_array, $file_action, 'id="file-action"'); ?>&nbsp;&nbsp;<?php echo zen_draw_input_field ('go_button', DBIO_BUTTON_GO, 'title="' . DBIO_BUTTON_GO_TITLE . '" onclick="return checkSubmit ();"', false, 'submit'); ?><hr /><?php echo TEXT_FILE_ACTION_INSTRUCTIONS; ?></div>
             <div class="file-row-header">
-                <div class="file-item">Choose File</div>
-                <div class="file-item left">File Name</div>
-                <div class="file-item">Bytes</div>
-                <div class="file-item">Last-Modified Date</div>
+                <div class="file-item"><?php echo HEADING_CHOOSE_FILE; ?></div>
+                <div class="file-item left"><?php echo HEADING_FILENAME; ?></div>
+                <div class="file-item"><?php echo HEADING_BYTES; ?></div>
+                <div class="file-item"><?php echo HEADING_LAST_MODIFIED; ?></div>
             </div>
 <?php
         $even_odd = 'even';

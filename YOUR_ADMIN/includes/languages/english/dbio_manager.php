@@ -7,6 +7,25 @@ define ('HEADING_TITLE', 'Database I/O (dbIO) Manager');
 
 define ('TEXT_IS_EXPORT_ONLY', "The '%s' dbIO handler does not support an import action.");
 
+define ('TEXT_FORMAT_CONFIG_INFO', 'This section shows the current settings that affect the <em>dbIO Manager</em>\'s operation.  The <em>dbIO Settings</em> values can be changed by clicking <a href="%s">here</a>.');
+define ('TEXT_DBIO_SETTINGS', 'DbIo Settings');
+define ('TEXT_CSV_DELIMITER', 'CSV: Delimiter');
+define ('TEXT_CSV_ENCLOSURE', 'CSV: Enclosure');
+define ('TEXT_CSV_ESCAPE', 'CSV: Escape');
+define ('TEXT_CSV_ENCODING', 'CSV: Encoding');
+define ('TEXT_CSV_DATE_FORMAT', 'CSV: Import Date Format');
+define ('TEXT_MAX_EXECUTION', 'Maximum Execution Time');
+define ('TEXT_SPLIT_RECORD_COUNT', 'Split Record Count');
+define ('TEXT_DEBUG_ENABLED', 'Debug Enabled');
+define ('TEXT_DATE_FORMAT', 'Display/Log Date Format');
+define ('TEXT_DBIO_SYSTEM_SETTINGS', 'System Settings');
+define ('TEXT_MAX_UPLOAD_FILE_SIZE', 'Maximum Upload File Size');
+define ('TEXT_CHARSET', 'Internal Character Encoding');
+define ('TEXT_DB_CHARSET', 'Database Character Encoding');
+define ('TEXT_DEFAULT_LANGUAGE', 'Default Language');
+
+define ('TEXT_REPORTS_INSTRUCTIONS', 'The following <em>dbIO</em> options are available:');
+
 define ('BUTTON_EXPORT', 'Export');
 define ('BUTTON_EXPORT_TITLE', 'Click here to export database information, based on the selected report type.');
 define ('BUTTON_SPLIT', 'Split');
@@ -26,6 +45,21 @@ define ('TEXT_FILE_ACTION_INSTRUCTIONS', 'You can perform the following actions 
 
 define ('DBIO_FORMAT_CONFIGURATION_ERROR', 'The <em>dbIO Manager</em> does not support your installation, due to a mismatch between your DB_CHARSET (%1$s) and CHARSET (%2$s) values.');
 define ('DBIO_FORM_SUBMISSION_ERROR', 'There were some missing values for your form\'s submission, please try again.');
+
+define ('TEXT_NO_DBIO_FILES_AVAILABLE', 'No import/export files available for the current handlers.');
+define ('TEXT_CHOOSE_ACTION', 'Choose the action to be performed for the file selected below:');
+
+define ('DBIO_ACTION_PLEASE_SELECT', 'Please select');
+define ('DBIO_ACTION_SPLIT', 'Split');
+define ('DBIO_ACTION_DELETE', 'Delete');
+define ('DBIO_ACTION_FULL_IMPORT', 'Import (Full)');
+define ('DBIO_ACTION_CHECK_IMPORT', 'Import (Check-only)');
+define ('DBIO_ACTION_DOWNLOAD', 'Download');
+
+define ('HEADING_CHOOSE_FILE', 'Choose File');
+define ('HEADING_FILENAME', 'File Name');
+define ('HEADING_BYTES', 'Bytes');
+define ('HEADING_LAST_MODIFIED', 'Last-Modified Date');
 
 define ('ERROR_CHOOSE_FILE_ACTION', 'Please choose the action to be performed on the file named &quot;%s&quot;.');
 
