@@ -43,6 +43,22 @@ class DbIoOrdersHandler extends DbIoHandler
             'additional_headers' => array (
                 'v_orders_status_name' => self::DBIO_FLAG_NONE,
             ),
+            'export_filters' => array (
+                'orders_id_range' => array (
+                    'type' => 'array',
+                    'label' => DBIO_ORDERS_ORDERS_ID_RANGE_LABEL,
+                    'fields' => array (
+                        'orders_id_min' => array (
+                            'type' => 'input',
+                            'label' => DBIO_ORDERS_ORDERS_ID_MIN_LABEL,
+                        ),
+                        'orders_id_max' => array (
+                            'type' => 'input',
+                            'label' => DBIO_ORDERS_ORDERS_ID_MAX_LABEL,
+                        ),
+                    ),
+                ),
+            ),
         );
     }
     
@@ -56,6 +72,29 @@ class DbIoOrdersHandler extends DbIoHandler
 
         return $fields;
       
+    }
+    
+    // -----
+    // This function gives the current handler the last opportunity to modify the SQL query clauses used for the current export.  It's
+    // usually provided by handlers that use an "export_filter", allowing the handler to inspect any filter-variables provided by
+    // the caller.
+    //
+    // Returns a boolean (true/false) indication of whether the export's initialization was successful.  If unsuccessful, the handler
+    // is **assumed** to have set its reason into the class message variable.
+    //
+    public function exportFinalizeInitialization ()
+    {
+        // -----
+        // Check to see if any of this handler's filter variables have been set.  If set, check the values and then
+        // update the where_clause for the to-be-issued SQL query for the export.
+        //
+        if (zen_not_null ($_POST['orders_id_min']) && ctype_digit ($_POST['orders_id_min'])) {
+            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'orders_id >= ' . (int)$_POST['orders_id_min'];
+        }
+        if (zen_not_null ($_POST['orders_id_max']) && ctype_digit ($_POST['orders_id_max'])) {
+            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'orders_id <= ' . (int)$_POST['orders_id_max'];
+        }        
+        return true;
     }
 
 // ----------------------------------------------------------------------------------

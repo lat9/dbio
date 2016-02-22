@@ -4,6 +4,8 @@
 // Copyright (c) 2016, Vinos de Frutas Tropicales.
 //
 require ('includes/application_top.php');
+require (DIR_WS_FUNCTIONS . 'dbio_manager_functions.php');
+
 $languages = zen_get_languages();
 
 // -----
@@ -63,7 +65,6 @@ if (!$ok_to_proceed) {
         $action = (isset ($_GET['action'])) ? $_GET['action'] : '';
         switch ($action) {
             case 'export':
-                unset ($_SESSION['dbio_stats']);
                 if (!isset ($_POST['handler'])) {
                     $messageStack->add_session (DBIO_FORM_SUBMISSION_ERROR);
                 } else {
@@ -71,13 +72,13 @@ if (!$ok_to_proceed) {
                     $dbio = new DbIo ($_POST['handler']);
                     $export_info = $dbio->dbioExport ('file');
                     if ($export_info['status'] === false) {
-                        $messageStack->add_session ($dbio->getMessage ());
+                        $messageStack->add ($dbio->getMessage ());
                     } else {
                         $messageStack->add_session (sprintf (DBIO_MGR_EXPORT_SUCCESSFUL, $_POST['handler'], $export_info['export_filename']), 'success');
+                        $_SESSION['dbio_vars'] = $_POST;
+                        zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER));
                     }
-                    $_SESSION['dbio_stats'] = $dbio->handler->getStatsArray ();
                 }
-                zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER));
                 break;
             case 'file':
                 if (!isset ($_POST['file_action']) || !isset ($_POST['filename_hash']) || !isset ($dbio_files[$_POST['filename_hash']])) {
@@ -243,7 +244,7 @@ input[type="submit"] { cursor: pointer; }
 #message.error { border-color: red; }
 #message.info { border-color: green; }
 #reports-instr { padding-bottom: 0.5em; }
-#reports-list { padding-left: 0.5em; }
+#reports-list { display: table; padding-left: 0.5em; }
 #file-list, #top-block { display: table; border-collapse: collapse; border: 2px solid #ddd; margin-top: 1em; }
 #file-list { margin: 1em auto; }
 #configuration, #reports { display: table-cell; padding: 0.5em; }
@@ -282,7 +283,13 @@ a.buttonLink:hover { background-color: #dcdcdc; }
 .input-label { float: left; text-align: right; font-weight: bold; padding-right: 0.5em; }
 .input-field { float: left; text-align: left; }
 .file-row-header, .config-header { font-weight: bold; }
-.file-row, .file-row-header, #top-block-row { display: table-row; }
+.file-row, .file-row-header, #top-block-row, .reports-details-row { display: table-row; }
+.reports-details-select, .reports-details, .reports-filter-label { display: table-cell; padding: 0.5em; }
+.reports-details-name, .reports-filter-label { font-weight: bold; }
+.reports-filter-label {  padding-left: 2em; font-style: italic; }
+.filter-subfield-label { padding: 0 2em 0 4em; }
+.filter-subfield-label { display: inline-block; clear: both; }
+.filter-subfield { }
 .file-row-caption { display: table-caption; border: 1px solid #ddd; padding: 0.5em; }
 .file-item { display: table-cell; padding: 0.5em; border: 1px solid #ddd; }
 .file-row:hover { background-color: #ccccff; }
@@ -346,8 +353,84 @@ if (!$ok_to_proceed || $error_message !== '') {
                 <div id="reports-instr"><?php echo TEXT_REPORTS_INSTRUCTIONS; ?></div>
                 <div id="reports-list">
 <?php
+    $first_handler = true;
     foreach ($dbio_handlers as $handler_name => $handler_info) {
-        echo zen_draw_radio_field ('handler', $handler_name, true) . '&nbsp;&nbsp;<strong>' . $handler_name . ':</strong>&nbsp;' . $handler_info['description'] . '<br />';
+        if (isset ($_POST['handler'])) {
+            $checked = ($_POST['handler'] == $handler_name);
+        } elseif (isset ($_SESSION['dbio_vars']) && isset ($_SESSION['dbio_vars']['handler'])) {
+            $checked = ($_SESSION['dbio_vars']['handler'] == $handler_name);
+        } else {
+            $checked = $first_handler;
+        }
+?>
+                    <div class="reports-details-row">
+                        <div class="reports-details-select"><?php echo zen_draw_radio_field ('handler', $handler_name, $checked); ?></div>
+                        <div class="reports-details">
+                            <span class="reports-details-name"><?php echo $handler_name; ?>:</span>
+                            <span class="reports-details-desc"><?php echo $handler_info['description']; ?></span>
+<?php
+       if ($handler_info['export_filters'] !== false) {
+?>
+                            <div class="reports-export-filters">
+<?php
+            foreach ($handler_info['export_filters'] as $field_name => $field_parms) {
+                if (!isset ($field_parms['type']) || !isset ($field_parms['label'])) {
+                    trigger_error ("DbIo: Missing type and/or label for $handler_name::$field_name export filters:\n" . var_export ($field_parms, true), E_USER_WARNING);
+                    
+                } else {
+                    $extra_field_class = '';
+                    switch ($field_parms['type']) {
+                        case 'input':
+                            $form_field = zen_draw_input_field ($field_name, dbioGetFieldValue ($field_name));
+                            break;
+                        case 'array':
+                            $extra_field_class = ' multi';
+                            if (!isset ($field_parms['fields'])) {
+                                $form_field = false;
+                                trigger_error ("DbIo: Missing additional filter variable values for $handler_name::$field_name.", E_USER_WARNING);
+                            } else {
+                                $form_field = '<span class="filter-subfield-wrap">';
+                                foreach ($field_parms['fields'] as $subfield_name => $subfield_parms) {
+                                    $form_field .= '<span class="filter-subfield-label">' . $subfield_parms['label'] . '</span>';
+                                    switch ($subfield_parms['type']) {
+                                        case 'input':
+                                            $form_field .= '<span class="filter-subfield">' . zen_draw_input_field ($subfield_name, dbioGetFieldValue ($subfield_name)) . '</span>';
+                                            break;
+                                         default:
+                                            $form_field = false;
+                                            trigger_error ("DbIo: Unknown filter subfield type (" . $subfield_parms['type'] . ") specified for $handler_name::$field_name::$subfield_name.", E_USER_WARNING);
+                                            break;
+                                    }
+                                }
+                                if ($form_field !== false) {
+                                    $form_field .= '</span>';
+                                }
+                            }
+                            break;
+                        default:
+                            $form_field = false;
+                            trigger_error ("DbIo: Unknown export filter type (" . $field_parms['type'] . ") specified for $handler_name::$field_name.", E_USER_WARNING);
+                            break;
+                    }
+                    if ($form_field !== false) {
+?>
+                                <div class="reports-filter-row">
+                                    <div class="reports-filter-label"><?php echo $field_parms['label']; ?></div>
+                                    <div class="reports-filter-field<?php echo $extra_field_class; ?>"><?php echo $form_field; ?></div>
+                                </div>
+<?php
+                    }
+                }
+            }
+?>
+                            </div>
+<?php
+       }
+?>
+                        </div>
+                    </div>
+<?php
+        $first_handler = false;
     }
 ?>
                 </div>

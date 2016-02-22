@@ -1,6 +1,6 @@
 <?php
 // -----
-// Part of the DataBase Import/Export (aka dbIO) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
+// Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2016, Vinos de Frutas Tropicales.
 //
 if (!defined ('IS_ADMIN_FLAG')) {
@@ -94,7 +94,7 @@ abstract class DbIoHandler extends base
     }
   
     // -----
-    // Get the script's statistics, returned as an array of statistical information about the previously timed dbIO operation.
+    // Get the script's statistics, returned as an array of statistical information about the previously timed DbIo operation.
     //
     // - errors .... the number of errors that occurred
     // - warnings ... the number of warnings that were issued
@@ -128,7 +128,7 @@ abstract class DbIoHandler extends base
     }
     
     // -----
-    // Return the indication as to whether the dbIO action is expected to include a header record.
+    // Return the indication as to whether the DbIo action is expected to include a header record.
     //
     public function isHeaderIncluded ()
     {
@@ -136,7 +136,7 @@ abstract class DbIoHandler extends base
     }
     
     // -----
-    // Return the indication as to whether the dbIO handler is export-only.
+    // Return the indication as to whether the DbIo handler is export-only.
     //
     public function isExportOnly ()
     {
@@ -152,7 +152,16 @@ abstract class DbIoHandler extends base
     }
     
     // -----
-    // Writes the requested message to the current debug-log file, if dbIO debug is enabled.
+    // Return the array of export-filter "instructions"; return false if no filters are provided by the handler.  These values
+    // are handled by the DbIo caller, either a cron-job or the admin's Tools->Database I/O Manager.
+    //
+    public function getExportFilters ()
+    {
+        return (isset ($this->config) && isset ($this->config['export_filters']) && is_array ($this->config['export_filters'])) ? $this->config['export_filters'] : false;
+    }
+    
+    // -----
+    // Writes the requested message to the current debug-log file, if DbIo debug is enabled.
     //
     public function debugMessage ($message, $severity = 0) 
     {
@@ -176,7 +185,7 @@ abstract class DbIoHandler extends base
     }
     
     // -----
-    // Initialize the dbIO export handling. 
+    // Initialize the DbIo export handling. 
     // 
     public function exportInitialize ($language = 'all') 
     {
@@ -191,7 +200,7 @@ abstract class DbIoHandler extends base
         // -----
         // For the export to be successfully initialized:
         //
-        // 1) The current dbIO handler must have included its 'config' section.
+        // 1) The current DbIo handler must have included its 'config' section.
         // 2) The language requested for the export must be present in the current Zen Cart's database
         //        
         if (!isset ($this->config)) {
@@ -204,7 +213,7 @@ abstract class DbIoHandler extends base
         } else {
             // -----
             // Since those pre-conditions have been met, the majority of the export's initialization
-            // requires the breaking-down of the current dbIO handler's configuration into data elements
+            // requires the breaking-down of the current DbIo handler's configuration into data elements
             // that can be easily parsed during each record's output.
             //
             $initialized = true;
@@ -285,14 +294,30 @@ abstract class DbIoHandler extends base
                 }
             }
         }
+        if ($initialized) {
+            $initialized = $this->exportFinalizeInitialization ();
+        }
         $this->debugMessage ("exportInitialize ($language), " . (($initialized) ? 'Successful' : ('Unsuccessful (' . $this->message . ')')) . 
                              "\nTables:\n" . var_export ($this->tables, true) . 
                              "\nHeaders:\n" . var_export ($this->headers, true));
         return $initialized;
     }
+    
+    // -----
+    // This function gives the current handler the last opportunity to modify the SQL query clauses used for the current export.  It's
+    // usually provided by handlers that use an "export_filter", allowing the handler to inspect any filter-variables provided by
+    // the caller.
+    //
+    // Returns a boolean (true/false) indication of whether the export's initialization was successful.  If unsuccessful, the handler
+    // is **assumed** to have set its reason into the class message variable.
+    //
+    public function exportFinalizeInitialization ()
+    {
+        return true;
+    }
   
     // -----
-    // Gets and returns the header-record for the current export.  This is driven by whether the current dbIO handler's configuration
+    // Gets and returns the header-record for the current export.  This is driven by whether the current DbIo handler's configuration
     // indicates that a header-record is to be included in the export.
     //
     // If no header is to be returned, the function returns (bool)false.  Otherwise, the exported record-count is incremented by 1 (to
@@ -314,7 +339,7 @@ abstract class DbIoHandler extends base
     public function exportGetSql ($sql_limit = '') 
     {
         if (!isset ($this->export_language) || !isset ($this->select_clause)) {
-            trigger_error ('Export aborted: dbIO export sequence error; not previously initialized.', E_USER_ERROR);
+            trigger_error ('Export aborted: DbIo export sequence error; not previously initialized.', E_USER_ERROR);
             exit ();
       
          }
@@ -347,7 +372,7 @@ abstract class DbIoHandler extends base
     public function importInitialize ($language = 'all', $operation = 'check') 
     {
         if (!isset ($this->config)) {
-            trigger_error ('Import aborted: dbIO helper not configured.', E_USER_ERROR);
+            trigger_error ('Import aborted: DbIo helper not configured.', E_USER_ERROR);
             exit ();
         }
         $this->message = '';
@@ -549,7 +574,7 @@ abstract class DbIoHandler extends base
     }
   
     // -----
-    // This function is the heart of the dbIO-Import handling, processing the current CSV record into the store's database.
+    // This function is the heart of the DbIo-Import handling, processing the current CSV record into the store's database.
     //
     public function importCsvRecord (array $data) 
     {
@@ -827,7 +852,7 @@ abstract class DbIoHandler extends base
         if (!isset ($this->config) || !is_array ($this->config) || 
             !( (isset ($this->config['tables']) && is_array ($this->config['tables'])) ||
                (isset ($this->config['export_headers']) && is_array ($this->config['export_headers'])) ) ) {
-            trigger_error ('dbIO configuration not set prior to initialize.  Current class: ' . var_export ($this, true), E_USER_ERROR);
+            trigger_error ('DbIo configuration not set prior to initialize.  Current class: ' . var_export ($this, true), E_USER_ERROR);
             exit();
         }
     
@@ -861,7 +886,7 @@ abstract class DbIoHandler extends base
     // specific field overrides (i.e. whether/not to include in header and/or data).
     //
     // NOTE: There's an override here for the products_description.products_id field.  It's marked (up to Zen Cart v1.5.5)
-    // as being an auto-increment field, which has "special" interpretation by the dbIO processing.  If that field is found
+    // as being an auto-increment field, which has "special" interpretation by the DbIo processing.  If that field is found
     // within the processing, simply mark it as non-auto-increment; ZC1.5.5 and later already do this.
     //
     private function initializeTableFields ($table_name, $table_config)
