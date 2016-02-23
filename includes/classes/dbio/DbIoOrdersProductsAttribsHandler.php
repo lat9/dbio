@@ -13,28 +13,15 @@ if (!defined ('IS_ADMIN_FLAG')) {
 //
 class DbIoOrdersProductsAttribsHandler extends DbIoOrdersProductsHandler 
 {
-    public function __construct ($log_file_suffix)
+    public static function getHandlerInformation ()
     {
-        include (DIR_FS_CATALOG . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoOrdersProductsAttribsHandler.php');
-        parent::__construct ($log_file_suffix);
+        include_once (DIR_FS_CATALOG . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoOrdersProductsAttribsHandler.php');
+        $handler_info = parent::getHandlerInformation ();
+        $handler_info['description'] = DBIO_ORDERSPRODUCTSATTRIBS_DESCRIPTION;
+        
+        return $handler_info;
     }
     
-    // -----
-    // This function, called during the overall class construction, is used to set this handler's database
-    // configuration for the dbIO operations.  Since this handler "extends" the OrdersProducts handler, let
-    // that handler provide the default configuration, then make extension-specific modifications.
-    //
-    protected function setHandlerConfiguration () 
-    {
-        parent::setHandlerConfiguration ();
-        $this->stats['report_name'] = 'OrdersProductsAttribs';
-        $this->config['export_headers']['tables'][TABLE_ORDERS_PRODUCTS] = 'op LEFT JOIN ' . TABLE_ORDERS_PRODUCTS_ATTRIBUTES . ' opa ON op.orders_products_id = opa.orders_products_id';
-        $this->config['export_headers']['fields']['products_options'] = 'opa';
-        $this->config['export_headers']['fields']['products_options_values'] = 'opa';
-        $this->config['export_headers']['order_by_clause'] .= ', op.orders_products_id ASC, opa.orders_products_attributes_id ASC';
-        $this->config['description'] = DBIO_ORDERSPRODUCTSATTRIBS_DESCRIPTION;
-    }
-
     // -----
     // Let the OrdersProducts handler do its thing, gathering the base order and product information, then check to
     // see if the current product has any attributes ... and add them.  Note that
@@ -58,5 +45,21 @@ class DbIoOrdersProductsAttribsHandler extends DbIoOrdersProductsHandler
 // ----------------------------------------------------------------------------------
 //             I N T E R N A L / P R O T E C T E D   F U N C T I O N S 
 // ----------------------------------------------------------------------------------
+    
+    // -----
+    // This function, called during the overall class construction, is used to set this handler's database
+    // configuration for the dbIO operations.  Since this handler "extends" the OrdersProducts handler, let
+    // that handler provide the default configuration, then make extension-specific modifications.
+    //
+    protected function setHandlerConfiguration () 
+    {
+        parent::setHandlerConfiguration ();
+        $this->stats['report_name'] = 'OrdersProductsAttribs';
+        $this->config['export_headers']['tables'][TABLE_ORDERS_PRODUCTS] = 'op LEFT JOIN ' . TABLE_ORDERS_PRODUCTS_ATTRIBUTES . ' opa ON op.orders_products_id = opa.orders_products_id';
+        $this->config['export_headers']['fields']['products_options'] = 'opa';
+        $this->config['export_headers']['fields']['products_options_values'] = 'opa';
+        $this->config['export_headers']['order_by_clause'] .= ', op.orders_products_id ASC, opa.orders_products_attributes_id ASC';
+        $this->config['description'] = DBIO_ORDERSPRODUCTSATTRIBS_DESCRIPTION;
+    }
 
 }  //-END class DbIoOrdersProductsHandler

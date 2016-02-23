@@ -13,51 +13,14 @@ if (!defined ('IS_ADMIN_FLAG')) {
 //
 class DbIoOrdersProductsHandler extends DbIoHandler 
 {
-    public function __construct ($log_file_suffix)
+    public static function getHandlerInformation ()
     {
-        include (DIR_FS_CATALOG . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoOrdersProductsHandler.php');
-        parent::__construct ($log_file_suffix);
-    }
-    
-    // -----
-    // This function, called during the overall class construction, is used to set this handler's database
-    // configuration for the dbIO operations.
-    //
-    protected function setHandlerConfiguration () 
-    {
-        $this->stats['report_name'] = 'OrdersProducts';
-        $this->config = array (
+        include_once (DIR_FS_CATALOG . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoOrdersProductsHandler.php');
+        return array (
             'version' => '0.0.0',
             'handler_version' => '0.0.0',
             'include_header' => true,
             'export_only' => true,
-            'export_headers' => array (
-                'tables' => array (
-                    TABLE_ORDERS => 'o',
-                    TABLE_ORDERS_PRODUCTS => 'op',
-                    TABLE_ORDERS_STATUS => 'os',
-                ),
-                'fields' => array (
-                    'date_purchased' => 'o',
-                    'orders_status_name' => 'os',
-                    'orders_id' => 'o',
-                    'customers_id' => 'o',
-                    'customers_name' => 'o',
-                    'customers_company' => 'o',
-                    'customers_street_address' => 'o',
-                    'customers_suburb' => 'o',
-                    'customers_city' => 'o',
-                    'customers_state' => 'o',
-                    'customers_postcode' => 'o',
-                    'customers_country' => 'o',
-                    'customers_telephone' => 'o',
-                    'customers_email_address' => 'o',
-                    'products_model' => 'op',
-                    'products_name' => 'op',
-                ),
-                'where_clause' => 'o.orders_id = op.orders_id AND os.orders_status_id = o.orders_status AND os.language_id = ' . $_SESSION['languages_id'],
-                'order_by_clause' => 'o.orders_id ASC',
-            ),
             'description' => DBIO_ORDERSPRODUCTS_DESCRIPTION,
         );
     }
@@ -85,5 +48,42 @@ class DbIoOrdersProductsHandler extends DbIoHandler
 // ----------------------------------------------------------------------------------
 //             I N T E R N A L / P R O T E C T E D   F U N C T I O N S 
 // ----------------------------------------------------------------------------------
-
+    
+    // -----
+    // This function, called during the overall class construction, is used to set this handler's database
+    // configuration for the dbIO operations.
+    //
+    protected function setHandlerConfiguration () 
+    {
+        $this->stats['report_name'] = 'OrdersProducts';
+        $this->config = self::getHandlerInformation ();
+        $this->config['export_headers'] = array (
+            'tables' => array (
+                TABLE_ORDERS => 'o',
+                TABLE_ORDERS_PRODUCTS => 'op',
+                TABLE_ORDERS_STATUS => 'os',
+            ),
+            'fields' => array (
+                'date_purchased' => 'o',
+                'orders_status_name' => 'os',
+                'orders_id' => 'o',
+                'customers_id' => 'o',
+                'customers_name' => 'o',
+                'customers_company' => 'o',
+                'customers_street_address' => 'o',
+                'customers_suburb' => 'o',
+                'customers_city' => 'o',
+                'customers_state' => 'o',
+                'customers_postcode' => 'o',
+                'customers_country' => 'o',
+                'customers_telephone' => 'o',
+                'customers_email_address' => 'o',
+                'products_model' => 'op',
+                'products_name' => 'op',
+            ),
+            'where_clause' => 'o.orders_id = op.orders_id AND os.orders_status_id = o.orders_status AND os.language_id = ' . $_SESSION['languages_id'],
+            'order_by_clause' => 'o.orders_id ASC',
+        );
+    }
+    
 }  //-END class DbIoOrdersProductsHandler

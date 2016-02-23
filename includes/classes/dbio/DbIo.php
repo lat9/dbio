@@ -58,15 +58,9 @@ class DbIo extends base
             foreach ($handlers as $current_handler) {
                 $handler_class = str_replace (array (DIR_FS_DBIO_CLASSES, '.php'), '', $current_handler);
                 if ($handler_class != 'DbIoHandler') {
-                    $handler = new $handler_class ($this->file_suffix);
                     $dbio_type = str_replace (array ('DbIo', 'Handler'), '', $handler_class);
-                    $handler_info[$dbio_type] = array ( 
-                        'description' => $handler->getHandlerDescription (), 
-                        'class_name' => $handler_class,
-                        'is_export_only' => $handler->isExportOnly (),
-                        'is_header_included' => $handler->isHeaderIncluded (),
-                        'export_filters' => $handler->getExportFilters (),
-                    );
+                    $handler_info[$dbio_type] = $handler_class::getHandlerInformation ();
+                    $handler_info[$dbio_type]['class_name'] = $handler_class;
                 }
             }
         }

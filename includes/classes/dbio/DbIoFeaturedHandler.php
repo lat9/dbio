@@ -13,11 +13,29 @@ if (!defined ('IS_ADMIN_FLAG')) {
 //
 class DbIoFeaturedHandler extends DbIoHandler 
 {
-    public function __construct ($log_file_suffix)
+    public static function getHandlerInformation ()
     {
-        include (DIR_FS_CATALOG . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoFeaturedHandler.php');
-        parent::__construct ($log_file_suffix);
+        include_once (DIR_FS_CATALOG . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoFeaturedHandler.php');
+        return array (
+            'version' => '0.0.0',
+            'handler_version' => '0.0.0',
+            'include_header' => true,
+            'export_only' => false,
+            'description' => DBIO_FEATURED_DESCRIPTION,
+        );
     }
+
+    public function exportPrepareFields (array $fields) 
+    {
+        $fields = parent::exportPrepareFields ($fields);
+        unset ($fields['products_id'], $fields['featured_id']);
+
+        return $fields;
+    }
+
+// ----------------------------------------------------------------------------------
+//             I N T E R N A L / P R O T E C T E D   F U N C T I O N S 
+// ----------------------------------------------------------------------------------
     
     // -----
     // This function, called during the overall class construction, is used to set this handler's database
@@ -26,42 +44,37 @@ class DbIoFeaturedHandler extends DbIoHandler
     protected function setHandlerConfiguration () 
     {
         $this->stats['report_name'] = 'Featured';
-        $this->config = array (
-            'version' => '0.0.0',
-            'handler_version' => '0.0.0',
-            'extra_keys' => array (
-                'products_id' => array (
-                    'table' => TABLE_PRODUCTS,
-                    'match_field' => 'products_model',
-                    'match_field_type' => 'string',
-                    'key_field' => 'products_id',
+        $this->config = self::getHandlerInformation ();
+        $this->config['extra_keys'] = array (
+            'products_id' => array (
+                'table' => TABLE_PRODUCTS,
+                'match_field' => 'products_model',
+                'match_field_type' => 'string',
+                'key_field' => 'products_id',
+            ),
+        );
+        $this->config['key'] = array (
+            'table' => TABLE_FEATURED,
+            'match_field' => 'products_id',
+            'extra_key_name' => 'products_id',
+            'key_field' => 'featured_id', 
+            'key_field_type' => 'integer',
+        );
+        $this->config['tables'] = array (
+            TABLE_PRODUCTS => array (
+                'short_name' => 'p',
+                'import_extra_keys_only' => true,
+                'export_key_field_only' => true,
+                'key_field' => 'products_model',
+            ),
+            TABLE_FEATURED => array ( 
+                'short_name' => 'f',
+                'key_field' => 'featured_id',
+                'io_field_overrides' => array (
+                    'products_id' => false,
+                    'featured_id' => 'no-header',
                 ),
-            ),
-            'key' => array ( 
-                'table' => TABLE_FEATURED,
-                'match_field' => 'products_id',
-                'extra_key_name' => 'products_id',
-                'key_field' => 'featured_id', 
-                'key_field_type' => 'integer',
-            ),
-            'include_header' => true,
-            'tables' => array (
-                TABLE_PRODUCTS => array (
-                    'short_name' => 'p',
-                    'import_extra_keys_only' => true,
-                    'export_key_field_only' => true,
-                    'key_field' => 'products_model',
-                ),
-                TABLE_FEATURED => array ( 
-                    'short_name' => 'f',
-                    'key_field' => 'featured_id',
-                    'io_field_overrides' => array (
-                        'products_id' => false,
-                        'featured_id' => 'no-header',
-                    ),
-                ), 
-            ),
-            'description' => DBIO_FEATURED_DESCRIPTION,
+            ), 
         );
     }
 
@@ -77,18 +90,6 @@ class DbIoFeaturedHandler extends DbIoHandler
         }
         return $initialized;
     }
-
-    public function exportPrepareFields (array $fields) 
-    {
-        $fields = parent::exportPrepareFields ($fields);
-        unset ($fields['products_id'], $fields['featured_id']);
-
-        return $fields;
-    }
-
-// ----------------------------------------------------------------------------------
-//             I N T E R N A L / P R O T E C T E D   F U N C T I O N S 
-// ----------------------------------------------------------------------------------
 
     // -----
     // This function, called for each-and-every data-element being imported, can return one of three values:

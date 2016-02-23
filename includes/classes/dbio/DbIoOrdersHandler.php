@@ -13,36 +13,15 @@ if (!defined ('IS_ADMIN_FLAG')) {
 //
 class DbIoOrdersHandler extends DbIoHandler 
 {
-    public function __construct ($log_file_suffix)
+    public static function getHandlerInformation ()
     {
-        include (DIR_FS_CATALOG . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoOrdersHandler.php');
-        parent::__construct ($log_file_suffix);
-    }
-    
-    // -----
-    // This function, called during the overall class construction, is used to set this handler's database
-    // configuration for the dbIO operations.
-    //
-    protected function setHandlerConfiguration () 
-    {
-        $this->stats['report_name'] = 'Orders';
-        $this->config = array (
+        include_once (DIR_FS_CATALOG . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoOrdersHandler.php');
+        return array (
             'version' => '0.0.0',
             'handler_version' => '0.0.0',
             'include_header' => true,
             'export_only' => true,
-            'tables' => array (
-                TABLE_ORDERS => array (
-                    'short_name' => 'o',
-                    'io_field_overrides' => array (
-                        'orders_status' => 'no-header',
-                    )                    
-                ),
-            ),
             'description' => DBIO_ORDERS_DESCRIPTION,
-            'additional_headers' => array (
-                'v_orders_status_name' => self::DBIO_FLAG_NONE,
-            ),
             'export_filters' => array (
                 'orders_status' => array (
                     'type' => 'select_orders_status',
@@ -133,7 +112,28 @@ class DbIoOrdersHandler extends DbIoHandler
 // ----------------------------------------------------------------------------------
 //             I N T E R N A L / P R O T E C T E D   F U N C T I O N S 
 // ----------------------------------------------------------------------------------
-
+    
+    // -----
+    // This function, called during the overall class construction, is used to set this handler's database
+    // configuration for the dbIO operations.
+    //
+    protected function setHandlerConfiguration () 
+    {
+        $this->stats['report_name'] = 'Orders';
+        $this->config = self::getHandlerInformation ();
+        $this->config['tables'] = array (
+            TABLE_ORDERS => array (
+                'short_name' => 'o',
+                'io_field_overrides' => array (
+                    'orders_status' => 'no-header',
+                )                    
+            ),
+        );
+        $this->config['additional_headers'] = array (
+                'v_orders_status_name' => self::DBIO_FLAG_NONE,
+        );
+    }
+    
     private function getOrdersStatusName ($orders_status_id) {
         global $db;
         $check = $db->Execute ("SELECT orders_status_name FROM " . TABLE_ORDERS_STATUS . " WHERE orders_status_id = " . (int)$orders_status_id . " AND language_id = " . $_SESSION['languages_id'] . " LIMIT 1");

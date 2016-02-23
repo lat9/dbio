@@ -370,7 +370,7 @@ if (!$ok_to_proceed || $error_message !== '') {
                             <span class="reports-details-name"><?php echo $handler_name; ?>:</span>
                             <span class="reports-details-desc"><?php echo $handler_info['description']; ?></span>
 <?php
-       if ($handler_info['export_filters'] !== false) {
+       if (isset ($handler_info['export_filters']) && is_array ($handler_info['export_filters'])) {
 ?>
                             <div class="reports-export-filters">
 <?php

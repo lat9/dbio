@@ -62,6 +62,8 @@ abstract class DbIoHandler extends base
         $this->initializeDbIo ();
     }
     
+    public abstract static function getHandlerInformation ();
+    
     // -----
     // Returns the current version of the DbIoHandler class.
     //

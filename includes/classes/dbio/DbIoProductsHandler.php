@@ -13,57 +13,17 @@ if (!defined ('IS_ADMIN_FLAG')) {
 //
 class DbIoProductsHandler extends DbIoHandler 
 {
-    public function __construct ($log_file_suffix)
+    public static function getHandlerInformation ()
     {
-        include (DIR_FS_CATALOG . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoProductsHandler.php');
-        parent::__construct ($log_file_suffix);
-    }
-    
-    // -----
-    // This function, called during the overall class construction, is used to set this handler's database
-    // configuration for the dbIO operations.
-    //
-    protected function setHandlerConfiguration () 
-    {
-        $this->stats['report_name'] = 'Products';
-        $this->config = array (
+        include_once (DIR_FS_CATALOG . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoProductsHandler.php');
+        return array (
             'version' => '0.0.0',
             'handler_version' => '0.0.0',
-            'key' => array ( 
-                'table' => TABLE_PRODUCTS, 
-                'match_field' => 'products_model', 
-                'key_field' => 'products_id', 
-                'key_field_type' => 'integer' 
-            ),
             'include_header' => true,
-            'tables' => array ( 
-                TABLE_PRODUCTS => array ( 
-                    'short_name' => 'p',
-                    'io_field_overrides' => array (
-                        'products_id' => 'no-header',
-                        'manufacturers_id' => false,
-                        'products_tax_class_id' => 'no-header',
-                        'master_categories_id' => false,
-                    ),
-                ), 
-                TABLE_PRODUCTS_DESCRIPTION => array ( 
-                    'short_name' => 'pd',
-                    'language_field' => 'language_id',
-                    'key_field' => 'products_id',
-                    'io_field_overrides' => array (
-                        'products_id' => false,
-                        'language_id' => false,
-                    ),
-                ), 
-            ),
-            'additional_headers' => array (
-                'v_manufacturers_name' => self::DBIO_FLAG_NONE,
-                'v_tax_class_title' => self::DBIO_FLAG_NONE,
-                'v_categories_name' => self::DBIO_FLAG_NONE,
-            ),
+            'export_only' => false,
             'description' => DBIO_PRODUCTS_DESCRIPTION,
         );
-    } 
+    }
 
     public function exportInitialize ($language = 'all') 
     {
@@ -132,7 +92,47 @@ class DbIoProductsHandler extends DbIoHandler
 // ----------------------------------------------------------------------------------
 //             I N T E R N A L / P R O T E C T E D   F U N C T I O N S 
 // ----------------------------------------------------------------------------------
-
+    
+    // -----
+    // This function, called during the overall class construction, is used to set this handler's database
+    // configuration for the dbIO operations.
+    //
+    protected function setHandlerConfiguration () 
+    {
+        $this->stats['report_name'] = 'Products';
+        $this->config = self::getHandlerInformation ();
+        $this->config['key'] = array (
+            'table' => TABLE_PRODUCTS, 
+            'match_field' => 'products_model', 
+            'key_field' => 'products_id', 
+            'key_field_type' => 'integer' 
+        );
+        $this->config['tables'] = array (
+            TABLE_PRODUCTS => array ( 
+                'short_name' => 'p',
+                'io_field_overrides' => array (
+                    'products_id' => 'no-header',
+                    'manufacturers_id' => false,
+                    'products_tax_class_id' => 'no-header',
+                    'master_categories_id' => false,
+                ),
+            ), 
+            TABLE_PRODUCTS_DESCRIPTION => array ( 
+                'short_name' => 'pd',
+                'language_field' => 'language_id',
+                'key_field' => 'products_id',
+                'io_field_overrides' => array (
+                    'products_id' => false,
+                    'language_id' => false,
+                ),
+            ), 
+        );
+        $this->config['additional_headers'] = array (
+            'v_manufacturers_name' => self::DBIO_FLAG_NONE,
+            'v_tax_class_title' => self::DBIO_FLAG_NONE,
+            'v_categories_name' => self::DBIO_FLAG_NONE,
+        );
+    } 
     // -----
     // This function, called for each-and-every data-element being imported, can return one of three values:
     //
