@@ -1,6 +1,6 @@
 <?php
 // -----
-// Part of the DataBase Import/Export (aka dbIO) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
+// Part of the DataBase I/O Manager (aka dbIO) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2016, Vinos de Frutas Tropicales.
 //
 require ('includes/application_top.php');
@@ -55,8 +55,8 @@ if (!$ok_to_proceed) {
                     'last_modified' => $file_stats[9],
                     'bytes' => $file_stats[7],
                     'handler_name' => $matches[1],
-                    'is_export_only' => (isset ($dbio_handlers[$matches[1]])) ? $dbio_handlers[$matches[1]]['is_export_only'] : false,
-                    'is_header_included' => (isset ($dbio_handlers[$matches[1]])) ? $dbio_handlers[$matches[1]]['is_header_included'] : false,
+                    'is_export_only' => (isset ($dbio_handlers[$matches[1]]) && isset ($dbio_handlers[$matches[1]]['export_only'])) ? $dbio_handlers[$matches[1]]['export_only'] : false,
+                    'is_header_included' => (isset ($dbio_handlers[$matches[1]]) && isset ($dbio_handlers[$matches[1]]['include_header'])) ? $dbio_handlers[$matches[1]]['include_header'] : false,
                 );
             }
         }
@@ -76,7 +76,7 @@ if (!$ok_to_proceed) {
                     } else {
                         $messageStack->add_session (sprintf (DBIO_MGR_EXPORT_SUCCESSFUL, $_POST['handler'], $export_info['export_filename']), 'success');
                         $_SESSION['dbio_vars'] = $_POST;
-                        zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER));
+                        zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
                     }
                 }
                 break;
@@ -97,13 +97,13 @@ if (!$ok_to_proceed) {
                             }
                         }
                     }
-                    zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER));
+                    zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
                 } else {
                     $action_filename = $dbio_files[$_POST['filename_hash']]['full_filepath'];
                     switch ($_POST['file_action']) {
                         case 'none':
                             $messageStack->add_session (sprintf (ERROR_CHOOSE_FILE_ACTION, $action_filename));
-                            zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER));
+                            zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params ()));
                             break;
                         case 'import-run':
                         case 'import-check':
@@ -120,7 +120,7 @@ if (!$ok_to_proceed) {
                                     $messageStack->add_session ($import_info['message']);
                                 }
                             }
-                            zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER));
+                            zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
                             break;
                         case 'split':
                             if (!is_readable ($action_filename) || ($fp = fopen ($action_filename, "r")) === false) {
@@ -195,7 +195,7 @@ if (!$ok_to_proceed) {
                                     }
                                 }
                             }
-                            zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER));
+                            zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
                             break;
                         case 'download':
                             $fp = fopen ($action_filename, 'r');
@@ -286,6 +286,8 @@ input[type="submit"] { cursor: pointer; }
 .file-row-caption { display: table-caption; border: 1px solid #ddd; padding: 0.5em; }
 .file-item { display: table-cell; padding: 0.5em; border: 1px solid #ddd; }
 .file-row:hover { background-color: #ccccff; }
+.file-sorter a { font-size: 20px; text-decoration: none; line-height: 11px; color: #599659; }
+.file-sorter.selected-sort a { color: red; }
 div.export-only span { color: red; font-weight: bold; }
 -->
 </style>
@@ -357,7 +359,7 @@ if (!$ok_to_proceed || $error_message !== '') {
     $configuration_group_id = ($config_check->EOF) ? 0 : $config_check->fields['configuration_group_id'];
 ?>
     <div id="main-contents">
-        <div id="top-block"><div id="top-block-row"><?php echo zen_draw_form ('dbio', FILENAME_DBIO_MANAGER, 'action=export'); ?>
+        <div id="top-block"><div id="top-block-row"><?php echo zen_draw_form ('dbio', FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action')) . 'action=export'); ?>
             <div id="reports" class="left">
                 <div id="reports-instr"><?php echo TEXT_REPORTS_INSTRUCTIONS; ?></div>
                 <div id="reports-list">
@@ -493,7 +495,7 @@ if (!$ok_to_proceed || $error_message !== '') {
             </div>
         </form></div></div>
         
-        <div id="file-list" class="clearBoth"><?php echo zen_draw_form ('file_form', FILENAME_DBIO_MANAGER, 'action=file'); ?>
+        <div id="file-list" class="clearBoth"><?php echo zen_draw_form ('file_form', FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action')) . 'action=file'); ?>
 <?php
     if (!is_array ($dbio_files) || count ($dbio_files) == 0) {
 ?>
@@ -508,29 +510,59 @@ if (!$ok_to_proceed || $error_message !== '') {
             array ( 'id' => 'download', 'text' => DBIO_ACTION_DOWNLOAD ),
         );
         $file_action = (isset ($_POST['file_action'])) ? $_POST['file_action'] : 'none';
+        
+        $sort_1a = $sort_1d = $sort_2a = $sort_2d = $sort_3a = $sort_3d = '';
+        $sort_type = 'sort_' . ((isset ($_GET['sort']) && in_array ($_GET['sort'], explode (',', '1a,1d,2a,2d,3a,3d'))) ? $_GET['sort'] : '1a');
+        $$sort_type = ' selected-sort';
 ?>
             <div class="file-row-caption"><?php echo TEXT_CHOOSE_ACTION . ' ' . zen_draw_pull_down_menu ('file_action', $file_actions_array, $file_action, 'id="file-action"'); ?>&nbsp;&nbsp;<?php echo zen_draw_input_field ('go_button', DBIO_BUTTON_GO, 'title="' . DBIO_BUTTON_GO_TITLE . '" onclick="return checkSubmit ();"', false, 'submit'); ?><hr /><?php echo TEXT_FILE_ACTION_DELETE_INSTRUCTIONS; ?><span id="file-delete-action"> <?php echo zen_draw_input_field ('delete_button', DBIO_BUTTON_DELETE, 'title="' . DBIO_BUTTON_DELETE_TITLE . '" onclick="return checkDelete ();"', false, 'submit'); ?></span></div>
             <div class="file-row-header">
                 <div class="file-item"><?php echo HEADING_CHOOSE_FILE; ?></div>
-                <div class="file-item left"><?php echo HEADING_FILENAME; ?></div>
-                <div class="file-item"><?php echo HEADING_BYTES; ?></div>
-                <div class="file-item"><?php echo HEADING_LAST_MODIFIED; ?></div>
+                <div class="file-item left"><span class="file-sorter<?php echo $sort_1a; ?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=1a'); ?>" title="<?php echo TEXT_SORT_NAME_ASC; ?>">&utrif;</a></span><?php echo HEADING_FILENAME; ?><span class="file-sorter<?php echo $sort_1d;?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=1d'); ?>" title="<?php echo TEXT_SORT_NAME_DESC; ?>">&dtrif;</a></span></div>
+                <div class="file-item"><span class="file-sorter<?php echo $sort_2a; ?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=2a'); ?>" title="<?php echo TEXT_SORT_SIZE_ASC; ?>">&utrif;</a></span><?php echo HEADING_BYTES; ?><span class="file-sorter<?php echo $sort_2d; ?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=2d'); ?>" title="<?php echo TEXT_SORT_SIZE_DESC; ?>">&dtrif;</a></span></div>
+                <div class="file-item"><span class="file-sorter<?php echo $sort_3a; ?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=3a'); ?>" title="<?php echo TEXT_SORT_DATE_ASC; ?>">&utrif;</a></span><?php echo HEADING_LAST_MODIFIED; ?><span class="file-sorter<?php echo $sort_3d; ?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=3d'); ?>" title="<?php echo TEXT_SORT_DATE_DESC; ?>">&dtrif;</a></span></div>
                 <div class="file-item"><?php echo HEADING_DELETE; ?></div>
             </div>
 <?php
+        uasort ($dbio_files, function ($a, $b)
+        {
+            $sort_type = (isset ($_GET['sort'])) ? $_GET['sort'] : '1a';
+            switch ($sort_type) {
+                case '1d':          //-File-name, descending
+                    $compare_value = strcmp ($b['filename_only'], $a['filename_only']);
+                    break;
+                case '2a':          //-File-size, ascending
+                    $compare_value = ($a['bytes'] == $b['bytes']) ? 0 : (($a['bytes'] < $b['bytes']) ? -1 : 1);
+                    break;
+                case '2d':          //-File-size, descending
+                    $compare_value = ($a['bytes'] == $b['bytes']) ? 0 : (($a['bytes'] > $b['bytes']) ? -1 : 1);
+                    break;
+                case '3a':          //-File-date, ascending
+                    $compare_value = ($a['last_modified'] == $b['last_modified']) ? 0 : (($a['last_modified'] < $b['last_modified']) ? -1 : 1);
+                    break;
+                case '3d':          //-File-date, descending
+                    $compare_value = ($a['last_modified'] == $b['last_modified']) ? 0 : (($a['last_modified'] > $b['last_modified']) ? -1 : 1);
+                    break;
+                default:            //-File-name, ascending (default)
+                    $compare_value = strcmp ($a['filename_only'], $b['filename_only']);
+                    break;
+            }
+            return $compare_value;
+        });
+
         $even_odd = 'even';
-        $button_split_title = sprintf (BUTTON_SPLIT_TITLE, (int)DBIO_SPLIT_RECORD_COUNT);
-        
+        $first_file = true;
         foreach ($dbio_files as $name_hash => $file_info) {
 ?>
             <div class="file-row <?php echo $even_odd; ?>">
-                <div class="file-item"><?php echo zen_draw_radio_field ('filename_hash', $name_hash, true, '', 'onclick="checkFileOptions ();"'); ?></div>
+                <div class="file-item"><?php echo zen_draw_radio_field ('filename_hash', $name_hash, $first_file, '', 'onclick="checkFileOptions ();"'); ?></div>
                 <div class="file-item left"><?php echo $file_info['filename_only']; ?></div>
                 <div class="file-item"><?php echo $file_info['bytes']; ?></div>
                 <div class="file-item"><?php echo date (DBIO_DEBUG_DATE_FORMAT, $file_info['last_modified']); ?></div>
                 <div class="file-item"><?php echo zen_draw_checkbox_field ('delete_hash[' . $name_hash . ']', '', false, '', 'class="delete-hash"'); ?></div>
             </div>
 <?php
+            $first_file = false;
             $even_odd = ($even_odd == 'even') ? 'odd' : 'even';
         }
     }

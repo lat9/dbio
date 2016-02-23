@@ -64,6 +64,13 @@ define ('HEADING_BYTES', 'Bytes');
 define ('HEADING_LAST_MODIFIED', 'Last-Modified Date');
 define ('HEADING_DELETE', 'Delete?');
 
+define ('TEXT_SORT_NAME_ASC', 'Click here to sort by file-name, ascending');
+define ('TEXT_SORT_NAME_DESC', 'Click here to sort by file-name, descending');
+define ('TEXT_SORT_SIZE_ASC', 'Click here to sort by file-size, ascending');
+define ('TEXT_SORT_SIZE_DESC', 'Click here to sort by file-size, descending');
+define ('TEXT_SORT_DATE_ASC', 'Click here to sort by file-date, ascending');
+define ('TEXT_SORT_DATE_DESC', 'Click here to sort by file-date, descending');
+
 define ('ERROR_CHOOSE_FILE_ACTION', 'Please choose the action to be performed on the file named &quot;%s&quot;.');
 
 define ('ERROR_CANT_DELETE_FILE', 'The requested file (%s) was not deleted; it was not found or its permissions are not set properly.');
