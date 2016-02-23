@@ -31,25 +31,25 @@ define ('TEXT_REPORTS_INSTRUCTIONS', 'The following <em>DbIo</em> options are av
 define ('BUTTON_EXPORT', 'Export');
 define ('BUTTON_EXPORT_TITLE', 'Click here to export database information, based on the selected report type.');
 define ('BUTTON_SPLIT', 'Split');
-define ('BUTTON_SPLIT_TITLE', 'Click here to split the currently-selected file into multiples of %u records.');
+define ('BUTTON_SPLIT_TITLE', 'Click here to split the currently-chosen file into multiples of %u records.');
 define ('DBIO_BUTTON_DELETE', 'Delete');
-define ('DBIO_BUTTON_DELETE_TITLE', 'Click here to delete the currently-selected file from the server.');
+define ('DBIO_BUTTON_DELETE_TITLE', 'Click here to delete the currently-selected file(s) from the server.');
 define ('DBIO_BUTTON_GO', 'Go');
-define ('DBIO_BUTTON_GO_TITLE', 'Click here to perform the chosen action for the file selected below.');
+define ('DBIO_BUTTON_GO_TITLE', 'Click here to perform the chosen action for the file chosen below.');
 define ('BUTTON_IMPORT', 'Import');
-define ('BUTTON_IMPORT_TITLE', 'Click here to import the currently-selected file, based on the criteria specified above.');
+define ('BUTTON_IMPORT_TITLE', 'Click here to import the currently-chosen file, based on the criteria specified above.');
 define ('DBIO_BUTTON_DOWNLOAD', 'Download');
-define ('DBIO_BUTTON_DOWNLOAD_TITLE', 'Click here to download the contents of the currently-selected file.');
+define ('DBIO_BUTTON_DOWNLOAD_TITLE', 'Click here to download the contents of the currently-chosen file.');
 define ('BUTTON_EXPORT', 'Export');
 define ('BUTTON_EXPORT_TITLE', 'Click here to export the information associated with the selected DbIo report.');
 
-define ('TEXT_FILE_ACTION_INSTRUCTIONS', 'You can perform the following actions on the selected file.');
+define ('TEXT_FILE_ACTION_DELETE_INSTRUCTIONS', 'You can also remove one or more of the reports below from the server.<br />Select the file(s) to be deleted, then click the &quot;Delete&quot; button.');
 
 define ('DBIO_FORMAT_CONFIGURATION_ERROR', 'The <em>DbIo Manager</em> does not support your installation, due to a mismatch between your DB_CHARSET (%1$s) and CHARSET (%2$s) values.');
 define ('DBIO_FORM_SUBMISSION_ERROR', 'There were some missing values for your form\'s submission, please try again.');
 
 define ('TEXT_NO_DBIO_FILES_AVAILABLE', 'No import/export files available for the current handlers.');
-define ('TEXT_CHOOSE_ACTION', 'Choose the action to be performed for the file selected below:');
+define ('TEXT_CHOOSE_ACTION', 'Choose the action to be performed for the file chosen below:');
 
 define ('DBIO_ACTION_PLEASE_SELECT', 'Please select');
 define ('DBIO_ACTION_SPLIT', 'Split');
@@ -62,6 +62,7 @@ define ('HEADING_CHOOSE_FILE', 'Choose File');
 define ('HEADING_FILENAME', 'File Name');
 define ('HEADING_BYTES', 'Bytes');
 define ('HEADING_LAST_MODIFIED', 'Last-Modified Date');
+define ('HEADING_DELETE', 'Delete?');
 
 define ('ERROR_CHOOSE_FILE_ACTION', 'Please choose the action to be performed on the file named &quot;%s&quot;.');
 
@@ -78,5 +79,7 @@ define ('FILE_SUCCESSFULLY_SPLIT', 'The file (%1$s) was successfully split into 
 define ('ERROR_FILE_IS_EXPORT_ONLY', 'The file (%s) was not imported.  It is associated with an <em>export-only</em> report.');
 define ('DBIO_MGR_EXPORT_SUCCESSFUL', 'Your <em>%1$s</em> export was successfully completed into %2$s.');
 
-define ('JS_MESSAGE_OK2DELETE', 'Are you sure you want to permanently remove the selected file from the server?');
+define ('JS_MESSAGE_OK2DELETE_PART1', 'Are you sure you want to permanently remove the ');  //-The count of files selected is inserted between these two messages
+define ('JS_MESSAGE_OK2DELETE_PART2', ' selected file(s) from the server?');
+define ('JS_MESSAGE_NO_FILES_SELECTED', 'No files were selected to delete; please try again.');
 define ('JS_MESSAGE_CHOOSE_ACTION', 'Please choose an action to perform on the selected file.');

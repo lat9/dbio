@@ -81,8 +81,23 @@ if (!$ok_to_proceed) {
                 }
                 break;
             case 'file':
-                if (!isset ($_POST['file_action']) || !isset ($_POST['filename_hash']) || !isset ($dbio_files[$_POST['filename_hash']])) {
+                if ( !( (isset ($_POST['file_action']) && isset ($_POST['filename_hash']) && isset ($dbio_files[$_POST['filename_hash']])) ||
+                        (isset ($_POST['delete_button']) && isset ($_POST['delete_hash']) ) ) ) {
                     $messageStack->add_session (DBIO_FORM_SUBMISSION_ERROR);
+                } elseif (isset ($_POST['delete_button'])) {
+                    if (is_array ($_POST['delete_hash'])) {
+                        foreach ($_POST['delete_hash'] as $delete_hash => $delete_value) {
+                            if (isset ($dbio_files[$delete_hash])) {
+                                $action_filename = $dbio_files[$delete_hash]['full_filepath'];
+                                if (!is_writeable ($action_filename) || !unlink ($action_filename)) {
+                                    $messageStack->add_session (sprintf (ERROR_CANT_DELETE_FILE, $action_filename));
+                                } else {
+                                    $messageStack->add_session (sprintf (SUCCESS_FILE_DELETED, $action_filename), 'success');
+                                }
+                            }
+                        }
+                    }
+                    zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER));
                 } else {
                     $action_filename = $dbio_files[$_POST['filename_hash']]['full_filepath'];
                     switch ($_POST['file_action']) {
@@ -104,14 +119,6 @@ if (!$ok_to_proceed) {
                                 } else {
                                     $messageStack->add_session ($import_info['message']);
                                 }
-                            }
-                            zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER));
-                            break;
-                        case 'delete':
-                            if (!is_writeable ($action_filename) || !unlink ($action_filename)) {
-                                $messageStack->add_session (sprintf (ERROR_CANT_DELETE_FILE, $action_filename));
-                            } else {
-                                $messageStack->add_session (sprintf (SUCCESS_FILE_DELETED, $action_filename), 'success');
                             }
                             zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER));
                             break;
@@ -251,20 +258,7 @@ input[type="submit"] { cursor: pointer; }
 #configuration { padding-left: 1em; }
 #reports { padding-right: 1em; border-right: 2px solid #ddd; }
 #submit-report { text-align: right; margin: 0.5em 0; }
-.buttonLink, .buttonLink:link, .buttonLink:hover, input.buttonLink { 
-  background-color:white;
-  border:1px solid #003366;
-  color:#404040;
-  border-radius:6px;
-  display:inline-block;
-  font-family:Verdana;
-  font-size:11px;
-  font-weight:bold;
-  margin: 2px;
-  padding:3px 8px;
-  text-decoration:none; }
-a.buttonLink:hover { background-color: #dcdcdc; }
-.hoverRow:hover > .dataTableRow { background-color: white!important; }
+#file-delete-action { float: right; padding: 0.5em 0 0 0.5em; display: inline-block; }
 .centered { text-align: center; }
 .right { text-align: right; }
 .left { text-align: left; }
@@ -274,7 +268,6 @@ a.buttonLink:hover { background-color: #dcdcdc; }
 .even { }
 .odd, .file-row-header { background-color: #ebebeb; }
 .instructions { font-size: 12px; padding-bottom: 10px; padding-top: 10px; }
-.name-input { width: 90%; }
 .config-list {  }
 .config-group { list-style-type: none; padding: 0; }
 .config-title { }
@@ -288,8 +281,7 @@ a.buttonLink:hover { background-color: #dcdcdc; }
 .reports-details-name, .reports-filter-label { font-weight: bold; }
 .reports-filter-label {  padding-left: 2em; font-style: italic; clear: both; float: left; }
 .reports-filter-field.multi { clear: both; }
-.filter-subfield-label { padding: 0 2em 0 4em; }
-.filter-subfield-label { display: inline-block; clear: both; }
+.filter-subfield-label { padding: 0 1em; width: 14em; text-align: right; display: inline-block; clear: both; }
 .filter-subfield { }
 .file-row-caption { display: table-caption; border: 1px solid #ddd; padding: 0.5em; }
 .file-item { display: table-cell; padding: 0.5em; border: 1px solid #ddd; }
@@ -317,10 +309,26 @@ div.export-only span { color: red; font-weight: bold; }
             alert( '<?php echo JS_MESSAGE_CHOOSE_ACTION; ?>' );
             return false;
         }
-        if (file_action == 'delete') {
-            return confirm( '<?php echo JS_MESSAGE_OK2DELETE; ?>' );
-        }
         return true;
+    }
+    
+    function checkDelete ()
+    {
+        var submitOK = false;
+        var e = document.getElementsByClassName( 'delete-hash' );
+        var n = e.length;
+        var selected = 0;
+        for (var i = 0; i < n; i++) {
+            if (e[i].checked) {
+                selected++;
+            }
+        }
+        if (selected == 0) {
+            alert( '<?php echo JS_MESSAGE_NO_FILES_SELECTED; ?>' );
+        } else {
+            submitOK = confirm( '<?php echo JS_MESSAGE_OK2DELETE_PART1; ?>'+selected+'<?php echo JS_MESSAGE_OK2DELETE_PART2; ?>' );
+        }
+        return submitOK;
     }
     
     function checkFileOptions ()
@@ -495,19 +503,19 @@ if (!$ok_to_proceed || $error_message !== '') {
         $file_actions_array = array (
             array ( 'id' => 'none', 'text' => DBIO_ACTION_PLEASE_SELECT ),
             array ( 'id' => 'split', 'text' => DBIO_ACTION_SPLIT ),
-            array ( 'id' => 'delete', 'text' => DBIO_ACTION_DELETE ),
             array ( 'id' => 'import-run', 'text' => DBIO_ACTION_FULL_IMPORT ),
             array ( 'id' => 'import-check', 'text' => DBIO_ACTION_CHECK_IMPORT ),
             array ( 'id' => 'download', 'text' => DBIO_ACTION_DOWNLOAD ),
         );
         $file_action = (isset ($_POST['file_action'])) ? $_POST['file_action'] : 'none';
 ?>
-            <div class="file-row-caption"><?php echo TEXT_CHOOSE_ACTION . ' ' . zen_draw_pull_down_menu ('file_action', $file_actions_array, $file_action, 'id="file-action"'); ?>&nbsp;&nbsp;<?php echo zen_draw_input_field ('go_button', DBIO_BUTTON_GO, 'title="' . DBIO_BUTTON_GO_TITLE . '" onclick="return checkSubmit ();"', false, 'submit'); ?><hr /><?php echo TEXT_FILE_ACTION_INSTRUCTIONS; ?></div>
+            <div class="file-row-caption"><?php echo TEXT_CHOOSE_ACTION . ' ' . zen_draw_pull_down_menu ('file_action', $file_actions_array, $file_action, 'id="file-action"'); ?>&nbsp;&nbsp;<?php echo zen_draw_input_field ('go_button', DBIO_BUTTON_GO, 'title="' . DBIO_BUTTON_GO_TITLE . '" onclick="return checkSubmit ();"', false, 'submit'); ?><hr /><?php echo TEXT_FILE_ACTION_DELETE_INSTRUCTIONS; ?><span id="file-delete-action"> <?php echo zen_draw_input_field ('delete_button', DBIO_BUTTON_DELETE, 'title="' . DBIO_BUTTON_DELETE_TITLE . '" onclick="return checkDelete ();"', false, 'submit'); ?></span></div>
             <div class="file-row-header">
                 <div class="file-item"><?php echo HEADING_CHOOSE_FILE; ?></div>
                 <div class="file-item left"><?php echo HEADING_FILENAME; ?></div>
                 <div class="file-item"><?php echo HEADING_BYTES; ?></div>
                 <div class="file-item"><?php echo HEADING_LAST_MODIFIED; ?></div>
+                <div class="file-item"><?php echo HEADING_DELETE; ?></div>
             </div>
 <?php
         $even_odd = 'even';
@@ -520,6 +528,7 @@ if (!$ok_to_proceed || $error_message !== '') {
                 <div class="file-item left"><?php echo $file_info['filename_only']; ?></div>
                 <div class="file-item"><?php echo $file_info['bytes']; ?></div>
                 <div class="file-item"><?php echo date (DBIO_DEBUG_DATE_FORMAT, $file_info['last_modified']); ?></div>
+                <div class="file-item"><?php echo zen_draw_checkbox_field ('delete_hash[' . $name_hash . ']', '', false, '', 'class="delete-hash"'); ?></div>
             </div>
 <?php
             $even_odd = ($even_odd == 'even') ? 'odd' : 'even';
