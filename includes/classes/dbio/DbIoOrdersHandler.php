@@ -44,6 +44,10 @@ class DbIoOrdersHandler extends DbIoHandler
                 'v_orders_status_name' => self::DBIO_FLAG_NONE,
             ),
             'export_filters' => array (
+                'orders_status' => array (
+                    'type' => 'select_orders_status',
+                    'label' => DBIO_ORDERS_ORDERS_STATUS_LABEL,
+                ),
                 'orders_id_range' => array (
                     'type' => 'array',
                     'label' => DBIO_ORDERS_ORDERS_ID_RANGE_LABEL,
@@ -55,6 +59,20 @@ class DbIoOrdersHandler extends DbIoHandler
                         'orders_id_max' => array (
                             'type' => 'input',
                             'label' => DBIO_ORDERS_ORDERS_ID_MAX_LABEL,
+                        ),
+                    ),
+                ),
+                'orders_date_range' => array (
+                    'type' => 'array',
+                    'label' => DBIO_ORDERS_ORDERS_DATE_RANGE_LABEL,
+                    'fields' => array (
+                        'orders_date_start' => array (
+                            'type' => 'input',
+                            'label' => DBIO_ORDERS_ORDERS_DATE_MIN_LABEL,
+                        ),
+                        'orders_date_end' => array (
+                            'type' => 'input',
+                            'label' => DBIO_ORDERS_ORDERS_DATE_MAX_LABEL,
                         ),
                     ),
                 ),
@@ -88,12 +106,27 @@ class DbIoOrdersHandler extends DbIoHandler
         // Check to see if any of this handler's filter variables have been set.  If set, check the values and then
         // update the where_clause for the to-be-issued SQL query for the export.
         //
+        if ($_POST['orders_status'] != '0') {
+            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'orders_status = ' . (int)$_POST['orders_status'];
+        }
         if (zen_not_null ($_POST['orders_id_min']) && ctype_digit ($_POST['orders_id_min'])) {
             $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'orders_id >= ' . (int)$_POST['orders_id_min'];
         }
         if (zen_not_null ($_POST['orders_id_max']) && ctype_digit ($_POST['orders_id_max'])) {
             $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'orders_id <= ' . (int)$_POST['orders_id_max'];
-        }        
+        }
+        if (zen_not_null ($_POST['orders_date_start'])) {
+           $validated_date = dbioFormatValidateDate ($_POST['orders_date_start']);
+            if ($validated_date !== false) {
+                $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "date_purchased >= '$validated_date 00:00:00'";
+            }
+        }
+        if (zen_not_null ($_POST['orders_date_end'])) {
+            $validated_date = dbioFormatValidateDate ($_POST['orders_date_end']);
+            if ($validated_date !== false) {
+                $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "date_purchased <= '$validated_date 23:59:59'";
+            }
+        }
         return true;
     }
 

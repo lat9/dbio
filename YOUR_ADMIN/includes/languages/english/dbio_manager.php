@@ -5,6 +5,8 @@
 //
 define ('HEADING_TITLE', 'Database I/O (DbIo) Manager');
 
+define ('TEXT_ALL_ORDERS_STATUS_VALUES', 'All Values');
+
 define ('TEXT_IS_EXPORT_ONLY', "The '%s' DbIo handler does not support an import action.");
 
 define ('TEXT_FORMAT_CONFIG_INFO', 'This section shows the current settings that affect the <em>DbIo Manager</em>\'s operation.  The <em>DbIo Settings</em> values can be changed by clicking <a href="%s">here</a>.');

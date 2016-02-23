@@ -12,6 +12,11 @@ define ('DBIO_ORDERS_DESCRIPTION', 'This report-format supports <em>export-only<
 // -----
 // Definitions that are used for the export-filters, displayed on Tools->Database I/O Manager
 //
-define ('DBIO_ORDERS_ORDERS_ID_RANGE_LABEL', '(optional) Choose the range of Order ID values to include.');
-define ('DBIO_ORDERS_ORDERS_ID_MIN_LABEL', 'Minimum (inclusive)');
-define ('DBIO_ORDERS_ORDERS_ID_MAX_LABEL', 'Maximum (inclusive)');
+define ('DBIO_ORDERS_ORDERS_STATUS_LABEL', 'Select the orders\' statuses to be included in the export:');
+define ('DBIO_ORDERS_ORDERS_ID_RANGE_LABEL', '(optional) Choose the range of Order ID values to export.');
+define ('DBIO_ORDERS_ORDERS_ID_MIN_LABEL', 'Minimum (inclusive):');
+define ('DBIO_ORDERS_ORDERS_ID_MAX_LABEL', 'Maximum (inclusive):');
+
+define ('DBIO_ORDERS_ORDERS_DATE_RANGE_LABEL', '(optional) Choose the range of order-placed dates to export.  Enter the dates in YYYY-MM-DD format.');
+define ('DBIO_ORDERS_ORDERS_DATE_MIN_LABEL', 'Start:');
+define ('DBIO_ORDERS_ORDERS_DATE_MAX_LABEL', 'End:');

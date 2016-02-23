@@ -4,7 +4,7 @@
 // Copyright (c) 2016, Vinos de Frutas Tropicales.
 //
 require ('includes/application_top.php');
-require (DIR_WS_FUNCTIONS . 'dbio_manager_functions.php');
+require (DIR_FS_CATALOG . 'includes/functions/dbio/dbio_manager_functions.php');
 
 $languages = zen_get_languages();
 
@@ -286,7 +286,8 @@ a.buttonLink:hover { background-color: #dcdcdc; }
 .file-row, .file-row-header, #top-block-row, .reports-details-row { display: table-row; }
 .reports-details-select, .reports-details, .reports-filter-label { display: table-cell; padding: 0.5em; }
 .reports-details-name, .reports-filter-label { font-weight: bold; }
-.reports-filter-label {  padding-left: 2em; font-style: italic; }
+.reports-filter-label {  padding-left: 2em; font-style: italic; clear: both; float: left; }
+.reports-filter-field.multi { clear: both; }
 .filter-subfield-label { padding: 0 2em 0 4em; }
 .filter-subfield-label { display: inline-block; clear: both; }
 .filter-subfield { }
@@ -382,6 +383,9 @@ if (!$ok_to_proceed || $error_message !== '') {
                     switch ($field_parms['type']) {
                         case 'input':
                             $form_field = zen_draw_input_field ($field_name, dbioGetFieldValue ($field_name));
+                            break;
+                        case 'select_orders_status':
+                            $form_field = dbioDrawOrdersStatusDropdown ($field_name);
                             break;
                         case 'array':
                             $extra_field_class = ' multi';
