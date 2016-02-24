@@ -8,6 +8,8 @@ require (DIR_FS_CATALOG . 'includes/functions/dbio/dbio_manager_functions.php');
 
 $languages = zen_get_languages();
 
+if (!defined ('DBIO_SUPPORTED_FILE_EXTENSIONS')) define ('DBIO_SUPPORTED_FILE_EXTENSIONS', 'csv');
+
 // -----
 // Make sure that the database and I/O character sets match; any dbIO operation is disallowed otherwise.
 //
@@ -64,20 +66,36 @@ if (!$ok_to_proceed) {
         
         $action = (isset ($_GET['action'])) ? $_GET['action'] : '';
         switch ($action) {
-            case 'export':
-                if (!isset ($_POST['handler'])) {
-                    $messageStack->add_session (DBIO_FORM_SUBMISSION_ERROR);
-                } else {
-                    unset ($dbio);
-                    $dbio = new DbIo ($_POST['handler']);
-                    $export_info = $dbio->dbioExport ('file');
-                    if ($export_info['status'] === false) {
-                        $messageStack->add ($dbio->getMessage ());
+            case 'export_upload':
+                if (isset ($_POST['export_button'])) {
+                    if (!isset ($_POST['handler'])) {
+                        $messageStack->add_session (DBIO_FORM_SUBMISSION_ERROR);
                     } else {
-                        $messageStack->add_session (sprintf (DBIO_MGR_EXPORT_SUCCESSFUL, $_POST['handler'], $export_info['export_filename']), 'success');
-                        $_SESSION['dbio_vars'] = $_POST;
+                        unset ($dbio);
+                        $dbio = new DbIo ($_POST['handler']);
+                        $export_info = $dbio->dbioExport ('file');
+                        if ($export_info['status'] === false) {
+                            $messageStack->add ($dbio->getMessage ());
+                        } else {
+                            $messageStack->add_session (sprintf (DBIO_MGR_EXPORT_SUCCESSFUL, $_POST['handler'], $export_info['export_filename']), 'success');
+                            $_SESSION['dbio_vars'] = $_POST;
+                            zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
+                        }
+                    }
+                } elseif (isset ($_POST['upload_button'])) {
+                    if (!zen_not_null ($_FILES['upload_filename']['name'])) {
+                        $messageStack->add (ERROR_NO_FILE_TO_UPLOAD);
+                    } else {
+                        $upload = new upload ('upload_filename');
+                        $upload->set_extensions (explode (',', DBIO_SUPPORTED_FILE_EXTENSIONS));
+                        $upload->set_destination (DIR_FS_DBIO);
+                        if ($upload->parse ()) {
+                            $upload->save ();
+                        }
                         zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
                     }
+                } else {
+                    zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
                 }
                 break;
             case 'file':
@@ -255,10 +273,11 @@ input[type="submit"] { cursor: pointer; }
 #file-list, #top-block { display: table; border-collapse: collapse; border: 2px solid #ddd; margin-top: 1em; }
 #file-list { margin: 1em auto; }
 #configuration, #reports { display: table-cell; padding: 0.5em; }
-#configuration { padding-left: 1em; }
-#reports { padding-right: 1em; border-right: 2px solid #ddd; }
+#configuration { }
+#reports { border-right: 2px solid #ddd; }
 #submit-report { text-align: right; margin: 0.5em 0; }
 #file-delete-action { float: right; padding: 0.5em 0 0 0.5em; display: inline-block; }
+#configuration-info { padding-bottom: 0.5em; }
 .centered { text-align: center; }
 .right { text-align: right; }
 .left { text-align: left; }
@@ -268,6 +287,7 @@ input[type="submit"] { cursor: pointer; }
 .even { }
 .odd, .file-row-header { background-color: #ebebeb; }
 .instructions { font-size: 12px; padding-bottom: 10px; padding-top: 10px; }
+.config-header { padding: 0.5em; background-color: #ebebeb; }
 .config-list {  }
 .config-group { list-style-type: none; padding: 0; }
 .config-title { }
@@ -359,7 +379,7 @@ if (!$ok_to_proceed || $error_message !== '') {
     $configuration_group_id = ($config_check->EOF) ? 0 : $config_check->fields['configuration_group_id'];
 ?>
     <div id="main-contents">
-        <div id="top-block"><div id="top-block-row"><?php echo zen_draw_form ('dbio', FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action')) . 'action=export'); ?>
+        <div id="top-block"><div id="top-block-row"><?php echo zen_draw_form ('dbio', FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action')) . 'action=export_upload', 'post', 'enctype="multipart/form-data"'); ?>
             <div id="reports" class="left">
                 <div id="reports-instr"><?php echo TEXT_REPORTS_INSTRUCTIONS; ?></div>
                 <div id="reports-list">
@@ -492,6 +512,12 @@ if (!$ok_to_proceed || $error_message !== '') {
 <?php
     }
 ?>
+                <hr />
+                <div id="upload-file">
+                    <div id="upload-instructions"><?php echo sprintf (TEXT_FILE_UPLOAD_INSTRUCTIONS, DBIO_SUPPORTED_FILE_EXTENSIONS); ?></div>
+                    <div id="upload-file"><?php echo TEXT_CHOOSE_FILE . ' ' . zen_draw_file_field ('upload_filename'); ?></div>
+                    <div id="upload-button" class="right"><?php echo zen_draw_input_field ('upload_button', BUTTON_UPLOAD, 'title="' . BUTTON_UPLOAD_TITLE . '"', false, 'submit'); ?></div>
+                </div>
             </div>
         </form></div></div>
         

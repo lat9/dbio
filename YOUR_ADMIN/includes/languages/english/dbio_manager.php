@@ -26,7 +26,7 @@ define ('TEXT_CHARSET', 'Internal Character Encoding');
 define ('TEXT_DB_CHARSET', 'Database Character Encoding');
 define ('TEXT_DEFAULT_LANGUAGE', 'Default Language');
 
-define ('TEXT_REPORTS_INSTRUCTIONS', 'The following <em>DbIo</em> options are available:');
+define ('TEXT_REPORTS_INSTRUCTIONS', 'The following <em>DbIo</em> reports are available for export:');
 
 define ('BUTTON_EXPORT', 'Export');
 define ('BUTTON_EXPORT_TITLE', 'Click here to export database information, based on the selected report type.');
@@ -42,6 +42,8 @@ define ('DBIO_BUTTON_DOWNLOAD', 'Download');
 define ('DBIO_BUTTON_DOWNLOAD_TITLE', 'Click here to download the contents of the currently-chosen file.');
 define ('BUTTON_EXPORT', 'Export');
 define ('BUTTON_EXPORT_TITLE', 'Click here to export the information associated with the selected DbIo report.');
+define ('BUTTON_UPLOAD', 'Upload');
+define ('BUTTON_UPLOAD_TITLE', 'Click here to upload the selected file.');
 
 define ('TEXT_FILE_ACTION_DELETE_INSTRUCTIONS', 'You can also remove one or more of the reports below from the server.<br />Select the file(s) to be deleted, then click the &quot;Delete&quot; button.');
 
@@ -50,6 +52,8 @@ define ('DBIO_FORM_SUBMISSION_ERROR', 'There were some missing values for your f
 
 define ('TEXT_NO_DBIO_FILES_AVAILABLE', 'No import/export files available for the current handlers.');
 define ('TEXT_CHOOSE_ACTION', 'Choose the action to be performed for the file chosen below:');
+define ('TEXT_FILE_UPLOAD_INSTRUCTIONS', 'You can also upload a file from your computer (extensions %s <b>only</b>) for import using the <em>DbIo Manager</em>.  Choose a file, then click the &quot;Upload&quot; button.');
+define ('TEXT_CHOOSE_FILE', 'Your file:');
 
 define ('DBIO_ACTION_PLEASE_SELECT', 'Please select');
 define ('DBIO_ACTION_SPLIT', 'Split');
@@ -85,6 +89,9 @@ define ('FILE_SUCCESSFULLY_SPLIT', 'The file (%1$s) was successfully split into 
 
 define ('ERROR_FILE_IS_EXPORT_ONLY', 'The file (%s) was not imported.  It is associated with an <em>export-only</em> report.');
 define ('DBIO_MGR_EXPORT_SUCCESSFUL', 'Your <em>%1$s</em> export was successfully completed into %2$s.');
+
+define ('ERROR_NO_FILE_TO_UPLOAD', 'No file was selected for the upload.  Please try again.');
+define ('FILE_UPLOADED_SUCCESSFULLY', 'The file <em>%s</em> was successfully uploaded.');
 
 define ('JS_MESSAGE_OK2DELETE_PART1', 'Are you sure you want to permanently remove the ');  //-The count of files selected is inserted between these two messages
 define ('JS_MESSAGE_OK2DELETE_PART2', ' selected file(s) from the server?');
