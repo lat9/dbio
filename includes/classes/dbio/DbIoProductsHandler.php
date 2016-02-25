@@ -15,13 +15,55 @@ class DbIoProductsHandler extends DbIoHandler
 {
     public static function getHandlerInformation ()
     {
+        global $db;
         include_once (DIR_FS_CATALOG . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoProductsHandler.php');
+        
+        $manufacturers_options = array ();
+        $manufacturers_info = $db->Execute ("SELECT manufacturers_id as `id`, manufacturers_name as `text` FROM " . TABLE_MANUFACTURERS . " ORDER BY manufacturers_name ASC");
+        while (!$manufacturers_info->EOF) {
+            $manufacturers_options[] = $manufacturers_info->fields;
+            $manufacturers_info->MoveNext ();
+        }
+        unset ($manufacturers_info);
+        
+        $status_options = array (
+            array ( 'id' => 'all', 'text' => DBIO_PRODUCTS_TEXT_STATUS_ALL ),
+            array ( 'id' => '1', 'text' => DBIO_PRODUCTS_TEXT_STATUS_ENABLED ),
+            array ( 'id' => '0', 'text' => DBIO_PRODUCTS_TEXT_STATUS_DISABLED ),
+        );
+        
+        $categories_options = zen_get_category_tree ();
+        unset ($categories_options[0]);
+        
         return array (
             'version' => '0.0.0',
             'handler_version' => '0.0.0',
             'include_header' => true,
             'export_only' => false,
             'description' => DBIO_PRODUCTS_DESCRIPTION,
+            'export_filters' => array (
+                'products_filters' => array (
+                    'type' => 'array',
+                    'label' => DBIO_PRODUCTS_FILTERS_LABEL,
+                    'fields' => array (
+                        'products_status' => array (
+                            'type' => 'dropdown',
+                            'dropdown_options' => $status_options,
+                            'label' => DBIO_PRODUCTS_STATUS_LABEL,
+                        ),
+                        'products_manufacturers' => array (
+                            'type' => 'dropdown_multiple',
+                            'dropdown_options' => $manufacturers_options,
+                            'label' => DBIO_PRODUCTS_MANUFACTURERS_LABEL,
+                        ),
+                        'products_categories' => array (
+                            'type' => 'dropdown_multiple',
+                            'dropdown_options' => array_values ($categories_options),
+                            'label' => DBIO_PRODUCTS_CATEGORIES_LABEL,
+                        ),
+                    ),
+                ),
+            ),
         );
     }
 
@@ -45,7 +87,37 @@ class DbIoProductsHandler extends DbIoHandler
         }
         return $initialized;
     }
-
+    
+    // -----
+    // This function gives the current handler the last opportunity to modify the SQL query clauses used for the current export.  It's
+    // usually provided by handlers that use an "export_filter", allowing the handler to inspect any filter-variables provided by
+    // the caller.
+    //
+    // Returns a boolean (true/false) indication of whether the export's initialization was successful.  If unsuccessful, the handler
+    // is **assumed** to have set its reason into the class message variable.
+    //
+    public function exportFinalizeInitialization ()
+    {
+        $this->debugMessage ('exportFinalizeInitialization for Products. POST variables:' . var_export ($_POST, true));
+        
+        // -----
+        // Check to see if any of this handler's filter variables have been set.  If set, check the values and then
+        // update the where_clause for the to-be-issued SQL query for the export.
+        //
+        if ($_POST['products_status'] != 'all') {
+            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'p.products_status = ' . (int)$_POST['products_status'];
+        }
+        if (isset ($_POST['products_manufacturers']) && is_array ($_POST['products_manufacturers'])) {
+            $manufacturers_list = implode (',', $_POST['products_manufacturers']);
+            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "p.manufacturers_id IN ($manufacturers_list)";
+        }
+        if (isset ($_POST['products_categories']) && is_array ($_POST['products_categories'])) {
+            $categories_list = implode (',', $_POST['products_categories']);
+            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "p.master_categories_id IN ($categories_list)";
+        }
+        return true;
+    }
+    
     public function exportPrepareFields (array $fields) 
     {
         $fields = parent::exportPrepareFields ($fields);

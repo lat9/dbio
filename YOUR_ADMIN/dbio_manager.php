@@ -264,6 +264,7 @@ if (!$ok_to_proceed) {
 <!--
 hr { background: #333 linear-gradient(to right, #ccc, #333, #ccc) repeat scroll 0 0; border: 0 none; height: 1px; }
 input[type="submit"] { cursor: pointer; }
+select { padding: 0.1em; margin: 0.5em; }
 #main-wrapper { text-align: center; padding: 1em; }
 #message { border: 2px solid #ddd; display: inline-block; padding: 0.5em; border-radius: 0.75em; }
 #message.error { border-color: red; }
@@ -295,11 +296,12 @@ input[type="submit"] { cursor: pointer; }
 .input { display: inline-block; }
 .input-label { float: left; text-align: right; font-weight: bold; padding-right: 0.5em; }
 .input-field { float: left; text-align: left; }
-.file-row-header, .config-header { font-weight: bold; }
+.file-row-header, .config-header, .reports-details-name { font-weight: bold; }
 .file-row, .file-row-header, #top-block-row, .reports-details-row { display: table-row; }
 .reports-details-select, .reports-details, .reports-filter-label { display: table-cell; padding: 0.5em; }
-.reports-details-name, .reports-filter-label { font-weight: bold; }
-.reports-filter-label {  padding-left: 2em; font-style: italic; clear: both; float: left; }
+.reports-filter-label { font-weight: bold; color: #599659; }
+.reports-filter-label {  padding-left: 2em; clear: both; float: left; }
+.reports-filter-label.multi { font-style: italic; }
 .reports-filter-field.multi { clear: both; }
 .filter-subfield-label { padding: 0 1em; width: 14em; text-align: right; display: inline-block; clear: both; }
 .filter-subfield { }
@@ -410,9 +412,22 @@ if (!$ok_to_proceed || $error_message !== '') {
                     
                 } else {
                     $extra_field_class = '';
+                    $dropdown_options = '';
+                    $dropdown_field_suffix = '';
                     switch ($field_parms['type']) {
                         case 'input':
                             $form_field = zen_draw_input_field ($field_name, dbioGetFieldValue ($field_name));
+                            break;
+                        case 'dropdown_multiple':
+                            $dropdown_options = 'multiple';  
+                            $dropdown_field_suffix = '[]';      //-Fall-through to dropdown handling
+                        case 'dropdown':
+                            if (!isset ($field_parms['dropdown_options']) || !is_array ($field_parms['dropdown_options'])) {
+                                $form_field = false;
+                                trigger_error ("DbIo: Missing dropdown_options for $handler_name::$field_name export filter:\n" . var_export ($field_parms, true), E_USER_WARNING);
+                            } else {
+                                $form_field = zen_draw_pull_down_menu ($field_name . $dropdown_field_suffix, $field_parms['dropdown_options'], dbioGetFieldValue ($field_name), $dropdown_options);
+                            }
                             break;
                         case 'select_orders_status':
                             $form_field = dbioDrawOrdersStatusDropdown ($field_name);
@@ -425,10 +440,26 @@ if (!$ok_to_proceed || $error_message !== '') {
                             } else {
                                 $form_field = '<span class="filter-subfield-wrap">';
                                 foreach ($field_parms['fields'] as $subfield_name => $subfield_parms) {
+                                    $dropdown_options = '';
+                                    $dropdown_field_suffix = '';
                                     $form_field .= '<span class="filter-subfield-label">' . $subfield_parms['label'] . '</span>';
                                     switch ($subfield_parms['type']) {
                                         case 'input':
                                             $form_field .= '<span class="filter-subfield">' . zen_draw_input_field ($subfield_name, dbioGetFieldValue ($subfield_name)) . '</span>';
+                                            break;
+                                        case 'dropdown_multiple':
+                                            $dropdown_options = 'multiple';
+                                            $dropdown_field_suffix = '[]';      //-Fall-through to dropdown handling
+                                        case 'dropdown':
+                                            if (!isset ($subfield_parms['dropdown_options']) || !is_array ($subfield_parms['dropdown_options'])) {
+                                                $form_field = false;
+                                                trigger_error ("DbIo: Missing dropdown_options for $handler_name::$field_name export filter:\n" . var_export ($subfield_parms, true), E_USER_WARNING);
+                                            } else {
+                                                $form_field .= zen_draw_pull_down_menu ($subfield_name . $dropdown_field_suffix, $subfield_parms['dropdown_options'], dbioGetFieldValue ($subfield_name), $dropdown_options);
+                                            }
+                                            break;
+                                        case 'select_orders_status':
+                                            $form_field .= dbioDrawOrdersStatusDropdown ($subfield_name);
                                             break;
                                          default:
                                             $form_field = false;
@@ -449,7 +480,7 @@ if (!$ok_to_proceed || $error_message !== '') {
                     if ($form_field !== false) {
 ?>
                                 <div class="reports-filter-row">
-                                    <div class="reports-filter-label"><?php echo $field_parms['label']; ?></div>
+                                    <div class="reports-filter-label<?php echo $extra_field_class; ?>"><?php echo $field_parms['label']; ?></div>
                                     <div class="reports-filter-field<?php echo $extra_field_class; ?>"><?php echo $form_field; ?></div>
                                 </div>
 <?php
