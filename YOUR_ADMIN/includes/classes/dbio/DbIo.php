@@ -15,7 +15,7 @@ class DbIo extends base
         $this->message = '';
         $this->file_suffix = date ('Ymd-His-') . mt_rand (1000,999999);
         
-        $message_file_name = DIR_FS_CATALOG . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/' . FILENAME_DBIO_MESSAGES;
+        $message_file_name = DIR_FS_ADMIN . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/' . FILENAME_DBIO_MESSAGES;
         if (!file_exists ($message_file_name)) {
             trigger_error ("Missing DbIo message file ($message_file_name)", E_USER_WARNING);
         } else {

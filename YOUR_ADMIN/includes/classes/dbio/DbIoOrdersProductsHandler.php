@@ -15,7 +15,7 @@ class DbIoOrdersProductsHandler extends DbIoHandler
 {
     public static function getHandlerInformation ()
     {
-        include_once (DIR_FS_CATALOG . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoOrdersProductsHandler.php');
+        include_once (DIR_FS_ADMIN . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoOrdersProductsHandler.php');
         return array (
             'version' => '0.0.0',
             'handler_version' => '0.0.0',

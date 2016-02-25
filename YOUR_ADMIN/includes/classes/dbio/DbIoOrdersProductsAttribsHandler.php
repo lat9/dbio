@@ -15,7 +15,7 @@ class DbIoOrdersProductsAttribsHandler extends DbIoOrdersProductsHandler
 {
     public static function getHandlerInformation ()
     {
-        include_once (DIR_FS_CATALOG . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoOrdersProductsAttribsHandler.php');
+        include_once (DIR_FS_ADMIN . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoOrdersProductsAttribsHandler.php');
         $handler_info = parent::getHandlerInformation ();
         $handler_info['description'] = DBIO_ORDERSPRODUCTSATTRIBS_DESCRIPTION;
         
