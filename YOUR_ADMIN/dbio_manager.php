@@ -4,7 +4,7 @@
 // Copyright (c) 2016, Vinos de Frutas Tropicales.
 //
 require ('includes/application_top.php');
-require (DIR_FS_CATALOG . 'includes/functions/dbio/dbio_manager_functions.php');
+require (DIR_FS_ADMIN . 'includes/functions/dbio_manager_functions.php');
 
 $languages = zen_get_languages();
 
