@@ -36,7 +36,7 @@ class DbIoOrdersProductsHandler extends DbIoHandler
             $this->last_order_handled = $fields['orders_id'];
         } else {
             foreach ($fields as $field_name => &$field_value) {
-                if ($field_name == 'products_model') {
+                if ($field_name == $this->config['export_headers']['order_common_cutoff_field']) {
                     break;
                 }
                 $field_value = '';
@@ -121,6 +121,7 @@ class DbIoOrdersProductsHandler extends DbIoHandler
                 'products_model' => 'op',
                 'products_name' => 'op',
             ),
+            'order_common_cutoff_field' => 'products_quantity',
             'where_clause' => 'o.orders_id = op.orders_id AND os.orders_status_id = o.orders_status AND os.language_id = ' . $_SESSION['languages_id'],
             'order_by_clause' => 'o.orders_id ASC',
         );
