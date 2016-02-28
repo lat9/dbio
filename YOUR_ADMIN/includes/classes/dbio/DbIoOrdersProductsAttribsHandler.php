@@ -29,8 +29,8 @@ class DbIoOrdersProductsAttribsHandler extends DbIoOrdersProductsHandler
     public function exportPrepareFields (array $fields) 
     {
         $fields = parent::exportPrepareFields ($fields);
-        if (!isset ($this->last_model_handled) || $this->last_model_handled !== $fields['products_model']) {
-            $this->last_model_handled = $fields['products_model'];
+        if (!isset ($this->last_orders_products_id_handled) || $this->last_orders_products_id_handled !== $fields['orders_products_id']) {
+            $this->last_orders_products_id_handled = $fields['orders_products_id'];
         } else {
             foreach ($fields as $field_name => &$field_value) {
                 if ($field_name == 'products_options') {
@@ -39,6 +39,7 @@ class DbIoOrdersProductsAttribsHandler extends DbIoOrdersProductsHandler
                 $field_value = '';
             }
         }
+        unset ($fields['orders_products_id']);
         return $fields;
     }
     
@@ -58,8 +59,13 @@ class DbIoOrdersProductsAttribsHandler extends DbIoOrdersProductsHandler
         $this->config['export_headers']['tables'][TABLE_ORDERS_PRODUCTS] = 'op LEFT JOIN ' . TABLE_ORDERS_PRODUCTS_ATTRIBUTES . ' opa ON op.orders_products_id = opa.orders_products_id';
         $this->config['export_headers']['fields']['products_options'] = 'opa';
         $this->config['export_headers']['fields']['products_options_values'] = 'opa';
+        $this->config['export_headers']['fields']['orders_products_id'] = 'op';
+        if (!isset ($this->config['export_headers']['no_header_fields'])) {
+            $this->config['export_headers']['no_header_fields'] = array ();
+        }
+        $this->config['export_headers']['no_header_fields'][] = 'orders_products_id';
         $this->config['export_headers']['order_by_clause'] .= ', op.orders_products_id ASC, opa.orders_products_attributes_id ASC';
         $this->config['description'] = DBIO_ORDERSPRODUCTSATTRIBS_DESCRIPTION;
     }
 
-}  //-END class DbIoOrdersProductsHandler
+}  //-END class DbIoOrdersProductsAttribsHandler

@@ -397,7 +397,7 @@ abstract class DbIoHandler extends base
             $match_field_name = $this->config['key']['match_field'];
             $key_field_type = $this->config['key']['match_field_type'];
         } else {
-            if (!is_array ($this->config['extra_keys']) || count ($this->config['extra_keys']) !== 1) {
+            if (!is_array ($this->config['extra_keys'])) {
                trigger_error ("Invalid 'extra_keys' configuration: " . var_export ($this->config, true), E_USER_ERROR);
             }
             $tables_used = array ();
@@ -706,9 +706,12 @@ abstract class DbIoHandler extends base
         }
         $this->from_clause = substr ($this->from_clause, 0, -2);
         
+        $no_header_array = (isset ($this->config['export_headers']['no_header_fields']) && is_array ($this->config['export_headers']['no_header_fields'])) ? $this->config['export_headers']['no_header_fields'] : array ();
         foreach ($this->config['export_headers']['fields'] as $field_name => $field_alias) {
             $this->select_clause .= "$field_alias.$field_name, ";
-            $this->headers[] = "v_$field_name";
+            if (!in_array ($field_name, $no_header_array)) {
+                $this->headers[] = "v_$field_name";
+            }
         }
         $this->select_clause = substr ($this->select_clause, 0, -2);
         $this->where_clause = $this->config['export_headers']['where_clause'];
