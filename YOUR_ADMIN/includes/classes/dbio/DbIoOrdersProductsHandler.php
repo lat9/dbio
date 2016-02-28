@@ -117,6 +117,7 @@ class DbIoOrdersProductsHandler extends DbIoHandler
                 'customers_country' => 'o',
                 'customers_telephone' => 'o',
                 'customers_email_address' => 'o',
+                'products_quantity' => 'op',
                 'products_model' => 'op',
                 'products_name' => 'op',
             ),
