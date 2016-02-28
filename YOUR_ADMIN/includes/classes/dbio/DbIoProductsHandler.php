@@ -35,7 +35,7 @@ class DbIoProductsHandler extends DbIoHandler
         $categories_options = zen_get_category_tree ();
         unset ($categories_options[0]);
         
-        return array (
+        $my_config = array (
             'version' => '0.0.0',
             'handler_version' => '0.0.0',
             'include_header' => true,
@@ -51,20 +51,23 @@ class DbIoProductsHandler extends DbIoHandler
                             'dropdown_options' => $status_options,
                             'label' => DBIO_PRODUCTS_STATUS_LABEL,
                         ),
-                        'products_manufacturers' => array (
-                            'type' => 'dropdown_multiple',
-                            'dropdown_options' => $manufacturers_options,
-                            'label' => DBIO_PRODUCTS_MANUFACTURERS_LABEL,
-                        ),
-                        'products_categories' => array (
-                            'type' => 'dropdown_multiple',
-                            'dropdown_options' => array_values ($categories_options),
-                            'label' => DBIO_PRODUCTS_CATEGORIES_LABEL,
-                        ),
                     ),
                 ),
             ),
         );
+        if (count ($manufacturers_options) > 0) {
+            $my_config['export_filters']['products_filters']['fields']['products_manufacturers'] = array (
+                'type' => 'dropdown_multiple',
+                'dropdown_options' => $manufacturers_options,
+                'label' => DBIO_PRODUCTS_MANUFACTURERS_LABEL,
+            );
+        }
+        $my_config['export_filters']['products_filters']['fields']['products_categories'] = array (
+            'type' => 'dropdown_multiple',
+            'dropdown_options' => array_values ($categories_options),
+            'label' => DBIO_PRODUCTS_CATEGORIES_LABEL,
+        );
+        return $my_config;
     }
 
     public function exportInitialize ($language = 'all') 
