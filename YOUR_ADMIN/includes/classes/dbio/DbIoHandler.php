@@ -227,7 +227,7 @@ abstract class DbIoHandler extends base
             // If the current handler's configuration supports a fixed-list of output fields, retrieve the applicable
             // headers from the handler itself.
             //
-            if (isset ($this->config['export_headers']) && is_array ($this->config['export_headers'])) {
+            if (isset ($this->config['fixed_headers']) && is_array ($this->config['fixed_headers'])) {
                 $this->tables = array ();
                 $this->exportInitializeFixedHeaders ();
                 
@@ -315,6 +315,7 @@ abstract class DbIoHandler extends base
     //
     public function exportFinalizeInitialization ()
     {
+        $this->debugMessage ("exportFinalizeInitialization\n" . var_export ($this, true));
         return true;
     }
   
@@ -701,21 +702,26 @@ abstract class DbIoHandler extends base
     
     protected function exportInitializeFixedHeaders ()
     {
-        foreach ($this->config['export_headers']['tables'] as $table_name => $table_alias) {
+        foreach ($this->config['fixed_headers']['tables'] as $table_name => $table_alias) {
             $this->from_clause .= "$table_name $table_alias, ";
         }
         $this->from_clause = substr ($this->from_clause, 0, -2);
         
-        $no_header_array = (isset ($this->config['export_headers']['no_header_fields']) && is_array ($this->config['export_headers']['no_header_fields'])) ? $this->config['export_headers']['no_header_fields'] : array ();
-        foreach ($this->config['export_headers']['fields'] as $field_name => $field_alias) {
+        $no_header_array = (isset ($this->config['fixed_headers']['no_header_fields']) && is_array ($this->config['fixed_headers']['no_header_fields'])) ? $this->config['fixed_headers']['no_header_fields'] : array ();
+        $current_language = ($this->export_language == 'all') ? DEFAULT_LANGUAGE : $this->export_language;
+        foreach ($this->config['fixed_headers']['fields'] as $field_name => $field_alias) {
             $this->select_clause .= "$field_alias.$field_name, ";
             if (!in_array ($field_name, $no_header_array)) {
-                $this->headers[] = "v_$field_name";
+                $language_suffix = '';
+                if (isset ($this->config['fixed_headers']['language_tables']) && isset ($this->config['fixed_headers']['language_tables'][$field_alias])) {
+                    $language_suffix = "_$current_language";
+                }
+                $this->headers[] = "v_$field_name$language_suffix";
             }
         }
         $this->select_clause = substr ($this->select_clause, 0, -2);
-        $this->where_clause = $this->config['export_headers']['where_clause'];
-        $this->order_by_clause = $this->config['export_headers']['order_by_clause'];
+        $this->where_clause = $this->config['fixed_headers']['where_clause'];
+        $this->order_by_clause = $this->config['fixed_headers']['order_by_clause'];
         
         $this->debugMessage ("exportInitializeFixedHeaders, from_clause = " . $this->from_clause . ", select_clause = " . $this->select_clause . ", headers:\n" . var_export ($this->headers, true));
     }
@@ -856,7 +862,7 @@ abstract class DbIoHandler extends base
 
         if (!isset ($this->config) || !is_array ($this->config) || 
             !( (isset ($this->config['tables']) && is_array ($this->config['tables'])) ||
-               (isset ($this->config['export_headers']) && is_array ($this->config['export_headers'])) ) ) {
+               (isset ($this->config['fixed_headers']) && is_array ($this->config['fixed_headers'])) ) ) {
             trigger_error ('DbIo configuration not set prior to initialize.  Current class: ' . var_export ($this, true), E_USER_ERROR);
             exit();
         }
