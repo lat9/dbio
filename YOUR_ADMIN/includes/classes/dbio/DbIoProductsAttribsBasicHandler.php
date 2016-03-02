@@ -1,6 +1,6 @@
 <?php
 // -----
-// Part of the DataBase Import/Export (aka dbIO) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
+// Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2015-2016, Vinos de Frutas Tropicales.
 //
 if (!defined ('IS_ADMIN_FLAG')) {
@@ -9,88 +9,22 @@ if (!defined ('IS_ADMIN_FLAG')) {
 }
 
 // -----
-// This dbIO class handles the customizations required for a basic Zen Cart product import/export.
+// This dbIO class handles the customizations required for a basic Zen Cart product-attribute import/export.
 //
-class DbIoProductsHandler extends DbIoHandler 
+class DbIoProductsAttribsBasicHandler extends DbIoHandler 
 {
     public static function getHandlerInformation ()
     {
-        global $db;
-        include_once (DIR_FS_ADMIN . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoProductsHandler.php');
-        
-        $manufacturers_options = array ();
-        $manufacturers_info = $db->Execute ("SELECT manufacturers_id as `id`, manufacturers_name as `text` FROM " . TABLE_MANUFACTURERS . " ORDER BY manufacturers_name ASC");
-        while (!$manufacturers_info->EOF) {
-            $manufacturers_options[] = $manufacturers_info->fields;
-            $manufacturers_info->MoveNext ();
-        }
-        unset ($manufacturers_info);
-        
-        $status_options = array (
-            array ( 'id' => 'all', 'text' => DBIO_PRODUCTS_TEXT_STATUS_ALL ),
-            array ( 'id' => '1', 'text' => DBIO_PRODUCTS_TEXT_STATUS_ENABLED ),
-            array ( 'id' => '0', 'text' => DBIO_PRODUCTS_TEXT_STATUS_DISABLED ),
-        );
-        
-        $categories_options = zen_get_category_tree ();
-        unset ($categories_options[0]);
-        
-        $my_config = array (
+        include_once (DIR_FS_ADMIN . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoProductsAttribsBasicHandler.php');      
+        return array (
             'version' => '0.0.0',
             'handler_version' => '0.0.0',
             'include_header' => true,
             'export_only' => false,
-            'description' => DBIO_PRODUCTS_DESCRIPTION,
-            'export_filters' => array (
-                'products_filters' => array (
-                    'type' => 'array',
-                    'label' => DBIO_PRODUCTS_FILTERS_LABEL,
-                    'fields' => array (
-                        'products_status' => array (
-                            'type' => 'dropdown',
-                            'dropdown_options' => $status_options,
-                            'label' => DBIO_PRODUCTS_STATUS_LABEL,
-                        ),
-                    ),
-                ),
-            ),
+            'description' => DBIO_PRODUCTSATTRIBSBASIC_DESCRIPTION,
         );
-        if (count ($manufacturers_options) > 0) {
-            $my_config['export_filters']['products_filters']['fields']['products_manufacturers'] = array (
-                'type' => 'dropdown_multiple',
-                'dropdown_options' => $manufacturers_options,
-                'label' => DBIO_PRODUCTS_MANUFACTURERS_LABEL,
-            );
-        }
-        $my_config['export_filters']['products_filters']['fields']['products_categories'] = array (
-            'type' => 'dropdown_multiple',
-            'dropdown_options' => array_values ($categories_options),
-            'label' => DBIO_PRODUCTS_CATEGORIES_LABEL,
-        );
-        return $my_config;
     }
 
-    public function exportInitialize ($language = 'all') 
-    {
-        $initialized = parent::exportInitialize ($language);
-        if ($initialized) {
-            if ($this->where_clause != '') {
-                $this->where_clause .= ' AND ';
-        
-            }
-
-            $export_language = ($this->export_language == 'all') ? 1 : $this->languages[$this->export_language];
-            $this->where_clause .= "p.products_id = pd.products_id AND pd.language_id = $export_language";
-            $this->order_by_clause .= 'p.products_id ASC';
-
-            $this->export[TABLE_PRODUCTS_DESCRIPTION]['language_sql'] = 
-                'SELECT ' . $this->export[TABLE_PRODUCTS_DESCRIPTION]['select'] . 
-                ' FROM ' . TABLE_PRODUCTS_DESCRIPTION . 
-                ' WHERE products_id = %u AND language_id = %u LIMIT 1';
-        }
-        return $initialized;
-    }
-    
     // -----
     // This function gives the current handler the last opportunity to modify the SQL query clauses used for the current export.  It's
     // usually provided by handlers that use an "export_filter", allowing the handler to inspect any filter-variables provided by
@@ -101,8 +35,6 @@ class DbIoProductsHandler extends DbIoHandler
     //
     public function exportFinalizeInitialization ()
     {
-        $this->debugMessage ('exportFinalizeInitialization for Products. POST variables:' . var_export ($_POST, true));
-        
         // -----
         // Check to see if any of this handler's filter variables have been set.  If set, check the values and then
         // update the where_clause for the to-be-issued SQL query for the export.
@@ -118,49 +50,45 @@ class DbIoProductsHandler extends DbIoHandler
             $categories_list = implode (',', $_POST['products_categories']);
             $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "p.master_categories_id IN ($categories_list)";
         }
-        return true;
+        return parent::exportFinalizeInitialization ();
     }
     
+    // -----
+    // Prepare the additional fields (the list of options' values' names) for the export.
+    //
+    // On entry:
+    //      $fields ... An associative array of values, as retrieved by the report's export SQL.
+    //
+    // On exit:
+    //      $fields ... Updated to remove the key-values and add the ^-separated list of values associated with the option.
+    //
     public function exportPrepareFields (array $fields) 
     {
-        $fields = parent::exportPrepareFields ($fields);
+        global $db;
         $products_id = $fields['products_id'];
-        $tax_class_id = $fields['products_tax_class_id'];
-        unset ($fields['products_id'], $fields['products_tax_class_id']);
-      
-        global $db;     
-        if ($this->export_language == 'all') {
-            foreach ($this->languages as $language_code => $language_id) {
-                if ($language_id != 1) {
-                    $description_info = $db->Execute (sprintf ($this->export[TABLE_PRODUCTS_DESCRIPTION]['language_sql'], $products_id, $language_id));
-                    if (!$description_info->EOF) {
-                        foreach ($description_info->fields as $field_name => $field_value) {
-                            if ($field_name != 'products_id' && $field_name != 'language_id') {
-                                $fields[$field_name . '_' . $language_code] = $field_value;
-                      
-                            }
-                        }
-                    }
-                }
-            }
-        }
-      
-        $fields['manufacturers_name'] = zen_get_products_manufacturers_name ($products_id);
-      
-        $tax_class_info = $db->Execute ("SELECT tax_class_title FROM " . TABLE_TAX_CLASS . " WHERE tax_class_id = $tax_class_id LIMIT 1");
-        $fields['tax_class_title'] = ($tax_class_info->EOF) ? '' : $tax_class_info->fields['tax_class_title'];
-      
-        $cPath_array = explode ('_', zen_get_product_path ($products_id));
-        $default_language_id = $this->languages[DEFAULT_LANGUAGE];
-        $categories_name = '';
-        foreach ($cPath_array as $next_category_id) {
-            $category_info = $db->Execute ("SELECT categories_name FROM " . TABLE_CATEGORIES_DESCRIPTION . " WHERE categories_id = $next_category_id AND language_id = $default_language_id LIMIT 1");
-            $categories_name .= (($category_info->EOF) ? self::DBIO_UNKNOWN_VALUE : $category_info->fields['categories_name']) . '^';
+        $products_options_id = $fields['products_options_id'];
+        unset ($fields['products_id'], $fields['products_options_id']);
         
+        if (PRODUCTS_OPTIONS_SORT_BY_PRICE == '1') {
+            $order_by = 'LPAD(pa.products_options_sort_order,11,"0"), pov.products_options_values_name';
+        } else {
+            $order_by = 'LPAD(pa.products_options_sort_order,11,"0"), pa.options_values_price';
         }
-        $fields['categories_name'] = substr ($categories_name, 0, -1);
-
-        return $fields;
+        $export_language = ($this->export_language == 'all') ? DEFAULT_LANGUAGE : $this->export_language;
+        $attrib_info = $db->Execute ("SELECT products_options_values_name FROM " . TABLE_PRODUCTS_ATTRIBUTES . " pa, " . TABLE_PRODUCTS_OPTIONS_VALUES . " pov
+                                       WHERE pa.products_id = $products_id
+                                         AND pa.options_id = $products_options_id
+                                         AND pa.options_values_id = pov.products_options_values_id
+                                         AND pov.language_id = " . $this->languages[$export_language] . "
+                                    ORDER BY $order_by");
+        $products_options_values_names = array ();
+        while (!$attrib_info->EOF) {
+            $products_options_values_names[] = $attrib_info->fields['products_options_values_name'];
+            $attrib_info->MoveNext ();
+        }
+        $fields['products_options_values_name_' . $export_language] = implode ('^', $products_options_values_names);
+        
+        return parent::exportPrepareFields ($fields);
       
     }
 
@@ -174,7 +102,12 @@ class DbIoProductsHandler extends DbIoHandler
     //
     protected function setHandlerConfiguration () 
     {
-        $this->stats['report_name'] = 'Products';
+        $this->stats['report_name'] = 'ProductsAttribsBasic';
+        if (PRODUCTS_OPTIONS_SORT_ORDER == '0') {
+            $options_order_by = 'LPAD(po.products_options_sort_order,11,"0")';
+        } else {
+            $options_order_by = 'po.products_options_name';
+        }
         $this->config = self::getHandlerInformation ();
         $this->config['key'] = array (
             'table' => TABLE_PRODUCTS, 
@@ -182,73 +115,47 @@ class DbIoProductsHandler extends DbIoHandler
             'key_field' => 'products_id', 
             'key_field_type' => 'integer' 
         );
-        $this->config['tables'] = array (
-            TABLE_PRODUCTS => array ( 
-                'alias' => 'p',
-                'io_field_overrides' => array (
-                    'products_id' => 'no-header',
-                    'manufacturers_id' => false,
-                    'products_tax_class_id' => 'no-header',
-                    'master_categories_id' => false,
-                ),
-            ), 
-            TABLE_PRODUCTS_DESCRIPTION => array ( 
-                'alias' => 'pd',
-                'language_field' => 'language_id',
-                'key_field' => 'products_id',
-                'io_field_overrides' => array (
-                    'products_id' => false,
-                    'language_id' => false,
-                ),
-            ), 
+        $this->config['fixed_headers'] = array (
+            'tables' => array (
+                TABLE_PRODUCTS_ATTRIBUTES => 'pa',
+                TABLE_PRODUCTS => 'p',
+                TABLE_PRODUCTS_OPTIONS => 'po',
+            ),
+            'language_tables' => array (
+                'po' => 'language_id',
+            ),
+            'fields' => array (
+                'products_model' => 'p',
+                'products_id' => 'p',
+                'products_options_id' => 'po',
+                'products_options_type' => 'po',
+                'products_options_name' => 'po',
+            ),
+            'no_header_fields' => array (
+                'products_id',
+                'products_options_id',
+            ),
+            'where_clause' => 'pa.products_id = p.products_id AND pa.options_id = po.products_options_id AND po.language_id = %u GROUP BY p.products_id, po.products_options_id',
+            'order_by_clause' => "p.products_model, $options_order_by",
         );
         $this->config['additional_headers'] = array (
-            'v_manufacturers_name' => self::DBIO_FLAG_NONE,
-            'v_tax_class_title' => self::DBIO_FLAG_NONE,
-            'v_categories_name' => self::DBIO_FLAG_NONE,
+            'v_products_options_values_name' => self::DBIO_FLAG_NONE,
         );
     } 
-    // -----
-    // This function, called for each-and-every data-element being imported, can return one of three values:
-    //
-    // - DBIO_IMPORT_OK ........ The field has no special-handling requirements.
-    // - DBIO_NO_IMPORT ........ The field's value should not set directly to the database for the import; implying
-    //                           that the field is calculated separately by the handler's processing.
-    // - DBIO_SPECIAL_IMPORT ... The field requires special-handling by the handler to create the associated database elements.
-    //
-    protected function importFieldCheck ($field_name) 
+    
+    protected function exportInitializeFixedHeaders ()
     {
-        $field_status = self::DBIO_IMPORT_OK;
-        switch ($field_name) {
-            case 'products_id':
-            case 'language_id':
-            case 'manufacturers_id':
-            case 'products_tax_class_id':
-            case 'master_categories_id':
-                $field_status = self::DBIO_NO_IMPORT;
-                break;
-            case 'manufacturers_name':
-            case 'tax_class_title':
-            case 'categories_name':
-                $field_status = self::DBIO_SPECIAL_IMPORT;
-                break;
-            default:
-                break;
+        parent::exportInitializeFixedHeaders ();
+        $export_language_code = $this->export_language;
+        if ($export_language_code == 'all') {
+            $export_language_code = DEFAULT_LANGUAGE;
         }
-        return $field_status;
+        $this->where_clause = sprintf ($this->where_clause, $this->languages[$export_language_code]);
+        $this->headers[] = "v_products_options_values_name_$export_language_code";
     }
-     
-    // -----
-    // This function handles any overall record post-processing required for the Products import, specifically
-    // making sure that the products' price sorter is run for the just inserted/updated product.
-    //
-    protected function importRecordPostProcess ($products_id)
-    {
-        if ($products_id !== false) {
-            zen_update_products_price_sorter ($products_id);
-        }
-    }    
-
+    
+    
+    
     protected function importAddField ($table_name, $field_name, $field_value, $field_type) {
         $this->debugMessage ("importAddField ($table_name, $field_name, $field_value, $field_type)");
         global $db;
