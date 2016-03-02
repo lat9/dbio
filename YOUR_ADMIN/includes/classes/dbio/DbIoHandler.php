@@ -37,8 +37,6 @@ abstract class DbIoHandler extends base
         
         $this->stats = array ( 'report_name' => self::DBIO_UNKNOWN_VALUE, 'errors' => 0, 'warnings' => 0, 'record_count' => 0, 'inserts' => 0, 'updates' => 0, 'date_added' => 'now()' );
         
-        $this->debugMessage ('Configured CHARSET (' . CHARSET . '), DB_CHARSET (' . DB_CHARSET . '), DBIO_CHARSET (' . DBIO_CHARSET . '), PHP multi-byte settings: ' . var_export (mb_get_info (), true));
-        
         $this->languages = array ();
         if (!class_exists ('language')) {
             require (DIR_WS_CLASSES . 'language.php');
@@ -58,6 +56,11 @@ abstract class DbIoHandler extends base
         $this->encoding = new ForceUTF8\Encoding;
         
         $this->setHandlerConfiguration ();
+        
+        if ($this->stats['report_name'] != self::DBIO_UNKNOWN_VALUE) {
+            $this->debug_log_file = DIR_FS_DBIO_LOGS . "/dbio-" . $this->stats['report_name'] . "-$log_file_suffix.log";
+        }
+        $this->debugMessage ('Configured CHARSET (' . CHARSET . '), DB_CHARSET (' . DB_CHARSET . '), DBIO_CHARSET (' . DBIO_CHARSET . '), PHP multi-byte settings: ' . var_export (mb_get_info (), true));
         
         $this->initializeDbIo ();
     }
@@ -177,7 +180,7 @@ abstract class DbIoHandler extends base
             
         } elseif ($severity & self::DBIO_ERROR) {
             $this->stats['errors']++;
-            trigger_error ($message, E_USER_ERROR);
+            trigger_error (DBIO_TEXT_ERROR . $message, E_USER_WARNING);
             
         }
         if (($severity & self::DBIO_ACTIVITY) && function_exists ('zen_record_admin_activity')) {
@@ -206,8 +209,7 @@ abstract class DbIoHandler extends base
         // 2) The language requested for the export must be present in the current Zen Cart's database
         //        
         if (!isset ($this->config)) {
-            $this->message = DBIO_ERROR_NO_HANDLER;
-            trigger_error ($this->message, E_USER_ERROR);
+            $this->debugMessage (DBIO_ERROR_NO_HANDLER, self::DBIO_ERROR);
             
         } elseif ($language != 'all' && !isset ($this->languages[$language])) {
             $this->message = sprintf (DBIO_ERROR_EXPORT_NO_LANGUAGE, $language);
@@ -223,29 +225,23 @@ abstract class DbIoHandler extends base
             $this->select_clause = $this->from_clause = $this->where_clause = $this->order_by_clause = '';
             $this->headers = array ();
             
-            // -----
-            // If the current handler's configuration supports a fixed-list of output fields, retrieve the applicable
-            // headers from the handler itself.
-            //
-            if (isset ($this->config['fixed_headers']) && is_array ($this->config['fixed_headers'])) {
-                $this->tables = array ();
-                $this->exportInitializeFixedHeaders ();
-                
-            // -----
-            // Otherwise, all fields in all configured tables are "fair game"; the handler will indicate which, if any,
-            // fields are to be "kept back" from the export.
-            //
-            } else {
-                foreach ($this->config['tables'] as $config_table_name => $config_table_info) {
+            foreach ($this->config['tables'] as $config_table_name => $config_table_info) {
+                if (!isset ($config_table_info['no_from_clause'])) {
                     $this->from_clause .= $config_table_name;
                     $table_prefix = (isset ($config_table_info['alias']) && $config_table_info['alias'] != '') ? ($config_table_info['alias'] . '.') : '';
                     if ($table_prefix != '') {
-                        $this->from_clause .= ' AS ' . $config_table_info['alias'] . ', ';
-                    
+                        $this->from_clause .= ' AS ' . $config_table_info['alias'];
                     }
+                    if (isset ($config_table_info['join_clause'])) {
+                        $this->from_clause .= ' ' . $config_table_info['join_clause'];
+                    }
+                    $this->from_clause .= ', ';
+                }
+                
+                if (!isset ($this->config['fixed_headers'])) {
                     if ($this->tables[$config_table_name]['uses_language']) {
                         $first_language = true;
-                        $this->export[$config_table_name]['select'] = '';
+                        $this->config['tables'][$config_table_name]['select'] = '';
                         foreach ($this->languages as $language_code => $language_id) {
                             if ($language !== 'all' && $language != $language_code) {
                                 continue;
@@ -254,7 +250,7 @@ abstract class DbIoHandler extends base
                                 if ($field_info['include_in_export'] !== false) {
                                     if ($first_language) {
                                         $this->select_clause .= "$table_prefix$current_field, ";
-                                        $this->export[$config_table_name]['select'] .= "$current_field, ";
+                                        $this->config['tables'][$config_table_name]['select'] .= "$current_field, ";
                             
                                     }
                                     if ($field_info['include_in_export'] === true) {
@@ -266,7 +262,7 @@ abstract class DbIoHandler extends base
                             $first_language = false;
                       
                         }
-                        $this->export[$config_table_name]['select'] = mb_substr ($this->export[$config_table_name]['select'], 0, -2);
+                        $this->config['tables'][$config_table_name]['select'] = mb_substr ($this->config['tables'][$config_table_name]['select'], 0, -2);
                     
                     } else {
                         foreach ($this->tables[$config_table_name]['fields'] as $current_field => $field_info) {
@@ -280,18 +276,38 @@ abstract class DbIoHandler extends base
                         }
                     }
                 }
-                $this->from_clause = ($this->from_clause == '') ? '' : mb_substr ($this->from_clause, 0, -2);
-                $this->select_clause = ($this->select_clause == '') ? '' : mb_substr ($this->select_clause, 0, -2);
-                
-                if (isset ($this->config['additional_headers']) && is_array ($this->config['additional_headers'])) {
-                    foreach ($this->config['additional_headers'] as $header_value => $flags) {
-                        if ($flags & self::DBIO_FLAG_PER_LANGUAGE) {
-                            foreach ($this->languages as $language_code => $language_id) {
-                                $this->headers[] = $header_value . '_' . $language_code;
-                            }
-                        } else {
-                            $this->headers[] = $header_value;
+            }
+            
+            if (isset ($this->config['fixed_headers'])) {
+                $this->debugMessage ('exportInitialize: Processing fixed headers');
+                $no_header_array = (isset ($this->config['fixed_fields_no_header']) && is_array ($this->config['fixed_fields_no_header'])) ? $this->config['fixed_fields_no_header'] : array ();
+                $current_language = ($this->export_language == 'all') ? DEFAULT_LANGUAGE : $this->export_language;
+                foreach ($this->config['fixed_headers'] as $field_name => $table_name) {
+                    $field_alias = (isset ($this->config['tables'][$table_name]['alias'])) ? ($this->config['tables'][$table_name]['alias'] . '.') : '';
+                    $this->select_clause .= "$field_alias$field_name, ";
+                    if (!in_array ($field_name, $no_header_array)) {
+                        $language_suffix = '';
+                        if (isset ($this->config['tables'][$table_name]['language_field'])) {
+                            $language_suffix = "_$current_language";
                         }
+                        $this->headers[] = "v_$field_name$language_suffix";
+                    }
+                }
+                $this->where_clause = $this->config['export_where_clause'];
+                $this->order_by_clause = $this->config['export_order_by_clause'];
+            }
+            
+            $this->from_clause = ($this->from_clause == '') ? '' : mb_substr ($this->from_clause, 0, -2);
+            $this->select_clause = ($this->select_clause == '') ? '' : mb_substr ($this->select_clause, 0, -2);
+            
+            if (isset ($this->config['additional_headers']) && is_array ($this->config['additional_headers'])) {
+                foreach ($this->config['additional_headers'] as $header_value => $flags) {
+                    if ($flags & self::DBIO_FLAG_PER_LANGUAGE) {
+                        foreach ($this->languages as $language_code => $language_id) {
+                            $this->headers[] = $header_value . '_' . $language_code;
+                        }
+                    } else {
+                        $this->headers[] = $header_value;
                     }
                 }
             }
@@ -715,33 +731,7 @@ abstract class DbIoHandler extends base
     // construction to have the handler set its database-related configuration.
     //
     abstract protected function setHandlerConfiguration ();
-    
-    protected function exportInitializeFixedHeaders ()
-    {
-        foreach ($this->config['fixed_headers']['tables'] as $table_name => $table_alias) {
-            $this->from_clause .= "$table_name $table_alias, ";
-        }
-        $this->from_clause = substr ($this->from_clause, 0, -2);
-        
-        $no_header_array = (isset ($this->config['fixed_headers']['no_header_fields']) && is_array ($this->config['fixed_headers']['no_header_fields'])) ? $this->config['fixed_headers']['no_header_fields'] : array ();
-        $current_language = ($this->export_language == 'all') ? DEFAULT_LANGUAGE : $this->export_language;
-        foreach ($this->config['fixed_headers']['fields'] as $field_name => $field_alias) {
-            $this->select_clause .= "$field_alias.$field_name, ";
-            if (!in_array ($field_name, $no_header_array)) {
-                $language_suffix = '';
-                if (isset ($this->config['fixed_headers']['language_tables']) && isset ($this->config['fixed_headers']['language_tables'][$field_alias])) {
-                    $language_suffix = "_$current_language";
-                }
-                $this->headers[] = "v_$field_name$language_suffix";
-            }
-        }
-        $this->select_clause = substr ($this->select_clause, 0, -2);
-        $this->where_clause = $this->config['fixed_headers']['where_clause'];
-        $this->order_by_clause = $this->config['fixed_headers']['order_by_clause'];
-        
-        $this->debugMessage ("exportInitializeFixedHeaders, from_clause = " . $this->from_clause . ", select_clause = " . $this->select_clause . ", headers:\n" . var_export ($this->headers, true));
-    }
-  
+
     // -----
     // Local function (used when logging messages to reduce unnecessary whitespace.
     //

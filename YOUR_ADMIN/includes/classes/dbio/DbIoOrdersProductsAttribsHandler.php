@@ -31,9 +31,9 @@ class DbIoOrdersProductsAttribsHandler extends DbIoOrdersProductsHandler
         $fields = parent::exportPrepareFields ($fields);
         if (!isset ($this->last_orders_products_id_handled) || $this->last_orders_products_id_handled !== $fields['orders_products_id']) {
             $this->last_orders_products_id_handled = $fields['orders_products_id'];
-        } elseif (isset ($this->config['opa_field_cutoff'])) {
+        } elseif (isset ($this->config['ordersproductsattribs_cutoff_field'])) {
             foreach ($fields as $field_name => &$field_value) {
-                if ($field_name == $this->config['opa_field_cutoff']) {
+                if ($field_name == $this->config['ordersproductsattribs_cutoff_field']) {
                     break;
                 }
                 $field_value = '';
@@ -50,23 +50,30 @@ class DbIoOrdersProductsAttribsHandler extends DbIoOrdersProductsHandler
     // -----
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the dbIO operations.  Since this handler "extends" the OrdersProducts handler, let
-    // that handler provide the default configuration, then make extension-specific modifications.
+    // that handler provide the default configuration, then make extension-specific overrides.
     //
     protected function setHandlerConfiguration () 
     {
         parent::setHandlerConfiguration ();
         $this->stats['report_name'] = 'OrdersProductsAttribs';
-        $this->config['fixed_headers']['tables'][TABLE_ORDERS_PRODUCTS] = 'op LEFT JOIN ' . TABLE_ORDERS_PRODUCTS_ATTRIBUTES . ' opa ON op.orders_products_id = opa.orders_products_id';
-        $this->config['fixed_headers']['fields']['products_options'] = 'opa';
-        $this->config['fixed_headers']['fields']['products_options_values'] = 'opa';
-        $this->config['fixed_headers']['fields']['orders_products_id'] = 'op';
-        if (!isset ($this->config['fixed_headers']['no_header_fields'])) {
-            $this->config['fixed_headers']['no_header_fields'] = array ();
+        $this->config['tables'][TABLE_ORDERS_PRODUCTS]['join_clause'] = 'LEFT JOIN ' . TABLE_ORDERS_PRODUCTS_ATTRIBUTES . ' opa ON op.orders_products_id = opa.orders_products_id';
+        $this->config['tables'][TABLE_ORDERS_PRODUCTS_ATTRIBUTES] = array (
+            'alias' => 'opa',
+            'no_from_clause' => true,
+        );
+        $additional_headers = array (
+            'products_options' => TABLE_ORDERS_PRODUCTS_ATTRIBUTES,
+            'products_options_values' => TABLE_ORDERS_PRODUCTS_ATTRIBUTES,
+            'orders_products_id' => TABLE_ORDERS_PRODUCTS,
+        );
+        $this->config['fixed_headers'] += $additional_headers;
+        if (!isset ($this->config['fixed_fields_no_header'])) {
+            $this->config['fixed_fields_no_headers'] = array ();
         }
-        $this->config['fixed_headers']['no_header_fields'][] = 'orders_products_id';
-        $this->config['fixed_headers']['order_by_clause'] .= ', op.orders_products_id ASC, opa.orders_products_attributes_id ASC';
+        $this->config['fixed_fields_no_header'][] = 'orders_products_id';
+        $this->config['export_order_by_clause'] .= ', op.orders_products_id ASC, opa.orders_products_attributes_id ASC';
         $this->config['description'] = DBIO_ORDERSPRODUCTSATTRIBS_DESCRIPTION;
-        $this->config['opa_field_cutoff'] = 'products_options';
+        $this->config['ordersproductsattribs_cutoff_field'] = 'products_options';
     }
 
 }  //-END class DbIoOrdersProductsAttribsHandler

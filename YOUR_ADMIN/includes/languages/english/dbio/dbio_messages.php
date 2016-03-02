@@ -30,3 +30,4 @@ define ('DBIO_ERROR_EXPORT_NO_LANGUAGE', 'DbIo Export.  The language code "%s" i
 //
 define ('DBIO_MESSAGE_IMPORT_MISSING_HEADER', 'Import aborted: Missing header information for input file.');
 define ('DBIO_FORMAT_MESSAGE_IMPORT_MISSING_KEY', 'Import aborted: Missing key column (%s).');
+define ('DBIO_TEXT_ERROR', 'Error: ');  //-Used to prefix processing messages with errors

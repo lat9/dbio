@@ -34,9 +34,9 @@ class DbIoOrdersProductsHandler extends DbIoHandler
     {
         if (!isset ($this->last_order_handled) || $this->last_order_handled !== $fields['orders_id']) {
             $this->last_order_handled = $fields['orders_id'];
-        } elseif (isset ($this->config['fixed_headers']['order_common_cutoff_field'])) {
+        } elseif (isset ($this->config['ordersproducts_cutoff_field'])) {
             foreach ($fields as $field_name => &$field_value) {
-                if ($field_name == $this->config['fixed_headers']['order_common_cutoff_field']) {
+                if ($field_name == $this->config['ordersproducts_cutoff_field']) {
                     break;
                 }
                 $field_value = '';
@@ -92,39 +92,50 @@ class DbIoOrdersProductsHandler extends DbIoHandler
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the dbIO operations.
     //
+    // Since this is an export-only report, it doesn't include a 'key'.
+    //
     protected function setHandlerConfiguration () 
     {
         $this->stats['report_name'] = 'OrdersProducts';
         $this->config = self::getHandlerInformation ();
-        $this->config['fixed_headers'] = array (
-            'tables' => array (
-                TABLE_ORDERS => 'o',
-                TABLE_ORDERS_PRODUCTS => 'op',
-                TABLE_ORDERS_STATUS => 'os',
+
+        $this->config['tables'] = array (
+            TABLE_ORDERS => array (
+                'alias' => 'o',
             ),
-            'fields' => array (
-                'date_purchased' => 'o',
-                'orders_status_name' => 'os',
-                'orders_id' => 'o',
-                'customers_id' => 'o',
-                'customers_name' => 'o',
-                'customers_company' => 'o',
-                'customers_street_address' => 'o',
-                'customers_suburb' => 'o',
-                'customers_city' => 'o',
-                'customers_state' => 'o',
-                'customers_postcode' => 'o',
-                'customers_country' => 'o',
-                'customers_telephone' => 'o',
-                'customers_email_address' => 'o',
-                'products_quantity' => 'op',
-                'products_model' => 'op',
-                'products_name' => 'op',
+            TABLE_ORDERS_PRODUCTS => array (
+                'alias' => 'op',
             ),
-            'order_common_cutoff_field' => 'products_quantity',
-            'where_clause' => 'o.orders_id = op.orders_id AND os.orders_status_id = o.orders_status AND os.language_id = ' . $_SESSION['languages_id'],
-            'order_by_clause' => 'o.orders_id ASC',
+            TABLE_ORDERS_STATUS => array (
+                'alias' => 'os',
+            ),
         );
+        $this->config['fixed_headers'] = array (
+            'date_purchased' => TABLE_ORDERS,
+            'orders_status_name' => TABLE_ORDERS_STATUS,
+            'orders_id' => TABLE_ORDERS,
+            'customers_id' => TABLE_ORDERS,
+            'customers_name' => TABLE_ORDERS,
+            'customers_company' => TABLE_ORDERS,
+            'customers_street_address' => TABLE_ORDERS,
+            'customers_suburb' => TABLE_ORDERS,
+            'customers_city' => TABLE_ORDERS,
+            'customers_state' => TABLE_ORDERS,
+            'customers_postcode' => TABLE_ORDERS,
+            'customers_country' => TABLE_ORDERS,
+            'customers_telephone' => TABLE_ORDERS,
+            'customers_email_address' => TABLE_ORDERS,
+            'products_quantity' => TABLE_ORDERS_PRODUCTS,
+            'products_model' => TABLE_ORDERS_PRODUCTS,
+            'products_name' => TABLE_ORDERS_PRODUCTS,
+        );
+        $this->config['export_where_clause'] = 'o.orders_id = op.orders_id AND os.orders_status_id = o.orders_status AND os.language_id = ' . $_SESSION['languages_id'];
+        $this->config['export_order_by_clause'] = 'o.orders_id ASC';
+        
+        // -----
+        // Report-specific configuration values.  Set here so that reports that extend this report can make modifications.
+        //
+        $this->config['ordersproducts_cutoff_field'] = 'products_quantity';
     }
     
 }  //-END class DbIoOrdersProductsHandler
