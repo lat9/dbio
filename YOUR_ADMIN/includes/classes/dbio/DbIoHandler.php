@@ -21,9 +21,10 @@ abstract class DbIoHandler extends base
     const DBIO_SPECIAL_IMPORT    = '--special--';
     const DBIO_UNKNOWN_VALUE     = '--unknown--';
     // ----- Message Severity ----- ** Note ** This set of constants are bit-flags!
-    const DBIO_WARNING           = 1;
-    const DBIO_ERROR             = 2;
-    const DBIO_ACTIVITY          = 4;
+    const DBIO_INFORMATIONAL     = 1;
+    const DBIO_WARNING           = 2;
+    const DBIO_ERROR             = 4;
+    const DBIO_ACTIVITY          = 8;
     // ----- Handler configuration bit switches -----
     const DBIO_FLAG_NONE         = 0;       //- No special handling
     const DBIO_FLAG_PER_LANGUAGE = 1;       //- Field is handled once per language
@@ -32,7 +33,21 @@ abstract class DbIoHandler extends base
 // ----------------------------------------------------------------------------------
     public function __construct ($log_file_suffix) 
     {
-        $this->debug = (DBIO_DEBUG == 'true');
+        $this->debug = (DBIO_DEBUG != 'None');
+        switch (DBIO_DEBUG) {
+            case 'All':
+                $this->debug_level = self::DBIO_INFORMATIONAL | self::DBIO_WARNING | self::DBIO_ERROR;
+                break;
+            case 'Warning/Error':
+                $this->debug_level = self::DBIO_WARNING | self::DBIO_ERROR;
+                break;
+            case 'Errors Only':
+                $this->debug_level = self::DBIO_ERROR;
+                break;
+            default:
+                $this->debug_level = 0;
+                break;
+        }
         $this->debug_log_file = DIR_FS_DBIO_LOGS . '/dbio-' . $log_file_suffix . '.log';
         
         $this->stats = array ( 'report_name' => self::DBIO_UNKNOWN_VALUE, 'errors' => 0, 'warnings' => 0, 'record_count' => 0, 'inserts' => 0, 'updates' => 0, 'date_added' => 'now()' );
@@ -168,9 +183,9 @@ abstract class DbIoHandler extends base
     // -----
     // Writes the requested message to the current debug-log file, if DbIo debug is enabled.
     //
-    public function debugMessage ($message, $severity = 0) 
+    public function debugMessage ($message, $severity = self::DBIO_INFORMATIONAL) 
     {
-        if ($this->debug) {
+        if ($this->debug && ($severity & $this->debug_level)) {
             error_log (date (DBIO_DEBUG_DATE_FORMAT) . ": $message\n", 3, $this->debug_log_file);
       
         }
@@ -394,7 +409,7 @@ abstract class DbIoHandler extends base
             trigger_error ('Import aborted: DbIo helper not configured.', E_USER_ERROR);
             exit ();
         } elseif (!isset ($this->config['key']) || !is_array ($this->config['key'])) {
-            trigger_error ('Import aborted: DbIo helper\'s "key" configuration is not set or not proper.', E_USER_ERROR);
+            trigger_error ('Import aborted: DbIo helper\'s "key" configuration is not set or not an array.', E_USER_ERROR);
             exit ();
         }
         $this->message = '';
@@ -413,14 +428,24 @@ abstract class DbIoHandler extends base
             $this->key_field_name = $this->config['key']['match_field'];
             $this->key_field_type = $this->config['key']['match_field_type'];
             $key_table = $this->config['key']['table'];
-            $key_table_alias = $this->config['fixed_headers']['tables'][$key_table];
+            $key_table_alias = $this->config['tables'][$key_table]['alias'];
             $this->data_key_sql = "SELECT $key_table_alias." . $this->config['key']['key_field'] . " AS key_value
                                      FROM $key_table $key_table_alias
                                     WHERE $key_table_alias." . $this->config['key']['match_field'] . " = :match_value: LIMIT 1";
             $this->headers = array ();
-            foreach ($this->config['fixed_headers']['fields'] as $field_name => $field_alias) {
-                if (!in_array ($field_name, $this->config['fixed_headers']['no_header_fields'])) {
-                    $this->headers[] = "v_$field_name";
+            $no_header_fields = (isset ($this->config['fixed_fields_no_header']) && is_array ($this->config['fixed_fields_no_header'])) ? $this->config['fixed_fields_no_header'] : array ();
+            foreach ($this->config['fixed_headers'] as $field_name => $table_name) {
+                if (!in_array ($field_name, $no_header_fields)) {
+                    if (!isset ($this->config['tables'][$table_name]['language_field'])) {
+                        $this->headers[] = "v_$field_name";
+                    } else {
+                        foreach ($this->languages as $language_code => $language_id) {
+                            if ($language != 'all' && $language != $language_code) {
+                                continue;
+                            }
+                            $this->headers[] = 'v_' . $field_name . '_' . $language_code;
+                        }
+                    }
                 }
             }
         } else {
@@ -604,6 +629,7 @@ abstract class DbIoHandler extends base
         if (!$initialization_complete) {
             unset ($this->table_names);
         }
+        $this->debugMessage ("importGetHeader: finished ($initialization_complete). " . ((isset ($this->table_names)) ? var_export ($this->table_names, true) : ''));
         return $initialization_complete;
     
     }
@@ -618,6 +644,8 @@ abstract class DbIoHandler extends base
             trigger_error ("Import aborted, sequencing error. Previous import-header initialization error.", E_USER_ERROR);
             exit ();
         }
+        $this->debugMessage ("importCsvRecord: starting ...");
+        
         // -----
         // Indicate, initially, that the record is OK to import and increment the count of lines processed.  The last value
         // will be used in any debug-log information to note the location of any processing.
@@ -747,6 +775,7 @@ abstract class DbIoHandler extends base
  
     protected function importCheckKeyValue ($data_value, $key_value, $key_value_fields) 
     {
+        $this->debugMessage ("importCheckKeyValue ($data_value, $key_value, $key_value_fields)");
         return $this->record_ok;
     }
   
