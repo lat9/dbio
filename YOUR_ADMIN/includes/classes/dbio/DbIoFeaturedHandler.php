@@ -51,6 +51,7 @@ class DbIoFeaturedHandler extends DbIoHandler
                 'match_field' => 'products_model',
                 'match_field_type' => 'string',
                 'key_field' => 'products_id',
+                'key_field_type' => 'integer',
             ),
         );
         $this->config['key'] = array (
@@ -62,13 +63,13 @@ class DbIoFeaturedHandler extends DbIoHandler
         );
         $this->config['tables'] = array (
             TABLE_PRODUCTS => array (
-                'short_name' => 'p',
+                'alias' => 'p',
                 'import_extra_keys_only' => true,
                 'export_key_field_only' => true,
                 'key_field' => 'products_model',
             ),
             TABLE_FEATURED => array ( 
-                'short_name' => 'f',
+                'alias' => 'f',
                 'key_field' => 'featured_id',
                 'io_field_overrides' => array (
                     'products_id' => false,

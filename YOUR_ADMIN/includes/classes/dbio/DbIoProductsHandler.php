@@ -178,7 +178,8 @@ class DbIoProductsHandler extends DbIoHandler
         $this->config = self::getHandlerInformation ();
         $this->config['key'] = array (
             'table' => TABLE_PRODUCTS, 
-            'match_field' => 'products_model', 
+            'match_field' => 'products_model',
+            'match_field_type' => 'string',
             'key_field' => 'products_id', 
             'key_field_type' => 'integer' 
         );
@@ -388,7 +389,6 @@ class DbIoProductsHandler extends DbIoHandler
               
                 }
             } elseif ($table_name == TABLE_PRODUCTS_TO_CATEGORIES && $this->operation != 'check') {
-                if ($this->operation == 'check')
                 foreach ($sql_data_array as $next_category) {
                     $db->Execute ("INSERT IGNORE INTO $table_name (products_id, categories_id) VALUES ( $products_id, " . $next_category['value'] . ")");
               
@@ -396,7 +396,7 @@ class DbIoProductsHandler extends DbIoHandler
                 $sql_data_array = false;
             }
         }
-        return parent::importUpdateRecordKey ($table_name, $sql_data_array, $products_id);
+        return parent::importUpdateRecordKey ($table_name, $sql_data_array, $products_id, $key_value_fields);
       
     }
 
