@@ -7,8 +7,8 @@ if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
 }
 
-define('DBIO_CURRENT_VERSION', '0.0.5');
-define('DBIO_CURRENT_UPDATE_DATE', '2016-02-25');
+define('DBIO_CURRENT_VERSION', '0.0.6');
+define('DBIO_CURRENT_UPDATE_DATE', '2016-03-04');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
 
@@ -24,7 +24,7 @@ $configuration = $db->Execute("SELECT configuration_group_id FROM " . TABLE_CONF
 if ($configuration->EOF) {
     $db->Execute("INSERT INTO " . TABLE_CONFIGURATION_GROUP . " 
                  (configuration_group_title, configuration_group_description, sort_order, visible) 
-                 VALUES ('$configurationGroupTitle', '$configurationGroupTitle Settings', '1', '1');");
+                 VALUES ('$configurationGroupTitle', '$configurationGroupTitle', '1', '1');");
     $cgi = $db->Insert_ID(); 
     $db->Execute("UPDATE " . TABLE_CONFIGURATION_GROUP . " SET sort_order = $cgi WHERE configuration_group_id = $cgi;");
   
@@ -61,7 +61,9 @@ if (!defined ('DBIO_MODULE_VERSION')) {
 } else {
     if (!defined ('DBIO_SPLIT_RECORD_COUNT')) {
         $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'Split File: Record Count', 'DBIO_SPLIT_RECORD_COUNT', '2000', 'Sometimes, splitting a .csv file into multiple, smaller files can help if your server is timing out on an <em>import</em> operation or if an exported .csv is too large to download in a single chunk.<br /><br />Enter the number of records (default: 2000) at which to split these files using the <em>DbIo Manager</em>.', $cgi, 25, now(), NULL, NULL)");    
-
+    }
+    if (!defined ('DBIO_FILE_SORT_DEFAULT')) {
+        $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'Default File Sort Order', 'DBIO_FILE_SORT_DEFAULT', '3d', 'Choose the default sort-order that the <em>Database I/O Manager</em> uses when displaying the I/O files it has discovered, one of:<br /><br /><b>1a</b>: File Name, ascending<br /><b>1d</b>: File Name, descending<br /><b>2a</b>: File Size, ascending<br /><b>2d</b>: File Size, descending<br /><b>3a</b>: File Date, ascending<br /><b>3d</b>: File Date, descending', $cgi, 11, now(), NULL, 'zen_cfg_select_option(array(\'1a\', \'1d\', \'2a\', \'2d\', \'3a\', \'3d\'),')");
     }
 }
 

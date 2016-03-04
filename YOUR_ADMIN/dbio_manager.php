@@ -377,8 +377,6 @@ if (!$ok_to_proceed || $error_message !== '') {
     <div id="message" class="info"><?php echo $info_message; ?></div>
 <?php
     }
-    $config_check = $db->Execute ("SELECT configuration_group_id FROM " . TABLE_CONFIGURATION_GROUP . " WHERE configuration_group_title = 'Database I/O Manager Settings' LIMIT 1");
-    $configuration_group_id = ($config_check->EOF) ? 0 : $config_check->fields['configuration_group_id'];
 ?>
     <div id="main-contents">
         <div id="top-block"><div id="top-block-row"><?php echo zen_draw_form ('dbio', FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action')) . 'action=export_upload', 'post', 'enctype="multipart/form-data"'); ?>
@@ -501,7 +499,10 @@ if (!$ok_to_proceed || $error_message !== '') {
                 </div>
                 <div id="submit-report"><?php echo zen_draw_input_field ('export_button', BUTTON_EXPORT, 'title="' . BUTTON_EXPORT_TITLE . '"', false, 'submit'); ?></div>
             </div>
-            
+<?php
+    $config_check = $db->Execute ("SELECT configuration_group_id FROM " . TABLE_CONFIGURATION_GROUP . " WHERE configuration_group_title = 'Database I/O Manager Settings' LIMIT 1");
+    $configuration_group_id = ($config_check->EOF) ? 0 : $config_check->fields['configuration_group_id'];
+?>            
             <div id="configuration">
                 <div id="configuration-info"><?php echo sprintf (TEXT_FORMAT_CONFIG_INFO, zen_href_link (FILENAME_CONFIGURATION, "gID=$configuration_group_id")); ?></div>
 <?php
@@ -569,7 +570,7 @@ if (!$ok_to_proceed || $error_message !== '') {
         $file_action = (isset ($_POST['file_action'])) ? $_POST['file_action'] : 'none';
         
         $sort_1a = $sort_1d = $sort_2a = $sort_2d = $sort_3a = $sort_3d = '';
-        $sort_type = 'sort_' . ((isset ($_GET['sort']) && in_array ($_GET['sort'], explode (',', '1a,1d,2a,2d,3a,3d'))) ? $_GET['sort'] : '1a');
+        $sort_type = 'sort_' . ((isset ($_GET['sort']) && in_array ($_GET['sort'], explode (',', '1a,1d,2a,2d,3a,3d'))) ? $_GET['sort'] : DBIO_FILE_SORT_DEFAULT);
         $$sort_type = ' selected-sort';
 ?>
             <div class="file-row-caption"><?php echo TEXT_CHOOSE_ACTION . ' ' . zen_draw_pull_down_menu ('file_action', $file_actions_array, $file_action, 'id="file-action"'); ?>&nbsp;&nbsp;<?php echo zen_draw_input_field ('go_button', DBIO_BUTTON_GO, 'title="' . DBIO_BUTTON_GO_TITLE . '" onclick="return checkSubmit ();"', false, 'submit'); ?><hr /><?php echo TEXT_FILE_ACTION_DELETE_INSTRUCTIONS; ?><span id="file-delete-action"> <?php echo zen_draw_input_field ('delete_button', DBIO_BUTTON_DELETE, 'title="' . DBIO_BUTTON_DELETE_TITLE . '" onclick="return checkDelete ();"', false, 'submit'); ?></span></div>
@@ -583,7 +584,7 @@ if (!$ok_to_proceed || $error_message !== '') {
 <?php
         uasort ($dbio_files, function ($a, $b)
         {
-            $sort_type = (isset ($_GET['sort'])) ? $_GET['sort'] : '1a';
+            $sort_type = (isset ($_GET['sort'])) ? $_GET['sort'] : DBIO_FILE_SORT_DEFAULT;
             switch ($sort_type) {
                 case '1d':          //-File-name, descending
                     $compare_value = strcmp ($b['filename_only'], $a['filename_only']);
