@@ -19,7 +19,7 @@ class DbIo extends base
         if (!file_exists ($message_file_name)) {
             trigger_error ("Missing DbIo message file ($message_file_name)", E_USER_WARNING);
         } else {
-            require ($message_file_name);
+            require_once ($message_file_name);
         }
 
         mb_internal_encoding (CHARSET);
@@ -219,12 +219,13 @@ class DbIo extends base
                     while (($data = $this->getCsvRecord ()) !== false) {
                         $this->handler->importCsvRecord ($data);
                     }
+                    $completion_code = true;
                 }
                 fclose ($this->import_fp);
             }
             $this->handler->stopTimer ();
         }
-        return array ( 'status' => $completion_code, 'message' => $this->message );
+        return array ( 'status' => $completion_code, 'message' => $this->message, 'import_errors' => $this->handler->getImportErrors (), 'stats' => $this->handler->stats );
     }
 
     // -----

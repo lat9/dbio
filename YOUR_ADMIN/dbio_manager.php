@@ -131,12 +131,17 @@ if (!$ok_to_proceed) {
                             } else {
                                 $dbio = new DbIo ($dbio_files[$_POST['filename_hash']]['handler_name']);
                                 $action_types = explode ('-', $_POST['file_action']);
-                                $import_info = $dbio->dbioImport ($dbio_files[$_POST['filename_hash']]['filename_only'], $action_types[1]);
-                                if ($import_info['status'] === true) {
-                                    $messageStack->add_session (sprintf (SUCCESSFUL_FILE_IMPORT, $action_filename), 'success');
+                                $import_result = $dbio->dbioImport ($dbio_files[$_POST['filename_hash']]['filename_only'], $action_types[1]);
+                                if ($import_result['status'] === true) {
+                                    if (count ($import_result['import_errors']) == 0) {
+                                        $messageStack->add_session (sprintf (SUCCESSFUL_FILE_IMPORT, $action_filename, $import_result['stats']['record_count']), 'success');
+                                    } else {
+                                        $messageStack->add_session (sprintf (CAUTION_FILE_IMPORT, $action_filename, $import_result['stats']['errors'], $import_result['stats']['warnings'], $import_result['stats']['inserts'] + $import_result['stats']['updates']), 'warning');
+                                    }
                                 } else {
                                     $messageStack->add_session ($import_info['message']);
                                 }
+                                $_SESSION['dbio_import_result'] = $import_result;
                             }
                             zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
                             break;

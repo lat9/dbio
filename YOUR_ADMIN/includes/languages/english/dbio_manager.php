@@ -28,8 +28,6 @@ define ('TEXT_DEFAULT_LANGUAGE', 'Default Language');
 
 define ('TEXT_REPORTS_INSTRUCTIONS', 'The following <em>DbIo</em> reports are available for export:');
 
-define ('BUTTON_EXPORT', 'Export');
-define ('BUTTON_EXPORT_TITLE', 'Click here to export database information, based on the selected report type.');
 define ('BUTTON_SPLIT', 'Split');
 define ('BUTTON_SPLIT_TITLE', 'Click here to split the currently-chosen file into multiples of %u records.');
 define ('DBIO_BUTTON_DELETE', 'Delete');
@@ -76,6 +74,9 @@ define ('TEXT_SORT_DATE_ASC', 'Click here to sort by file-date, ascending');
 define ('TEXT_SORT_DATE_DESC', 'Click here to sort by file-date, descending');
 
 define ('ERROR_CHOOSE_FILE_ACTION', 'Please choose the action to be performed on the file named &quot;%s&quot;.');
+
+define ('SUCCESSFUL_FILE_IMPORT', 'The DbIo import from file &quot;%1$s&quot; was successfully completed.  %2$u records were imported.');
+define ('CAUTION_FILE_IMPORT', 'The DbIo import from file &quot;%1$s&quot; was completed with %2$u errors and %3$u warnings. %4$u records were inserted or updated.');
 
 define ('ERROR_CANT_DELETE_FILE', 'The requested file (%s) was not deleted; it was not found or its permissions are not set properly.');
 define ('SUCCESS_FILE_DELETED', 'The requested file (%s) was successfully deleted.');

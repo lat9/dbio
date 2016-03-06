@@ -209,15 +209,16 @@ class DbIoProductsHandler extends DbIoHandler
             'v_categories_name' => self::DBIO_FLAG_NONE,
         );
     } 
+    
     // -----
-    // This function, called for each-and-every data-element being imported, can return one of three values:
+    // This function, called for header-element being imported, can return one of three values:
     //
     // - DBIO_IMPORT_OK ........ The field has no special-handling requirements.
     // - DBIO_NO_IMPORT ........ The field's value should not set directly to the database for the import; implying
     //                           that the field is calculated separately by the handler's processing.
     // - DBIO_SPECIAL_IMPORT ... The field requires special-handling by the handler to create the associated database elements.
     //
-    protected function importFieldCheck ($field_name) 
+    protected function importHeaderFieldCheck ($field_name) 
     {
         $field_status = self::DBIO_IMPORT_OK;
         switch ($field_name) {
@@ -250,8 +251,8 @@ class DbIoProductsHandler extends DbIoHandler
         }
     }    
 
-    protected function importAddField ($table_name, $field_name, $field_value, $field_type) {
-        $this->debugMessage ("importAddField ($table_name, $field_name, $field_value, $field_type)");
+    protected function importAddField ($table_name, $field_name, $field_value) {
+        $this->debugMessage ("Products::importAddField ($table_name, $field_name, $field_value)");
         global $db;
         switch ($table_name) {
             case TABLE_PRODUCTS:
@@ -259,20 +260,18 @@ class DbIoProductsHandler extends DbIoHandler
                 if ($this->import_is_insert) {
                     if ($field_name === 'products_date_added') {
                         $field_value = 'now()';
-                        $field_type = 'noquotestring';
                     } elseif ($field_name === 'products_last_modified') {
                         $import_this_field = false;
                     }
                 } else {
                     if ($field_name === 'products_last_modified') {
                         $field_value = 'now()';
-                        $field_type = 'noquotestring';
                     } elseif ($field_name === 'products_date_added') {
                         $import_this_field = false;
                     }
                 }
                 if ($import_this_field) {
-                    parent::importAddField ($table_name, $field_name, $field_value, $field_type);
+                    parent::importAddField ($table_name, $field_name, $field_value);
                 }
                 break;
             case self::DBIO_SPECIAL_IMPORT:
@@ -304,7 +303,7 @@ class DbIoProductsHandler extends DbIoHandler
                                 }
                             }
                         }
-                        parent::importAddField (TABLE_PRODUCTS, 'manufacturers_id', $manufacturers_id, 'integer');
+                        $this->import_sql_data[TABLE_PRODUCTS]['manufacturers_id'] = array ( 'value' => $manufacturers_id, 'type' => 'integer' );
                         break;
                     case 'tax_class_title':
                         if (zen_not_null ($field_value)) {
@@ -315,8 +314,7 @@ class DbIoProductsHandler extends DbIoHandler
                       
                             }
                             $tax_class_id = ($tax_class_check->EOF) ? 0 : $tax_class_check->fields['tax_class_id'];
-                            parent::importAddField (TABLE_PRODUCTS, 'products_tax_class_id', $tax_class_id, 'integer');
-                    
+                            $this->import_sql_data[TABLE_PRODUCTS]['products_tax_class_id'] = array ( 'value' => $tax_class_id, 'type' => 'integer' );
                         }
                         break;
                     case 'categories_name':
@@ -348,9 +346,8 @@ class DbIoProductsHandler extends DbIoHandler
                                 $this->debugMessage ("[*] Product not inserted at line number " . $this->stats['record_count'] . "; category ($field_name) has categories.", self::DBIO_WARNING);
 
                             } else {
-                                parent::importAddField (TABLE_PRODUCTS, 'master_categories_id', $parent_category, 'integer');
-                                parent::importAddField (TABLE_PRODUCTS_TO_CATEGORIES, 'categories_id', $parent_category, 'integer');
-
+                                $this->import_sql_data[TABLE_PRODUCTS]['master_categories_id'] = array ( 'value' => $parent_category, 'type' => 'integer' );
+                                $this->import_sql_data[TABLE_PRODUCTS_TO_CATEGORIES]['categories_id'] = array ( 'value' => $parent_category, 'type' => 'integer' );
                             }
                         }
                         if (!$categories_name_ok) {
@@ -379,24 +376,23 @@ class DbIoProductsHandler extends DbIoHandler
     // happens within this function and we set the return value to false to indicate to the parent processing that the
     // associated update has been already handled.
     //
-    protected function importUpdateRecordKey ($table_name, $sql_data_array, $products_id, $key_value_fields) 
+    protected function importUpdateRecordKey ($table_name, $table_fields, $products_id, $key_value_fields) 
     {
         if ($products_id !== false) {
             global $db;
             if ($this->import_is_insert) {
                 if ($table_name != TABLE_PRODUCTS) {
-                    $sql_data_array[] = array ( 'fieldName' => 'products_id', 'value' => $products_id, 'type' => 'integer' );
+                    $table_fields['products_id'] = array ( 'value' => $products_id, 'type' => 'integer' );
               
                 }
             } elseif ($table_name == TABLE_PRODUCTS_TO_CATEGORIES && $this->operation != 'check') {
-                foreach ($sql_data_array as $next_category) {
-                    $db->Execute ("INSERT IGNORE INTO $table_name (products_id, categories_id) VALUES ( $products_id, " . $next_category['value'] . ")");
-              
+                foreach ($table_fields as $field_name => $field_data) {
+                    $db->Execute ("INSERT IGNORE INTO $table_name (products_id, categories_id) VALUES ( $products_id, " . (int)$field_data['value'] . ")");
                 }
-                $sql_data_array = false;
+                $table_fields = false;
             }
         }
-        return parent::importUpdateRecordKey ($table_name, $sql_data_array, $products_id, $key_value_fields);
+        return parent::importUpdateRecordKey ($table_name, $table_fields, $products_id, $key_value_fields);
       
     }
 

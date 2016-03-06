@@ -92,91 +92,66 @@ class DbIoFeaturedHandler extends DbIoHandler
         return $initialized;
     }
 
-    // -----
-    // This function, called for each-and-every data-element being imported, can return one of three values:
-    //
-    // - DBIO_IMPORT_OK ........ The field has no special-handling requirements.
-    // - DBIO_NO_IMPORT ........ The field's value should not set directly to the database for the import; implying
-    //                           that the field is calculated separately by the handler's processing.
-    // - DBIO_SPECIAL_IMPORT ... The field requires special-handling by the handler to create the associated database elements.
-    //
-    protected function importFieldCheck ($field_name) 
-    {
-        switch ($field_name) {
-            case 'products_model':
-            case 'status':
-            case 'featured_date_added':
-            case 'expires_date':
-            case 'date_status_change':
-            case 'featured_date_available':
-                $field_status = self::DBIO_IMPORT_OK;
-                break;
-            default:
-                $field_status = self::DBIO_NO_IMPORT;
-                break;
-        }
-        return $field_status;
-    }
  
     // -----
     // Part of the dbIO import record-processing, check to see what type of operation is being performed.  If the
-    // current key value **is** false, then either the products_model doesn't exist or there's no current record
-    // for the product in the "featured" database table.
+    // current key value is false, then either the products_model doesn't exist or there's no current record
+    // for the product in the "featured" database table.  Determine which and continue if the model's found.
     //
     protected function importCheckKeyValue ($data_value, $key_value, $key_value_fields) 
     {
         global $db;
-        $this->debugMessage ("importCheckKeyValue ($data_value, $key_value, " . str_replace ("\n", '', var_export ($key_value_fields, true)));
+        $this->debugMessage ("Featured::importCheckKeyValue ($data_value, $key_value, key_value_fields:" . str_replace ("\n", '', var_export ($key_value_fields, true)));
+        $products_id = false;
         if ($key_value === false) {
             $model_check_sql = "SELECT products_id FROM " . TABLE_PRODUCTS . " WHERE products_model = :products_model: LIMIT 1";
             $model_check_sql = $db->bindVars ($model_check_sql, ':products_model:', $data_value, 'string');
             $model_check = $db->Execute ($model_check_sql);
-            if ($model_check->EOF) {
-                $this->debugMessage ("[*] Featured product not inserted at line number " . $this->stats['record_count'] . "; product's model ($data_value) does not exist.", self::DBIO_WARNING);
-                $this->record_ok = false;
-                $this->stats['inserts']--;
-            } else {
-                parent::importAddField (TABLE_FEATURED, 'products_id', $model_check->fields['products_id'], 'integer');
+            if (!$model_check->EOF) {
+                $products_id = $model_check->fields['products_id'];
             }
+        } elseif (isset ($key_value_fields['products_id'])) {
+            $products_id = $key_value_fields['products_id'];
         }
-        return parent::importCheckKeyValue ($data_value, $key_value, $key_value_fields);
+        
+        if ($products_id === false) {
+            $this->debugMessage ("[*] Featured product not inserted at line number " . $this->stats['record_count'] . "; product's model ($data_value) does not exist.", self::DBIO_WARNING);
+            $this->record_ok = false;
+        } elseif ($this->import_is_insert) {
+            $this->import_sql_data[TABLE_FEATURED]['products_id'] = array ( 'value' => $products_id, 'type' => 'integer' );
+        }
+        
+        unset ($this->import_sql_data[TABLE_PRODUCTS]);
+        
+        return $this->record_ok;
     }  
 
-    protected function importAddField ($table_name, $field_name, $field_value, $field_type) {
-        $this->debugMessage ("importAddField ($table_name, $field_name, $field_value, $field_type)");
-        global $db;
+    protected function importAddField ($table_name, $field_name, $field_value) {
+        $this->debugMessage ("Featured::importAddField ($table_name, $field_name, $field_value)");
         switch ($table_name) {
             case TABLE_FEATURED:
-                $import_this_field = true;
                 if ($this->import_is_insert) {
                     if ($field_name === 'featured_date_added') {
                         $field_value = 'now()';
-                        $field_type = 'noquotestring';
                     } elseif ($field_name === 'featured_last_modified') {
-                        $import_this_field = false;
+                        $field_value = self::DBIO_NO_IMPORT;
                     }
                 } else {
                     if ($field_name === 'featured_last_modified') {
                         $field_value = 'now()';
-                        $field_type = 'noquotestring';
-                    } elseif ($field_name === 'featured_date_added') {
-                        $import_this_field = false;
                     }
                 }
-                if ($import_this_field) {
-                    parent::importAddField ($table_name, $field_name, $field_value, $field_type);
-                }
+                parent::importAddField ($table_name, $field_name, $field_value);
                 break;
              default:
-                parent::importAddField ($table_name, $field_name, $field_value, $field_type);
                 break;
         }  //-END switch interrogating $table_name
     }  //-END function importAddField
    
-    protected function importProcessField ($table_name, $field_name, $language_id, $field_value, $field_type = false) 
+    protected function importProcessField ($table_name, $field_name, $language_id, $field_value) 
     {
         if ($table_name == FILENAME_FEATURED) {
-             parent::importProcessField ($table_name, $field_name, $language_id, $field_value, $field_type);
+             parent::importProcessField ($table_name, $field_name, $language_id, $field_value);
         }
     }
 
