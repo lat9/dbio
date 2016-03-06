@@ -95,13 +95,13 @@ class DbIoOrdersHandler extends DbIoHandler
             $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'o.orders_id <= ' . (int)$_POST['orders_id_max'];
         }
         if (zen_not_null ($_POST['orders_date_start'])) {
-           $validated_date = dbioFormatValidateDate ($_POST['orders_date_start']);
+           $validated_date = $this->formatValidateDate ($_POST['orders_date_start']);
             if ($validated_date !== false) {
                 $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "o.date_purchased >= '$validated_date 00:00:00'";
             }
         }
         if (zen_not_null ($_POST['orders_date_end'])) {
-            $validated_date = dbioFormatValidateDate ($_POST['orders_date_end']);
+            $validated_date = $this->formatValidateDate ($_POST['orders_date_end']);
             if ($validated_date !== false) {
                 $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "o.date_purchased <= '$validated_date 23:59:59'";
             }

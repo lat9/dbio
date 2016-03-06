@@ -24,17 +24,3 @@ function dbioDrawOrdersStatusDropdown ($field_name)
     }
     return zen_draw_pull_down_menu ($field_name, $status_array, dbioGetFieldValue ($field_name));
 }
-
-function dbioFormatValidateDate ($date_value, $imported = false, $log = true)
-{
-    $parsed_date = date_parse ($date_value);
-    if ($parsed_date['error_count'] == 0 && checkdate ($parsed_date['month'], $parsed_date['day'], $parsed_date['year'])) {
-        $return_date = sprintf ('%u-%02u-%02u', $parsed_date['year'], $parsed_date['month'], $parsed_date['day']);
-    } else {
-        $return_date = false;
-        if ($log) {
-            trigger_error ("Invalid date ($date_value) supplied.\n" . var_export ($parsed_date, true), E_USER_WARNING);
-        }
-    }
-    return $return_date;
-}
