@@ -141,7 +141,7 @@ if (!$ok_to_proceed) {
                                 } else {
                                     $messageStack->add_session ($import_info['message']);
                                 }
-                                $_SESSION['dbio_import_result'] = $import_result;
+                                $_SESSION['dbio_import_result'] = array_merge ($import_result, array ('import_filename' => $action_filename));
                             }
                             zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
                             break;
@@ -552,7 +552,7 @@ if (!$ok_to_proceed || $error_message !== '') {
                 <hr />
                 <div id="upload-file">
                     <div id="upload-instructions"><?php echo sprintf (TEXT_FILE_UPLOAD_INSTRUCTIONS, DBIO_SUPPORTED_FILE_EXTENSIONS); ?></div>
-                    <div id="upload-file"><?php echo TEXT_CHOOSE_FILE . ' ' . zen_draw_file_field ('upload_filename'); ?></div>
+                    <div id="upload-file-field"><?php echo TEXT_CHOOSE_FILE . ' ' . zen_draw_file_field ('upload_filename'); ?></div>
                     <div id="upload-button" class="right"><?php echo zen_draw_input_field ('upload_button', BUTTON_UPLOAD, 'title="' . BUTTON_UPLOAD_TITLE . '"', false, 'submit'); ?></div>
                 </div>
             </div>
@@ -616,10 +616,14 @@ if (!$ok_to_proceed || $error_message !== '') {
         $even_odd = 'even';
         $first_file = true;
         foreach ($dbio_files as $name_hash => $file_info) {
+            $file_details = '';
+            if (isset ($_SESSION['dbio_import_result']) && $_SESSION['dbio_import_result']['import_filename'] == $file_info['full_filepath']) {
+                $file_details = ' X ';
+            }
 ?>
             <div class="file-row <?php echo $even_odd; ?>">
                 <div class="file-item"><?php echo zen_draw_radio_field ('filename_hash', $name_hash, $first_file, '', 'onclick="checkFileOptions ();"'); ?></div>
-                <div class="file-item left"><?php echo $file_info['filename_only']; ?></div>
+                <div class="file-item left"><?php echo $file_info['filename_only'] . $file_details; ?></div>
                 <div class="file-item"><?php echo $file_info['bytes']; ?></div>
                 <div class="file-item"><?php echo date (DBIO_DEBUG_DATE_FORMAT, $file_info['last_modified']); ?></div>
                 <div class="file-item"><?php echo zen_draw_checkbox_field ('delete_hash[' . $name_hash . ']', '', false, '', 'class="delete-hash"'); ?></div>

@@ -24,6 +24,20 @@ class DbIoFeaturedHandler extends DbIoHandler
             'description' => DBIO_FEATURED_DESCRIPTION,
         );
     }
+    
+
+    public function exportInitialize ($language = 'all') 
+    {
+        $initialized = parent::exportInitialize ($language);
+        if ($initialized) {
+            if ($this->where_clause != '') {
+                $this->where_clause .= ' AND ';
+            }
+            $this->where_clause .= "p.products_id = f.products_id";
+            $this->order_by_clause .= 'f.products_id ASC';
+        }
+        return $initialized;
+    }
 
     public function exportPrepareFields (array $fields) 
     {
@@ -78,20 +92,6 @@ class DbIoFeaturedHandler extends DbIoHandler
             ), 
         );
     }
-
-    public function exportInitialize ($language = 'all') 
-    {
-        $initialized = parent::exportInitialize ($language);
-        if ($initialized) {
-            if ($this->where_clause != '') {
-                $this->where_clause .= ' AND ';
-            }
-            $this->where_clause .= "p.products_id = f.products_id";
-            $this->order_by_clause .= 'f.products_id ASC';
-        }
-        return $initialized;
-    }
-
  
     // -----
     // Part of the dbIO import record-processing, check to see what type of operation is being performed.  If the
@@ -116,14 +116,14 @@ class DbIoFeaturedHandler extends DbIoHandler
         
         if ($products_id === false) {
             $this->debugMessage ("[*] Featured product not inserted at line number " . $this->stats['record_count'] . "; product's model ($data_value) does not exist.", self::DBIO_WARNING);
-            $this->record_ok = false;
+            $this->record_status = false;
         } elseif ($this->import_is_insert) {
             $this->import_sql_data[TABLE_FEATURED]['products_id'] = array ( 'value' => $products_id, 'type' => 'integer' );
         }
         
         unset ($this->import_sql_data[TABLE_PRODUCTS]);
         
-        return $this->record_ok;
+        return $this->record_status;
     }  
 
     protected function importAddField ($table_name, $field_name, $field_value) {

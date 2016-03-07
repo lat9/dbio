@@ -35,6 +35,9 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
     //
     public function exportFinalizeInitialization ()
     {
+        $first_language_code = ($this->export_language == 'all') ? DEFAULT_LANGUAGE : $this->export_language;
+        $this->where_clause = sprintf ($this->where_clause, $this->languages[$first_language_code]);
+        
         // -----
         // Check to see if any of this handler's filter variables have been set.  If set, check the values and then
         // update the where_clause for the to-be-issued SQL query for the export.
@@ -103,208 +106,132 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
     protected function setHandlerConfiguration () 
     {
         $this->stats['report_name'] = 'ProductsAttribsBasic';
+        $this->config = self::getHandlerInformation ();
+        $this->config['key'] = array (
+            'table' => TABLE_PRODUCTS, 
+            'match_field' => 'products_model',
+            'match_field_type' => 'string',
+            'key_field' => 'products_id', 
+            'key_field_type' => 'integer' 
+        );
+        $this->config['tables'] = array (
+            TABLE_PRODUCTS_ATTRIBUTES => array (
+                'alias' => 'pa',
+            ),
+            TABLE_PRODUCTS => array (
+                'alias' => 'p',
+            ),
+            TABLE_PRODUCTS_OPTIONS => array (
+                'alias' => 'po',
+                'language_field' => 'language_id',
+            ),
+            TABLE_PRODUCTS_OPTIONS_VALUES => array (
+                'alias' => 'pov',
+                'language_field' => 'language_id',
+                'no_from_clause' => true,
+            ),
+        );
+        $this->config['fixed_headers'] = array (
+            'products_model' => TABLE_PRODUCTS,
+            'products_id' => TABLE_PRODUCTS,
+            'products_options_id' => TABLE_PRODUCTS_OPTIONS,
+            'products_options_type' => TABLE_PRODUCTS_OPTIONS,
+            'products_options_name' => TABLE_PRODUCTS_OPTIONS,
+        );
+        $this->config['fixed_fields_no_header'] = array (
+            'products_id',
+            'products_options_id',
+        );
+        $this->config['export_where_clause'] = 'pa.products_id = p.products_id AND pa.options_id = po.products_options_id AND po.language_id = %u GROUP BY p.products_id, po.products_options_id';
+        
         if (PRODUCTS_OPTIONS_SORT_ORDER == '0') {
             $options_order_by = 'LPAD(po.products_options_sort_order,11,"0")';
         } else {
             $options_order_by = 'po.products_options_name';
         }
-        $this->config = self::getHandlerInformation ();
-        $this->config['key'] = array (
-            'table' => TABLE_PRODUCTS, 
-            'match_field' => 'products_model', 
-            'key_field' => 'products_id', 
-            'key_field_type' => 'integer' 
-        );
-        $this->config['fixed_headers'] = array (
-            'tables' => array (
-                TABLE_PRODUCTS_ATTRIBUTES => 'pa',
-                TABLE_PRODUCTS => 'p',
-                TABLE_PRODUCTS_OPTIONS => 'po',
-            ),
-            'language_tables' => array (
-                'po' => 'language_id',
-            ),
-            'fields' => array (
-                'products_model' => 'p',
-                'products_id' => 'p',
-                'products_options_id' => 'po',
-                'products_options_type' => 'po',
-                'products_options_name' => 'po',
-            ),
-            'no_header_fields' => array (
-                'products_id',
-                'products_options_id',
-            ),
-            'where_clause' => 'pa.products_id = p.products_id AND pa.options_id = po.products_options_id AND po.language_id = %u GROUP BY p.products_id, po.products_options_id',
-            'order_by_clause' => "p.products_model, $options_order_by",
-        );
+        $this->config['export_order_by_clause'] = "p.products_model, $options_order_by";
+
         $this->config['additional_headers'] = array (
-            'v_products_options_values_name' => self::DBIO_FLAG_NONE,
+            'v_products_options_values_name' => self::DBIO_FLAG_PER_LANGUAGE,
         );
-    } 
-    
-    protected function exportInitializeFixedHeaders ()
-    {
-        parent::exportInitializeFixedHeaders ();
-        $export_language_code = $this->export_language;
-        if ($export_language_code == 'all') {
-            $export_language_code = DEFAULT_LANGUAGE;
-        }
-        $this->where_clause = sprintf ($this->where_clause, $this->languages[$export_language_code]);
-        $this->headers[] = "v_products_options_values_name_$export_language_code";
     }
     
+    // -----
+    // Check the "key" value (the products_model mapped to a products_id).  If that value is false, then the associated
+    // product model wasn't found, so there's nothing to import for the current data record.
+    //
+    protected function importCheckKeyValue ($data_value, $key_value, $key_value_fields)
+    {
+        if ($key_value === false) {
+            $this->record_status = false;
+            $this->debugMessage ("[*] Attributes not inserted at line number " . $this->stats['record_count'] . "; product's model ($data_value) does not exist.", self::DBIO_WARNING);
+        } else {
+            $this->saved_data = array ( 'products_id' => $key_value, 'option' => array () );
+        }
+        return $this->record_status;
+    }
     
-    
-    protected function importAddField ($table_name, $field_name, $field_value, $field_type) {
-        $this->debugMessage ("importAddField ($table_name, $field_name, $field_value, $field_type)");
+    protected function importProcessField ($table_name, $field_name, $language_id, $field_value)
+    {
         global $db;
-        switch ($table_name) {
-            case TABLE_PRODUCTS:
-                $import_this_field = true;
-                if ($this->import_is_insert) {
-                    if ($field_name === 'products_date_added') {
-                        $field_value = 'now()';
-                        $field_type = 'noquotestring';
-                    } elseif ($field_name === 'products_last_modified') {
-                        $import_this_field = false;
-                    }
+        if ($table_name == TABLE_PRODUCTS_OPTIONS) {
+            if (!isset ($this->saved_data['option'][$language_id])) {
+                $this->saved_data['option'][$language_id] = array ();
+            }
+            $this->saved_data['option'][$language_id][$field_name] = $field_value;
+        } elseif ($table_name == TABLE_PRODUCTS_OPTIONS_VALUES) {
+            if (!isset ($this->saved_data['option'][$language_id]) || !isset ($this->saved_data['option'][$language_id]['products_options_type']) || !isset ($this->saved_data['option'][$language_id]['products_options_name'])) {    $this->record_status = false;
+                $this->debugMessage ("[*] Attributes not inserted at line number " . $this->stats['record_count'] . "; product's option information does not exist.", self::DBIO_WARNING);
+            } else {
+                $products_options_name = $this->saved_data['option'][$language_id]['products_options_name'];
+                $products_options_type = $this->saved_data['option'][$language_id]['products_options_type'];
+                $option_check = $db->Execute ("SELECT products_options_id FROM " . TABLE_PRODUCTS_OPTIONS . "
+                                                WHERE products_options_name = '" . $db->prepare_input ($products_options_name) . "'
+                                                  AND language_id = $language_id
+                                                  AND products_options_type = " . (int)$products_options_type . " LIMIT 1", false, false, 0, true);
+                if ($option_check->EOF) {
+                    $this->record_status = false;
+                    $this->debugMessage ("[*] Attributes not inserted at line number " . $this->stats['record_count'] . "; product's option ($products_options_name::$products_options_type::$language_id) not found.", self::DBIO_WARNING);
                 } else {
-                    if ($field_name === 'products_last_modified') {
-                        $field_value = 'now()';
-                        $field_type = 'noquotestring';
-                    } elseif ($field_name === 'products_date_added') {
-                        $import_this_field = false;
-                    }
-                }
-                if ($import_this_field) {
-                    parent::importAddField ($table_name, $field_name, $field_value, $field_type);
-                }
-                break;
-            case self::DBIO_SPECIAL_IMPORT:
-                switch ($field_name) {
-                    case 'manufacturers_name':
-                        if (empty ($field_value)) {
-                            $manufacturers_id = 0;
-
-                        } else {
-                            $manufacturer_check_sql = "SELECT manufacturers_id FROM " . TABLE_MANUFACTURERS . " WHERE manufacturers_name = :manufacturer_name: LIMIT 1";
-                            $manufacturer_check = $db->Execute ($db->bindVars ($manufacturer_check_sql, ':manufacturer_name:', $field_value, 'string'), false, false, 0, true);
-                            if (!$manufacturer_check->EOF) {
-                                $manufacturers_id = $manufacturer_check->fields['manufacturers_id'];
-                          
+                    $products_options_id = $option_check->fields['products_options_id'];
+                    $options_values_names = explode ('^', $field_value);
+                    if (count ($options_values_names) == 0) {
+                        $this->record_status = false;
+                        $this->debugMessage ("[*] Attributes not inserted at line number " . $this->stats['record_count'] . "; option names\' list cannot be empty ($field_value).", self::DBIO_WARNING);
+                    } else {
+                        foreach ($options_values_names as $current_option_value_name) {
+                            $value_check = $db->Execute ("SELECT products_options_values_id FROM " . TABLE_PRODUCTS_OPTIONS_VALUES . "
+                                                           WHERE products_options_values_name = '" . $db->prepare_input ($current_option_value_name) . "'
+                                                             AND language_id = $language_id LIMIT 1", false, false, 0, true);
+                            if ($value_check->EOF) {
+                                $this->record_status = false;
+                                $this->debugMessage ("[*] Attributes not inserted at line number " . $this->stats['record_count'] . "; option value name ($current_option_value_name::$language_id) does not exist.", self::DBIO_WARNING);
                             } else {
-                                $this->debugMessage ("[*] Import, creating database entry for manufacturer named \"$field_value\"", self::DBIO_ACTIVITY);
-                                $sql_data_array = array ();
-                                $sql_data_array[] = array ( 'fieldName' => 'manufacturers_name', 'value' => $field_value, 'type' => 'string' );
-                                $sql_data_array[] = array ( 'fieldName' => 'date_added', 'value' => 'now()', 'type' => 'noquotestring' );
-                                $db->perform (TABLE_MANUFACTURERS, $sql_data_array);
-                                $manufacturers_id = $db->Insert_ID();
-                          
-                                foreach ($this->languages as $language_code => $language_id) {
-                                    $sql_data_array = array ();
-                                    $sql_data_array[] = array ( 'fieldName' => 'manufacturers_id', 'value' => $manufacturers_id, 'type' => 'integer' );
-                                    $sql_data_array[] = array ( 'fieldName' => 'languages_id', 'value' => $language_id, 'type' => 'integer' );
-                                    $db->perform (TABLE_MANUFACTURERS_INFO, $sql_data_array);
-                            
+                                $attribute_check = $db->Execute ("SELECT products_attributes_id FROM " . TABLE_PRODUCTS_ATTRIBUTES . "
+                                                                   WHERE products_id = " . (int)$this->saved_data['products_id'] . "
+                                                                     AND options_id = $products_options_id
+                                                                     AND options_values_id = " . $value_check->fields['products_options_values_id'] . " LIMIT 1", false, false, 0, true);
+                                if ($attribute_check->EOF) {
+                                    $table_fields = array (
+                                        'products_id' => array ( 'value' => $this->saved_data['products_id'], 'type' => 'integer' ),
+                                        'options_id' => array ( 'value' => $products_options_id, 'type' => 'integer' ),
+                                        'options_values_id' => array ( 'value' => $value_check->fields['products_options_values_id'], 'type' => 'integer' ),
+                                    );
+                                    $sql_query = $this->importBuildSqlQuery (TABLE_PRODUCTS_ATTRIBUTES, $table_fields, true, true);
+                                    if ($this->operation != 'check') {
+                                        $db->Execute ($sql_query);
+                                        $attrib_record_id = $db->Insert_ID ();
+                                        $this->stats['inserts']++;
+                                        $this->debugMessage ("ProductsAttribsBasic inserted products_attributes_id = $attrib_record_id.", self::DBIO_ACTIVITY);
+                                    }
                                 }
                             }
                         }
-                        parent::importAddField (TABLE_PRODUCTS, 'manufacturers_id', $manufacturers_id, 'integer');
-                        break;
-                    case 'tax_class_title':
-                        if (zen_not_null ($field_value)) {
-                            $tax_class_check_sql = "SELECT tax_class_id FROM " . TABLE_TAX_CLASS . " WHERE tax_class_title = :tax_class_title: LIMIT 1";
-                            $tax_class_check = $db->Execute ($db->bindVars ($tax_class_check_sql, ':tax_class_title:', $field_value, 'string'));
-                            if ($tax_class_check->EOF) {
-                                $this->debugMessage ('[*] Import line #' . $this->stats['record_count'] . ", undefined tax_class_title ($field_value).  Defaulting product to untaxed.", self::DBIO_WARNING);
-                      
-                            }
-                            $tax_class_id = ($tax_class_check->EOF) ? 0 : $tax_class_check->fields['tax_class_id'];
-                            parent::importAddField (TABLE_PRODUCTS, 'products_tax_class_id', $tax_class_id, 'integer');
-                    
-                        }
-                        break;
-                    case 'categories_name':
-                        $parent_category = 0;
-                        $categories_name_ok = true;
-                        $language_id = $this->languages[DEFAULT_LANGUAGE];
-                        $categories = explode ('^', $field_value);
-                        foreach ($categories as $current_category_name) {
-                            $category_info_sql = "SELECT c.categories_id FROM " . TABLE_CATEGORIES . " c, " . TABLE_CATEGORIES_DESCRIPTION . " cd
-                                                   WHERE c.parent_id = $parent_category 
-                                                     AND c.categories_id = cd.categories_id
-                                                     AND cd.categories_name = :categories_name: 
-                                                     AND cd.language_id = $language_id LIMIT 1";
-                            $category_info = $db->Execute ($db->bindVars ($category_info_sql, ':categories_name:', $current_category_name, 'string'), false, false, 0, true);
-                            if (!$category_info->EOF) {
-                                $parent_category = $category_info->fields['categories_id'];
-                              
-                            } elseif ($this->import_is_insert) {
-                                $categories_name_ok = false;
-                                $this->debugMessage ('[*] Product not inserted at line number ' . $this->stats['record_count'] . ", no match found for categories_name ($current_category_name).", self::DBIO_WARNING);
-                                break;
-                              
-                            }
-                        }
-                        if ($categories_name_ok && $this->import_is_insert) {
-                            $category_check = $db->Execute ("SELECT categories_id FROM " . TABLE_CATEGORIES . " WHERE parent_id = $parent_category LIMIT 1", false, false, 0, true);
-                            if (!$category_check->EOF) {
-                                $categories_name_ok = false;
-                                $this->debugMessage ("[*] Product not inserted at line number " . $this->stats['record_count'] . "; category ($field_name) has categories.", self::DBIO_WARNING);
-
-                            } else {
-                                parent::importAddField (TABLE_PRODUCTS, 'master_categories_id', $parent_category, 'integer');
-                                parent::importAddField (TABLE_PRODUCTS_TO_CATEGORIES, 'categories_id', $parent_category, 'integer');
-
-                            }
-                        }
-                        if (!$categories_name_ok) {
-                            $this->record_ok = false;
-                        }
-                        break;
-                    default:
-                        break;
-                }  //-END switch interrogating $field_name for self::DBIO_SPECIAL_IMPORT
-                break;
-            default:
-                parent::importAddField ($table_name, $field_name, $field_value, $field_type);
-                break;
-        }  //-END switch interrogating $table_name
-    }  //-END function importAddField
-
-    // -----
-    // This function, issued just prior to the database action, allows the I/O handler to make any "last-minute" changes based
-    // on the record's 'key' value -- for this report, it's the products_id value.
-    //
-    // If we're doing an insert (i.e. a new product), simply add the products_id field to the non-products tables' SQL
-    // input array.
-    //
-    // If we're doing an update (i.e. existing product), the built-in handling has already taken care of the language
-    // tables, but there's some special handling required for the products-to-categories table.  That table's update
-    // happens within this function and we set the return value to false to indicate to the parent processing that the
-    // associated update has been already handled.
-    //
-    protected function importUpdateRecordKey ($table_name, $sql_data_array, $products_id, $key_value_fields) 
-    {
-        if ($products_id !== false) {
-            global $db;
-            if ($this->import_is_insert) {
-                if ($table_name != TABLE_PRODUCTS) {
-                    $sql_data_array[] = array ( 'fieldName' => 'products_id', 'value' => $products_id, 'type' => 'integer' );
-              
+                        $this->record_status = 'processed';
+                    }
                 }
-            } elseif ($table_name == TABLE_PRODUCTS_TO_CATEGORIES && $this->operation != 'check') {
-                if ($this->operation == 'check')
-                foreach ($sql_data_array as $next_category) {
-                    $db->Execute ("INSERT IGNORE INTO $table_name (products_id, categories_id) VALUES ( $products_id, " . $next_category['value'] . ")");
-              
-                }
-                $sql_data_array = false;
             }
         }
-        return parent::importUpdateRecordKey ($table_name, $sql_data_array, $products_id);
-      
     }
 
 }  //-END class DbIoProductsHandler

@@ -256,23 +256,18 @@ class DbIoProductsHandler extends DbIoHandler
         global $db;
         switch ($table_name) {
             case TABLE_PRODUCTS:
-                $import_this_field = true;
                 if ($this->import_is_insert) {
                     if ($field_name === 'products_date_added') {
                         $field_value = 'now()';
                     } elseif ($field_name === 'products_last_modified') {
-                        $import_this_field = false;
+                        $field_value = self::DBIO_NO_IMPORT;
                     }
                 } else {
                     if ($field_name === 'products_last_modified') {
                         $field_value = 'now()';
-                    } elseif ($field_name === 'products_date_added') {
-                        $import_this_field = false;
                     }
                 }
-                if ($import_this_field) {
-                    parent::importAddField ($table_name, $field_name, $field_value);
-                }
+                parent::importAddField ($table_name, $field_name, $field_value);
                 break;
             case self::DBIO_SPECIAL_IMPORT:
                 switch ($field_name) {
@@ -351,7 +346,7 @@ class DbIoProductsHandler extends DbIoHandler
                             }
                         }
                         if (!$categories_name_ok) {
-                            $this->record_ok = false;
+                            $this->record_status = false;
                         }
                         break;
                     default:
@@ -359,7 +354,7 @@ class DbIoProductsHandler extends DbIoHandler
                 }  //-END switch interrogating $field_name for self::DBIO_SPECIAL_IMPORT
                 break;
             default:
-                parent::importAddField ($table_name, $field_name, $field_value, $field_type);
+                parent::importAddField ($table_name, $field_name, $field_value);
                 break;
         }  //-END switch interrogating $table_name
     }  //-END function importAddField

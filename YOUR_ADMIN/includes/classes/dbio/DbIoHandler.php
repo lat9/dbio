@@ -665,7 +665,7 @@ abstract class DbIoHandler extends base
                                 break;
                             case 'date':
                             case 'datetime':
-                                $field_type = 'date';
+                                $field_type = ($this->tables[$table_name]['fields'][$current_field]['default'] === NULL) ? 'null_date' : 'date';
                                 break;
                             case 'char':
                             case 'text':
@@ -734,7 +734,7 @@ abstract class DbIoHandler extends base
         // Indicate, initially, that the record is OK to import and increment the count of lines processed.  The last value
         // will be used in any debug-log information to note the location of any processing.
         //
-        $this->record_ok = true;
+        $this->record_status = true;
         $this->stats['record_count']++;
         
         // -----
@@ -747,7 +747,7 @@ abstract class DbIoHandler extends base
           
         } else {
             $data_key_sql = $db->bindVars ($this->data_key_sql, ':match_value:', $data[$key_index], $this->key_field_type);
-            $data_key_check = $db->Execute ($data_key_sql);
+            $data_key_check = $db->Execute ($data_key_sql, false, false, 0, true);
             if ($data_key_check->EOF) {
                 $this->import_action = 'insert';
                 $this->import_is_insert = true;
@@ -787,7 +787,7 @@ abstract class DbIoHandler extends base
                 // -----
                 // If the record didn't have errors preventing its insert/update ...
                 //
-                if ($this->record_ok) {
+                if ($this->record_status === true) {
                     if ($this->import_is_insert) {
                         $this->stats['inserts']++;
                     } else {
@@ -827,9 +827,10 @@ abstract class DbIoHandler extends base
         }
     }
     
-    protected function importBuildSqlQuery ($table_name, $table_fields) {
+    protected function importBuildSqlQuery ($table_name, $table_fields, $is_override = false, $is_insert = true) {
         global $db;
-        if ($this->import_is_insert) {
+        $record_is_insert = ($is_override) ? $is_insert : $this->import_is_insert;
+        if ($record_is_insert) {
             $sql_query = "INSERT INTO $table_name (" . implode (', ', array_keys ($table_fields)) . ")\nVALUES (";
             $sql_query = str_replace ($this->unused_fields, '', $sql_query);
             foreach ($table_fields as $field_name => $field_info) {
@@ -840,7 +841,8 @@ abstract class DbIoHandler extends base
                      case 'float':
                         $field_value = (float)$field_info['value'];
                         break;
-                     case 'date':
+                     case 'date':           //-Fall-through ...
+                     case 'null_date':
                         $field_value = $field_info['value'];
                         if ($field_value != 'null' && $field_value != 'NULL' && $field_value != 'now()') {
                             $field_value = "'" . $db->prepare_input ($field_value) . "'";
@@ -868,6 +870,7 @@ abstract class DbIoHandler extends base
                             $field_value = (float)$field_info['value'];
                             break;
                          case 'date':
+                         case 'null_date':
                             $field_value = $field_info['value'];
                             if ($field_value != 'null' && $field_value != 'NULL' && $field_value != 'now()') {
                                 $field_value = "'" . $db->prepare_input ($field_value) . "'";
@@ -910,7 +913,7 @@ abstract class DbIoHandler extends base
     protected function importCheckKeyValue ($data_value, $key_value, $key_value_fields) 
     {
         $this->debugMessage ("importCheckKeyValue ($data_value, $key_value, key_value_fields:" . str_replace ("\n", '', var_export ($key_value_fields, true)));
-        return $this->record_ok;
+        return $this->record_status;
     }
   
     protected function importUpdateRecordKey ($table_name, $table_fields, $key_value, $key_value_fields) 
@@ -940,7 +943,8 @@ abstract class DbIoHandler extends base
                     $this->import_sql_data[$import_table_name] = array ();
                 }
             }
-            $field_type = $this->import_sql_data[$table_name][$field_name]['type'];
+            $field_type = $this->import_sql_data[$import_table_name][$field_name]['type'];
+            $field_type = $this->import_sql_data[$import_table_name][$field_name]['type'];
             $field_error = false;
             if ($this->check_values) {
                 switch ($field_type) {
@@ -956,6 +960,11 @@ abstract class DbIoHandler extends base
                             $this->debugMessage ("[*] $import_table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is not a floating-point value.", self::DBIO_ERROR);
                         }
                         break;
+                    case 'null_date':
+                        if ($field_value == 'NULL' || $field_value == 'null' || $field_value == NULL) {
+                            $field_value = 'NULL';
+                            break;
+                        }                   //-Fall through for date checking if not null
                     case 'date':
                         if (!$this->formatValidateDate ($field_value)) {
                             $field_error = true;
@@ -972,7 +981,7 @@ abstract class DbIoHandler extends base
                 }
             }
             if ($field_error) {
-                $this->record_ok = false;
+                $this->record_status = false;
             } else {
                 $this->importAddField ($import_table_name, $field_name, $field_value);
             }
