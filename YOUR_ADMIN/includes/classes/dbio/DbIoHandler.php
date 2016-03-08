@@ -475,50 +475,51 @@ abstract class DbIoHandler extends base
         } else {
             if (!isset ($this->config['extra_keys'])) {
                 $alias = $this->config['tables'][$this->config['key']['table']]['alias'];
-                $from_clause = $this->config['key']['table'] . ' ' . $alias;
-                $where_clause = $alias . '.' . $this->config['key']['match_field'] . " = :match_value:";
+                $this->from_clause = $this->config['key']['table'] . ' ' . $alias;
+                $this->where_clause = $alias . '.' . $this->config['key']['match_field'] . " = :match_value:";
                 $match_field_name = $this->config['key']['match_field'];
                 $key_field_type = $this->config['key']['match_field_type'];
             } else {
                 if (!is_array ($this->config['extra_keys'])) {
-                    trigger_error ("Invalid 'extra_keys' configuration: " . var_export ($this->config, true), E_USER_ERROR);
+                    trigger_error ("Invalid 'extra_keys' configuration: " . var_export ($this->config['extra_keys'], true), E_USER_ERROR);
                 }
                 $tables_used = array ();
-                $from_clause = '';
-                $where_clause = '';
+                $this->from_clause = '';
+                $this->where_clause = '';
                 foreach ($this->config['extra_keys'] as $record_key => $key_info) {
                     $match_field_name = $key_info['match_field'];
                     $key_field_type = $key_info['match_field_type'];
                     $alias = $this->config['tables'][$key_info['table']]['alias'];
                     if (!isset ($tables_used[$key_info['table']])) {
-                        if ($from_clause != '') {
-                            $from_clause .= ', ';
+                        if ($this->from_clause != '') {
+                            $this->from_clause .= ', ';
                         }
-                        $from_clause .= $key_info['table'] . " $alias";
+                        $this->from_clause .= $key_info['table'] . " $alias";
                         $table_array[] = $key_info['table'];
                     }
-                    if ($where_clause != '') {
-                        $where_clause .= ' AND ';
+                    if ($this->where_clause != '') {
+                        $this->where_clause .= ' AND ';
                     }
                     if (isset ($key_info['match_field'])) {
-                        $where_clause .= "$alias." . $key_info['match_field'] . ' = :match_value: ';
+                        $this->where_clause .= "$alias." . $key_info['match_field'] . ' = :match_value: ';
                     } else {
                         trigger_error ('Missing match_field in extra_keys configuration; operation aborted.', E_USER_ERROR);
                     }
                 }
                 if (!isset ($tables_used[$this->config['key']['table']])) {
-                    $from_clause .= ', ' . $this->config['key']['table'] . ' ' . $this->config['tables'][$this->config['key']['table']]['alias'];
+                    $this->from_clause .= ', ' . $this->config['key']['table'] . ' ' . $this->config['tables'][$this->config['key']['table']]['alias'];
                 }
                 $match_info = $this->config['extra_keys'][$this->config['key']['extra_key_name']];
                 $match_key_sql_name = $this->config['tables'][$match_info['table']]['alias'] . '.' . $match_info['key_field'];
                 $extra_select_clause .= ', ' . $match_key_sql_name;
-                $where_clause .= ' AND ' . $this->config['tables'][$this->config['key']['table']]['alias'] . '.' . $this->config['key']['match_field'] . " = $match_key_sql_name";
+                $this->where_clause .= ' AND ' . $this->config['tables'][$this->config['key']['table']]['alias'] . '.' . $this->config['key']['match_field'] . " = $match_key_sql_name";
             }
             $this->key_field_name = $match_field_name;
             $this->key_field_type = $key_field_type;
-            $this->data_key_sql = "SELECT " . $this->config['tables'][$this->config['key']['table']]['alias'] . '.' . $this->config['key']['key_field'] . " as key_value$extra_select_clause
-                                     FROM " . $from_clause . " 
-                                    WHERE " . $where_clause . " LIMIT 1";
+            $this->key_field_select = $this->config['tables'][$this->config['key']['table']]['alias'] . '.' . $this->config['key']['key_field'] . " as key_value$extra_select_clause";
+            $this->data_key_sql = "SELECT " . $this->key_field_select . "
+                                     FROM " . $this->from_clause . " 
+                                    WHERE " . $this->where_clause . " LIMIT 1";
                               
             $this->headers = array ();
             foreach ($this->config['tables'] as $config_table_name => $config_table_info) {
@@ -559,7 +560,6 @@ abstract class DbIoHandler extends base
         }
         $this->debugMessage ("importInitialize completed.\n" . var_export ($this, true));
         return $this->headers;
-        
     }
   
     public function importGetHeader ($header) 
@@ -700,12 +700,12 @@ abstract class DbIoHandler extends base
             $initialization_complete = false;
           
         } elseif ($this->key_index === false) {
-            $this->message = sprintf (DBIO_FORMAT_MESSAGE_IMPORT_MISSING_KEY, "$key_table_name::$key_match_field");
+            $this->message = sprintf (DBIO_FORMAT_MESSAGE_IMPORT_MISSING_KEY, $this->key_field_name);
             $initialization_complete = false;
           
         }
         if (!$initialization_complete) {
-            unset ($this->table_names);
+            $this->table_names = array ();
         }
         $this->debugMessage ("importGetHeader: finished ($initialization_complete).\n" . $this->prettify (array (
             $this->import_sql_data, 
@@ -746,7 +746,7 @@ abstract class DbIoHandler extends base
             $this->debugMessage ('Data record at line #' . $this->stats['record_count'] . ' not imported.  Column count (' . count ($data) . ') missing key column (' . $key_index . ').', self::DBIO_ERROR);
           
         } else {
-            $data_key_sql = $db->bindVars ($this->data_key_sql, ':match_value:', $data[$key_index], $this->key_field_type);
+            $data_key_sql = $this->importBuildKeyCheckQuery ($data);
             $data_key_check = $db->Execute ($data_key_sql, false, false, 0, true);
             if ($data_key_check->EOF) {
                 $this->import_action = 'insert';
@@ -825,6 +825,12 @@ abstract class DbIoHandler extends base
                 }  //-No errors found in the current record's data
             }  //-Record's key value is OK to continue processing
         }
+    }
+    
+    protected function importBuildKeyCheckQuery ($data)
+    {
+        global $db;
+        return $db->bindVars ($this->data_key_sql, ':match_value:', $data[$this->key_index], $this->key_field_type);
     }
     
     protected function importBuildSqlQuery ($table_name, $table_fields, $is_override = false, $is_insert = true) {
@@ -943,7 +949,6 @@ abstract class DbIoHandler extends base
                     $this->import_sql_data[$import_table_name] = array ();
                 }
             }
-            $field_type = $this->import_sql_data[$import_table_name][$field_name]['type'];
             $field_type = $this->import_sql_data[$import_table_name][$field_name]['type'];
             $field_error = false;
             if ($this->check_values) {
@@ -1118,8 +1123,9 @@ abstract class DbIoHandler extends base
         $uses_language = false;
         $insert_data_array = array ();
         $update_data_array = array ();
+        $language_override = (isset ($this->config['tables'][$table_name]['language_override']) && $this->config['tables'][$table_name]['language_override'] === true);
         foreach ($this->tables[$table_name]['fields'] as $field_name => $field_info) {
-            if ($field_name == 'language_id' || $field_name == 'languages_id') {
+            if (!$language_override && ($field_name == 'language_id' || $field_name == 'languages_id')) {
                 $uses_language = true;
             }
             if (isset ($this->config['tables'][$table_name]['insert_now']) && $this->config['tables'][$table_name]['insert_now'] == $field_name) {

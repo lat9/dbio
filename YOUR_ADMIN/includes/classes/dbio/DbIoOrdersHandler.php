@@ -123,7 +123,7 @@ class DbIoOrdersHandler extends DbIoHandler
         $this->config = self::getHandlerInformation ();
         $this->config['tables'] = array (
             TABLE_ORDERS => array (
-                'short_name' => 'o',
+                'alias' => 'o',
                 'io_field_overrides' => array (
                     'orders_status' => 'no-header',
                 )                    

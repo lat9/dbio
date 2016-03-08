@@ -139,7 +139,7 @@ if (!$ok_to_proceed) {
                                         $messageStack->add_session (sprintf (CAUTION_FILE_IMPORT, $action_filename, $import_result['stats']['errors'], $import_result['stats']['warnings'], $import_result['stats']['inserts'] + $import_result['stats']['updates']), 'warning');
                                     }
                                 } else {
-                                    $messageStack->add_session ($import_info['message']);
+                                    $messageStack->add_session ($import_result['message']);
                                 }
                                 $_SESSION['dbio_import_result'] = array_merge ($import_result, array ('import_filename' => $action_filename));
                             }
