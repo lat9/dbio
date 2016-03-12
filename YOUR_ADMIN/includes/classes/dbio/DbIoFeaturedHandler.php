@@ -1,6 +1,6 @@
 <?php
 // -----
-// Part of the DataBase Import/Export (aka dbIO) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
+// Part of the Database I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2015-2016, Vinos de Frutas Tropicales.
 //
 if (!defined ('IS_ADMIN_FLAG')) {
@@ -9,7 +9,7 @@ if (!defined ('IS_ADMIN_FLAG')) {
 }
 
 // -----
-// This dbIO class handles the customizations required for a basic Zen Cart "Featured Products" import/export.
+// This DbIo class handles the customizations required for a basic Zen Cart "Featured Products" import/export.
 //
 class DbIoFeaturedHandler extends DbIoHandler 
 {
@@ -59,32 +59,28 @@ class DbIoFeaturedHandler extends DbIoHandler
     {
         $this->stats['report_name'] = 'Featured';
         $this->config = self::getHandlerInformation ();
-        $this->config['extra_keys'] = array (
-            'products_id' => array (
-                'table' => TABLE_PRODUCTS,
-                'match_field' => 'products_model',
-                'match_field_type' => 'string',
-                'key_field' => 'products_id',
-                'key_field_type' => 'integer',
+        $this->config['keys'] = array (
+            TABLE_PRODUCTS => array (
+                'alias' => 'p',
+                'products_model' => array (
+                    'type' => self::DBIO_KEY_IS_VARIABLE | self::DBIO_KEY_SELECTED,
+                ),
             ),
-        );
-        $this->config['key'] = array (
-            'table' => TABLE_FEATURED,
-            'match_field' => 'products_id',
-            'extra_key_name' => 'products_id',
-            'key_field' => 'featured_id', 
-            'key_field_type' => 'integer',
+            TABLE_FEATURED => array (
+                'alias' => 'f',
+                'products_id' => array (
+                    'type' => self::DBIO_KEY_IS_FIXED,
+                    'match_fixed_key' => 'p.products_id',
+                ),
+            ),
         );
         $this->config['tables'] = array (
             TABLE_PRODUCTS => array (
                 'alias' => 'p',
-                'import_extra_keys_only' => true,
-                'export_key_field_only' => true,
-                'key_field' => 'products_model',
+                'key_fields_only' => true,
             ),
             TABLE_FEATURED => array ( 
                 'alias' => 'f',
-                'key_field' => 'featured_id',
                 'io_field_overrides' => array (
                     'products_id' => false,
                     'featured_id' => 'no-header',
@@ -92,39 +88,6 @@ class DbIoFeaturedHandler extends DbIoHandler
             ), 
         );
     }
- 
-    // -----
-    // Part of the dbIO import record-processing, check to see what type of operation is being performed.  If the
-    // current key value is false, then either the products_model doesn't exist or there's no current record
-    // for the product in the "featured" database table.  Determine which and continue if the model's found.
-    //
-    protected function importCheckKeyValue ($data_value, $key_value, $key_value_fields) 
-    {
-        global $db;
-        $this->debugMessage ("Featured::importCheckKeyValue ($data_value, $key_value, key_value_fields:" . str_replace ("\n", '', var_export ($key_value_fields, true)));
-        $products_id = false;
-        if ($key_value === false) {
-            $model_check_sql = "SELECT products_id FROM " . TABLE_PRODUCTS . " WHERE products_model = :products_model: LIMIT 1";
-            $model_check_sql = $db->bindVars ($model_check_sql, ':products_model:', $data_value, 'string');
-            $model_check = $db->Execute ($model_check_sql);
-            if (!$model_check->EOF) {
-                $products_id = $model_check->fields['products_id'];
-            }
-        } elseif (isset ($key_value_fields['products_id'])) {
-            $products_id = $key_value_fields['products_id'];
-        }
-        
-        if ($products_id === false) {
-            $this->debugMessage ("[*] Featured product not inserted at line number " . $this->stats['record_count'] . "; product's model ($data_value) does not exist.", self::DBIO_WARNING);
-            $this->record_status = false;
-        } elseif ($this->import_is_insert) {
-            $this->import_sql_data[TABLE_FEATURED]['products_id'] = array ( 'value' => $products_id, 'type' => 'integer' );
-        }
-        
-        unset ($this->import_sql_data[TABLE_PRODUCTS]);
-        
-        return $this->record_status;
-    }  
 
     protected function importAddField ($table_name, $field_name, $field_value) {
         $this->debugMessage ("Featured::importAddField ($table_name, $field_name, $field_value)");
@@ -147,12 +110,5 @@ class DbIoFeaturedHandler extends DbIoHandler
                 break;
         }  //-END switch interrogating $table_name
     }  //-END function importAddField
-   
-    protected function importProcessField ($table_name, $field_name, $language_id, $field_value) 
-    {
-        if ($table_name == FILENAME_FEATURED) {
-             parent::importProcessField ($table_name, $field_name, $language_id, $field_value);
-        }
-    }
 
 }  //-END class DbIoFeaturedHandler

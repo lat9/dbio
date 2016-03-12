@@ -75,10 +75,11 @@ if (!$ok_to_proceed) {
                         $dbio = new DbIo ($_POST['handler']);
                         $export_info = $dbio->dbioExport ('file');
                         if ($export_info['status'] === false) {
-                            $messageStack->add ($dbio->getMessage ());
+                            $messageStack->add ($export_info['message']);
                         } else {
                             $messageStack->add_session (sprintf (DBIO_MGR_EXPORT_SUCCESSFUL, $_POST['handler'], $export_info['export_filename']), 'success');
                             $_SESSION['dbio_vars'] = $_POST;
+                            $_SESSION['dbio_last_export'] = $export_info;
                             zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
                         }
                     }
@@ -133,7 +134,7 @@ if (!$ok_to_proceed) {
                                 $action_types = explode ('-', $_POST['file_action']);
                                 $import_result = $dbio->dbioImport ($dbio_files[$_POST['filename_hash']]['filename_only'], $action_types[1]);
                                 if ($import_result['status'] === true) {
-                                    if (count ($import_result['import_errors']) == 0) {
+                                    if (count ($import_result['io_errors']) == 0) {
                                         $messageStack->add_session (sprintf (SUCCESSFUL_FILE_IMPORT, $action_filename, $import_result['stats']['record_count']), 'success');
                                     } else {
                                         $messageStack->add_session (sprintf (CAUTION_FILE_IMPORT, $action_filename, $import_result['stats']['errors'], $import_result['stats']['warnings'], $import_result['stats']['inserts'] + $import_result['stats']['updates']), 'warning');

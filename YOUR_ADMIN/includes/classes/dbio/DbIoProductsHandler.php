@@ -78,15 +78,12 @@ class DbIoProductsHandler extends DbIoHandler
                 $this->where_clause .= ' AND ';
         
             }
-
-            $export_language = ($this->export_language == 'all') ? 1 : $this->languages[$this->export_language];
+            $export_language = ($this->export_language == 'all') ? $this->languages[DEFAULT_LANGUAGE] : $this->languages[$this->export_language];
             $this->where_clause .= "p.products_id = pd.products_id AND pd.language_id = $export_language";
             $this->order_by_clause .= 'p.products_id ASC';
-
-            $this->export[TABLE_PRODUCTS_DESCRIPTION]['language_sql'] = 
-                'SELECT ' . $this->export[TABLE_PRODUCTS_DESCRIPTION]['select'] . 
-                ' FROM ' . TABLE_PRODUCTS_DESCRIPTION . 
-                ' WHERE products_id = %u AND language_id = %u LIMIT 1';
+            
+            $this->saved_data['products_description_sql'] = 
+                'SELECT * FROM ' . TABLE_PRODUCTS_DESCRIPTION . ' WHERE products_id = %u AND language_id = %u LIMIT 1';
         }
         return $initialized;
     }
@@ -132,12 +129,11 @@ class DbIoProductsHandler extends DbIoHandler
         if ($this->export_language == 'all') {
             foreach ($this->languages as $language_code => $language_id) {
                 if ($language_id != 1) {
-                    $description_info = $db->Execute (sprintf ($this->export[TABLE_PRODUCTS_DESCRIPTION]['language_sql'], $products_id, $language_id));
+                    $description_info = $db->Execute (sprintf ($this->saved_data['products_description_sql'], $products_id, $language_id));
                     if (!$description_info->EOF) {
                         foreach ($description_info->fields as $field_name => $field_value) {
                             if ($field_name != 'products_id' && $field_name != 'language_id') {
                                 $fields[$field_name . '_' . $language_code] = $field_value;
-                      
                             }
                         }
                     }
@@ -176,12 +172,17 @@ class DbIoProductsHandler extends DbIoHandler
     {
         $this->stats['report_name'] = 'Products';
         $this->config = self::getHandlerInformation ();
-        $this->config['key'] = array (
-            'table' => TABLE_PRODUCTS, 
-            'match_field' => 'products_model',
-            'match_field_type' => 'string',
-            'key_field' => 'products_id', 
-            'key_field_type' => 'integer' 
+        $this->config['keys'] = array (
+            TABLE_PRODUCTS => array (
+                'alias' => 'p',
+                'capture_key_value' => true,
+                'products_model' => array (
+                    'type' => self::DBIO_KEY_IS_VARIABLE | self::DBIO_KEY_SELECTED,
+                ),
+                'products_id' => array (
+                    'type' => self::DBIO_KEY_IS_MASTER,
+                ),
+            ),
         );
         $this->config['tables'] = array (
             TABLE_PRODUCTS => array ( 
@@ -196,7 +197,6 @@ class DbIoProductsHandler extends DbIoHandler
             TABLE_PRODUCTS_DESCRIPTION => array ( 
                 'alias' => 'pd',
                 'language_field' => 'language_id',
-                'key_field' => 'products_id',
                 'io_field_overrides' => array (
                     'products_id' => false,
                     'language_id' => false,
@@ -246,7 +246,8 @@ class DbIoProductsHandler extends DbIoHandler
     //
     protected function importRecordPostProcess ($products_id)
     {
-        if ($products_id !== false) {
+        $this->debugMessage ('Products::importRecordPostProcess: ' . $this->data_key_sql . "\n" . var_export ($this->key_fields, true), self::DBIO_WARNING);
+        if ($products_id !== false && $this->operation != 'check') {
             zen_update_products_price_sorter ($products_id);
         }
     }    
@@ -371,23 +372,27 @@ class DbIoProductsHandler extends DbIoHandler
     // happens within this function and we set the return value to false to indicate to the parent processing that the
     // associated update has been already handled.
     //
-    protected function importUpdateRecordKey ($table_name, $table_fields, $products_id, $key_value_fields) 
+    protected function importUpdateRecordKey ($table_name, $table_fields, $new_products_id) 
     {
         if ($products_id !== false) {
             global $db;
-            if ($this->import_is_insert) {
-                if ($table_name != TABLE_PRODUCTS) {
-                    $table_fields['products_id'] = array ( 'value' => $products_id, 'type' => 'integer' );
-              
+            if ($table_name != TABLE_PRODUCTS) {
+                if ($this->import_is_insert) {
+                    $table_fields['products_id'] = array ( 'value' => $new_products_id, 'type' => 'integer' );
+                } else {
+                    $this->where_clause = 'products_id = ' . (int)$this->key_fields['products_id'];
                 }
-            } elseif ($table_name == TABLE_PRODUCTS_TO_CATEGORIES && $this->operation != 'check') {
-                foreach ($table_fields as $field_name => $field_data) {
-                    $db->Execute ("INSERT IGNORE INTO $table_name (products_id, categories_id) VALUES ( $products_id, " . (int)$field_data['value'] . ")");
+            }
+            if ($table_name == TABLE_PRODUCTS_TO_CATEGORIES) {
+                if ($this->operation != 'check') {
+                    foreach ($table_fields as $field_name => $field_data) {
+                        $db->Execute ("INSERT IGNORE INTO $table_name (products_id, categories_id) VALUES ( $new_products_id, " . (int)$field_data['value'] . ")");
+                    }
                 }
                 $table_fields = false;
             }
         }
-        return parent::importUpdateRecordKey ($table_name, $table_fields, $products_id, $key_value_fields);
+        return parent::importUpdateRecordKey ($table_name, $table_fields, $new_products_id);
       
     }
 

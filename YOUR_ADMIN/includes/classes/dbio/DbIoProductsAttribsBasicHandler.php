@@ -9,7 +9,14 @@ if (!defined ('IS_ADMIN_FLAG')) {
 }
 
 // -----
-// This dbIO class handles the customizations required for a basic Zen Cart product-attribute import/export.
+// This DbIo class handles the customizations required for a basic Zen Cart product-attribute import/export.
+//
+// The I/O fields supported by this fixed-field I/O handler are:  v_products_model, v_products_options_type, v_products_options_name, and v_products_options_values
+//
+// For imports, 
+// - The v_products_model field identifies the (presumed) single product associated with the (possibly) multiple imports.
+// - The combination of v_products_options_type and v_products_options_name are used to find existing option/option-value pairs in the
+//   store's DEFAULT LANGUAGE.  All combinations must pre-exist in the database or the associated record's information is not imported.
 //
 class DbIoProductsAttribsBasicHandler extends DbIoHandler 
 {
@@ -25,37 +32,6 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
         );
     }
 
-    // -----
-    // This function gives the current handler the last opportunity to modify the SQL query clauses used for the current export.  It's
-    // usually provided by handlers that use an "export_filter", allowing the handler to inspect any filter-variables provided by
-    // the caller.
-    //
-    // Returns a boolean (true/false) indication of whether the export's initialization was successful.  If unsuccessful, the handler
-    // is **assumed** to have set its reason into the class message variable.
-    //
-    public function exportFinalizeInitialization ()
-    {
-        $first_language_code = ($this->export_language == 'all') ? DEFAULT_LANGUAGE : $this->export_language;
-        $this->where_clause = sprintf ($this->where_clause, $this->languages[$first_language_code]);
-        
-        // -----
-        // Check to see if any of this handler's filter variables have been set.  If set, check the values and then
-        // update the where_clause for the to-be-issued SQL query for the export.
-        //
-        if ($_POST['products_status'] != 'all') {
-            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'p.products_status = ' . (int)$_POST['products_status'];
-        }
-        if (isset ($_POST['products_manufacturers']) && is_array ($_POST['products_manufacturers'])) {
-            $manufacturers_list = implode (',', $_POST['products_manufacturers']);
-            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "p.manufacturers_id IN ($manufacturers_list)";
-        }
-        if (isset ($_POST['products_categories']) && is_array ($_POST['products_categories'])) {
-            $categories_list = implode (',', $_POST['products_categories']);
-            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "p.master_categories_id IN ($categories_list)";
-        }
-        return parent::exportFinalizeInitialization ();
-    }
-    
     // -----
     // Prepare the additional fields (the list of options' values' names) for the export.
     //
@@ -77,22 +53,21 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
         } else {
             $order_by = 'LPAD(pa.products_options_sort_order,11,"0"), pa.options_values_price';
         }
-        $export_language = ($this->export_language == 'all') ? DEFAULT_LANGUAGE : $this->export_language;
+        $language_id = $this->languages[DEFAULT_LANGUAGE];
         $attrib_info = $db->Execute ("SELECT products_options_values_name FROM " . TABLE_PRODUCTS_ATTRIBUTES . " pa, " . TABLE_PRODUCTS_OPTIONS_VALUES . " pov
                                        WHERE pa.products_id = $products_id
                                          AND pa.options_id = $products_options_id
                                          AND pa.options_values_id = pov.products_options_values_id
-                                         AND pov.language_id = " . $this->languages[$export_language] . "
+                                         AND pov.language_id = $language_id
                                     ORDER BY $order_by");
         $products_options_values_names = array ();
         while (!$attrib_info->EOF) {
             $products_options_values_names[] = $attrib_info->fields['products_options_values_name'];
             $attrib_info->MoveNext ();
         }
-        $fields['products_options_values_name_' . $export_language] = implode ('^', $products_options_values_names);
-        
+        $fields['products_options_values_name'] = implode ('^', $products_options_values_names);
+
         return parent::exportPrepareFields ($fields);
-      
     }
 
 // ----------------------------------------------------------------------------------
@@ -107,12 +82,16 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
     {
         $this->stats['report_name'] = 'ProductsAttribsBasic';
         $this->config = self::getHandlerInformation ();
-        $this->config['key'] = array (
-            'table' => TABLE_PRODUCTS, 
-            'match_field' => 'products_model',
-            'match_field_type' => 'string',
-            'key_field' => 'products_id', 
-            'key_field_type' => 'integer' 
+        $this->config['keys'] = array (
+            TABLE_PRODUCTS => array (
+                'alias' => 'p',
+                'products_model' => array (
+                    'type' => self::DBIO_KEY_IS_VARIABLE | self::DBIO_KEY_SELECTED,
+                ),
+                'products_id' => array (
+                    'type' => self::DBIO_KEY_IS_MASTER,
+                ),
+            ),
         );
         $this->config['tables'] = array (
             TABLE_PRODUCTS_ATTRIBUTES => array (
@@ -123,11 +102,9 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
             ),
             TABLE_PRODUCTS_OPTIONS => array (
                 'alias' => 'po',
-                'language_field' => 'language_id',
             ),
             TABLE_PRODUCTS_OPTIONS_VALUES => array (
                 'alias' => 'pov',
-                'language_field' => 'language_id',
                 'no_from_clause' => true,
             ),
         );
@@ -142,7 +119,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
             'products_id',
             'products_options_id',
         );
-        $this->config['export_where_clause'] = 'pa.products_id = p.products_id AND pa.options_id = po.products_options_id AND po.language_id = %u GROUP BY p.products_id, po.products_options_id';
+        $this->config['export_where_clause'] = 'pa.products_id = p.products_id AND pa.options_id = po.products_options_id AND po.language_id = ' . $this->languages[DEFAULT_LANGUAGE] . ' GROUP BY p.products_id, po.products_options_id';
         
         if (PRODUCTS_OPTIONS_SORT_ORDER == '0') {
             $options_order_by = 'LPAD(po.products_options_sort_order,11,"0")';
@@ -152,86 +129,117 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
         $this->config['export_order_by_clause'] = "p.products_model, $options_order_by";
 
         $this->config['additional_headers'] = array (
-            'v_products_options_values_name' => self::DBIO_FLAG_PER_LANGUAGE,
+            'v_products_options_values_name' => self::DBIO_FLAG_NONE,
         );
     }
     
     // -----
-    // Check the "key" value (the products_model mapped to a products_id).  If that value is false, then the associated
-    // product model wasn't found, so there's nothing to import for the current data record.
+    // This report's import handling is a little different.  The base class' handling is used to determine whether the record's associated
+    // products_model exists; that value, in turn, provides the product's ID.  If the model_number doesn't exist, then the record's import
+    // is denied.
     //
-    protected function importCheckKeyValue ($data_value, $key_value, $key_value_fields)
+    // The products_id value is saved by the base class processing in the class array "key_fields".
+    //
+    protected function importCheckKeyValue ($data)
     {
-        if ($key_value === false) {
+        if ($this->import_is_insert === true) {
             $this->record_status = false;
             $this->debugMessage ("[*] Attributes not inserted at line number " . $this->stats['record_count'] . "; product's model ($data_value) does not exist.", self::DBIO_WARNING);
-        } else {
-            $this->saved_data = array ( 'products_id' => $key_value, 'option' => array () );
         }
         return $this->record_status;
     }
     
     protected function importProcessField ($table_name, $field_name, $language_id, $field_value)
     {
-        global $db;
         if ($table_name == TABLE_PRODUCTS_OPTIONS) {
-            if (!isset ($this->saved_data['option'][$language_id])) {
-                $this->saved_data['option'][$language_id] = array ();
+            if (!isset ($this->saved_data['option'])) {
+                $this->saved_data['option'] = array ();
             }
-            $this->saved_data['option'][$language_id][$field_name] = $field_value;
+            $this->saved_data['option'][$field_name] = $field_value;
+            
         } elseif ($table_name == TABLE_PRODUCTS_OPTIONS_VALUES) {
-            if (!isset ($this->saved_data['option'][$language_id]) || !isset ($this->saved_data['option'][$language_id]['products_options_type']) || !isset ($this->saved_data['option'][$language_id]['products_options_name'])) {    $this->record_status = false;
-                $this->debugMessage ("[*] Attributes not inserted at line number " . $this->stats['record_count'] . "; product's option information does not exist.", self::DBIO_WARNING);
+            $this->saved_data['option_values'] = $field_value;
+        }
+    }
+    
+    protected function importFinishProcessing ()
+    {
+        global $db;
+        $message = '';
+        if (!isset ($this->saved_data['option']) || !isset ($this->saved_data['option']['products_options_type']) || !isset ($this->saved_data['option']['products_options_name'])) {
+            $message = " product's option fields do not exist.";
+            
+        } elseif (!isset ($this->saved_data['option_values'])) {
+            $message = " product's option value field(s) do not exist.";
+            
+        } else {
+            $products_options_name = $this->saved_data['option']['products_options_name'];
+            $products_options_type = $this->saved_data['option']['products_options_type'];
+            $language_id = $this->languages[DEFAULT_LANGUAGE];
+            
+            $option_check = $db->Execute ("SELECT products_options_id FROM " . TABLE_PRODUCTS_OPTIONS . "
+                                            WHERE products_options_name = '" . $db->prepare_input ($products_options_name) . "'
+                                              AND language_id = $language_id
+                                              AND products_options_type = " . (int)$products_options_type . " LIMIT 1", false, false, 0, true);
+            if ($option_check->EOF) {
+                $message = " no match for option name::option_type::default_language_id ($products_options_name::$products_options_type::$language_id).";
             } else {
-                $products_options_name = $this->saved_data['option'][$language_id]['products_options_name'];
-                $products_options_type = $this->saved_data['option'][$language_id]['products_options_type'];
-                $option_check = $db->Execute ("SELECT products_options_id FROM " . TABLE_PRODUCTS_OPTIONS . "
-                                                WHERE products_options_name = '" . $db->prepare_input ($products_options_name) . "'
-                                                  AND language_id = $language_id
-                                                  AND products_options_type = " . (int)$products_options_type . " LIMIT 1", false, false, 0, true);
-                if ($option_check->EOF) {
-                    $this->record_status = false;
-                    $this->debugMessage ("[*] Attributes not inserted at line number " . $this->stats['record_count'] . "; product's option ($products_options_name::$products_options_type::$language_id) not found.", self::DBIO_WARNING);
+                $products_options_id = $option_check->fields['products_options_id'];
+
+                $option_values_names = explode ('^', $this->saved_data['option_values']);
+                $options_values_list = '';
+                foreach ($options_values_names as $current_value_name) {
+                    $options_values_list .= "'$current_value_name', ";
+                }
+                $options_values_list = substr ($options_values_list, 0, -2);
+                $option_values_check = $db->Execute ("SELECT pov.products_options_values_id, pov.products_options_values_name
+                                                        FROM " . TABLE_PRODUCTS_OPTIONS_VALUES . " pov, " . TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS . " pov2po
+                                                       WHERE pov.products_options_values_name IN ($options_values_list)
+                                                         AND pov.language_id = $language_id
+                                                         AND pov.products_options_values_id = pov2po.products_options_values_id
+                                                         AND pov2po.products_options_id = $products_options_id", false, false, 0, true);
+                if (count ($options_values_list) != $option_values_check->RecordCount ()) {
+                    $values_found = array ();
+                    while (!$options_values_check->EOF) {
+                        $values_found = $options_values_check->fields['products_options_values_name'];
+                        $options_values_check->MoveNext ();
+                    }
+                    $values_not_found = implode (', ', array_diff ($options_values_names, $values_found));
+                    $message = " one or more option-values ($values_not_found) were either not present in the default language or are not associated with the products_options_id of $products_options_id.";
                 } else {
-                    $products_options_id = $option_check->fields['products_options_id'];
-                    $options_values_names = explode ('^', $field_value);
-                    if (count ($options_values_names) == 0) {
-                        $this->record_status = false;
-                        $this->debugMessage ("[*] Attributes not inserted at line number " . $this->stats['record_count'] . "; option names\' list cannot be empty ($field_value).", self::DBIO_WARNING);
-                    } else {
-                        foreach ($options_values_names as $current_option_value_name) {
-                            $value_check = $db->Execute ("SELECT products_options_values_id FROM " . TABLE_PRODUCTS_OPTIONS_VALUES . "
-                                                           WHERE products_options_values_name = '" . $db->prepare_input ($current_option_value_name) . "'
-                                                             AND language_id = $language_id LIMIT 1", false, false, 0, true);
-                            if ($value_check->EOF) {
-                                $this->record_status = false;
-                                $this->debugMessage ("[*] Attributes not inserted at line number " . $this->stats['record_count'] . "; option value name ($current_option_value_name::$language_id) does not exist.", self::DBIO_WARNING);
-                            } else {
-                                $attribute_check = $db->Execute ("SELECT products_attributes_id FROM " . TABLE_PRODUCTS_ATTRIBUTES . "
-                                                                   WHERE products_id = " . (int)$this->saved_data['products_id'] . "
-                                                                     AND options_id = $products_options_id
-                                                                     AND options_values_id = " . $value_check->fields['products_options_values_id'] . " LIMIT 1", false, false, 0, true);
-                                if ($attribute_check->EOF) {
-                                    $table_fields = array (
-                                        'products_id' => array ( 'value' => $this->saved_data['products_id'], 'type' => 'integer' ),
-                                        'options_id' => array ( 'value' => $products_options_id, 'type' => 'integer' ),
-                                        'options_values_id' => array ( 'value' => $value_check->fields['products_options_values_id'], 'type' => 'integer' ),
-                                    );
-                                    $sql_query = $this->importBuildSqlQuery (TABLE_PRODUCTS_ATTRIBUTES, $table_fields, true, true);
-                                    if ($this->operation != 'check') {
-                                        $db->Execute ($sql_query);
-                                        $attrib_record_id = $db->Insert_ID ();
-                                        $this->stats['inserts']++;
-                                        $this->debugMessage ("ProductsAttribsBasic inserted products_attributes_id = $attrib_record_id.", self::DBIO_ACTIVITY);
-                                    }
-                                }
+                    $products_id = $this->key_fields['products_id'];
+                    $attributes_insert_sql = array (
+                        'products_id' => array ( 'value' => $products_id, 'type' => 'integer' ),
+                        'options_id' => array ( 'value' => $products_options_id, 'type' => 'integer' ),
+                        'options_values_id' => array ( 'value' => 0, 'type' => 'integer' ),
+                    );
+                    while (!$options_values_check->EOF) {
+                        $check = $db->Execute ("SELECT products_attributes_id FROM " . TABLE_PRODUCTS_ATTRIBUTES . "
+                                                 WHERE products_id = $products_id
+                                                   AND options_id = $products_options_id
+                                                   AND options_values_id = " . $options_values_check->fields['products_options_values_id'] . " LIMIT 1", false, false, 0, true);
+                        if ($check->EOF) {
+                            $attributes_insert_sql['options_values_id']['value'] = $options_values_check->fields['products_options_values_id'];
+                            $attrib_insert_query = $this->importBuildSqlQuery (TABLE_PRODUCTS_ATTRIBUTES, $attributes_insert_sql, '', true);
+                            if ($this->operation != 'check') {
+                                $db->Execute ($attrib_insert_query);
                             }
                         }
-                        $this->record_status = 'processed';
+                        $options_values_check->MoveNext ();
                     }
+                    $this->record_status = 'processed';
                 }
             }
         }
+        if ($message != '') {
+            $this->record_status = false;
+            $this->debugMessage ("[*] Attributes not inserted at line number " . $this->stats['record_count'] . "; $message", self::DBIO_WARNING);
+        }
+    }
+    
+    protected function importBuildSqlQuery ($table_name, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
+    {
+        return ($table_name == TABLE_PRODUCTS) ? false : parent::importBuildSqlQuery ($table_name, $table_fields, $extra_where_clause, $is_override, $is_insert);
     }
 
-}  //-END class DbIoProductsHandler
+}  //-END class DbIoProductsAttribsBasicHandler

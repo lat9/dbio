@@ -172,7 +172,7 @@ class DbIo extends base
                 }
                 if ($this->export_fp !== false) {
                     fclose ($this->export_fp);
-		    $this->export_fp = false;
+                    $this->export_fp = false;
                 }
             }
             $this->handler->stopTimer ();
@@ -180,7 +180,14 @@ class DbIo extends base
         if (!$completion_code && $this->message == '') {
             $this->message = $this->handler->getHandlerMessage ();
         }
-        return array ( 'status' => $completion_code, 'export_filename' => $this->export_filename );
+        return array ( 
+            'status' => $completion_code, 
+            'export_filename' => $this->export_filename, 
+            'message' => $this->message, 
+            'io_errors' => $this->handler->getIOErrors (), 
+            'stats' => $this->handler->stats, 
+            'handler' => $this->dbio_type,
+        );
     }
   
     // -----
@@ -209,23 +216,30 @@ class DbIo extends base
                 trigger_error ($this->message, E_USER_WARNING);
             
             } else {
-                $this->handler->importInitialize ($language, $operation);
-                $this->csv_parms = $this->handler->getCsvParameters ();
-                if (!$this->handler->importGetHeader (($this->handler->isHeaderIncluded ()) ? $this->getCsvRecord () : false)) {
-                    $this->message = $this->handler->getHandlerMessage ();
-              
-                } else {
-                    ini_set ('max_execution_time', DBIO_MAX_EXECUTION_TIME);
-                    while (($data = $this->getCsvRecord ()) !== false) {
-                        $this->handler->importCsvRecord ($data);
+                if ($this->handler->importInitialize ($language, $operation)) {
+                    $this->csv_parms = $this->handler->getCsvParameters ();
+                    if (!$this->handler->importGetHeader (($this->handler->isHeaderIncluded ()) ? $this->getCsvRecord () : false)) {
+                        $this->message = $this->handler->getHandlerMessage ();
+                  
+                    } else {
+                        ini_set ('max_execution_time', DBIO_MAX_EXECUTION_TIME);
+                        while (($data = $this->getCsvRecord ()) !== false) {
+                            $this->handler->importCsvRecord ($data);
+                        }
+                        $completion_code = true;
                     }
-                    $completion_code = true;
                 }
                 fclose ($this->import_fp);
             }
             $this->handler->stopTimer ();
         }
-        return array ( 'status' => $completion_code, 'message' => $this->message, 'import_errors' => $this->handler->getImportErrors (), 'stats' => $this->handler->stats );
+        return array ( 
+            'status' => $completion_code, 
+            'message' => $this->message, 
+            'io_errors' => $this->handler->getIOErrors (), 
+            'stats' => $this->handler->stats,
+            'handler' => $this->dbio_type
+        );
     }
 
     // -----

@@ -7,8 +7,8 @@ if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
 }
 
-define('DBIO_CURRENT_VERSION', '0.0.6');
-define('DBIO_CURRENT_UPDATE_DATE', '2016-03-04');
+define('DBIO_CURRENT_VERSION', '0.0.7');
+define('DBIO_CURRENT_UPDATE_DATE', '2016-03-12');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
 
@@ -55,18 +55,11 @@ if (!defined ('DBIO_MODULE_VERSION')) {
     
     $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'Default File Sort Order', 'DBIO_FILE_SORT_DEFAULT', '3d', 'Choose the default sort-order that the <em>Database I/O Manager</em> uses when displaying the I/O files it has discovered, one of:<br /><br /><b>1a</b>: File Name, ascending<br /><b>1d</b>: File Name, descending<br /><b>2a</b>: File Size, ascending<br /><b>2d</b>: File Size, descending<br /><b>3a</b>: File Date, ascending<br /><b>3d</b>: File Date, descending', $cgi, 26, now(), NULL, 'zen_cfg_select_option(array(\'1a\', \'1d\', \'2a\', \'2d\', \'3a\', \'3d\'),')");
 
-    $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'DbIo Debug Level', 'DBIO_DEBUG', 'None', 'Identify whether or not the DbIo debug is to be enabled and to what degree.  When enabled, a <em>dbio-*.log</em> file is written to your store\'s /YOUR_ADMIN/dbio/logs folder.', $cgi, 600, now(), NULL, 'zen_cfg_select_option(array(\'None\', \'Warnings/Errors\', \'Errors Only\', \'All\'),')");
+    $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'Enable Debug?', 'DBIO_DEBUG', 'false', 'Identify whether or not the DbIo debug is to be enabled.  When enabled, <b>all</b> I/O status is written to a <em>dbio-*.log</em> file in your store\'s /YOUR_ADMIN/dbio/logs folder.', $cgi, 600, now(), NULL, 'zen_cfg_select_option(array(\'true\', \'false\'),')");
 
     $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'Debug Date Format', 'DBIO_DEBUG_DATE_FORMAT', 'Y-m-d H:i:s', 'Enter the formatting string used to timestamp all DbIo log entries.', $cgi, 601, now(), NULL, NULL)");
     
     define ('DBIO_MODULE_VERSION', $version_release_date);
-} else {
-    if (!defined ('DBIO_SPLIT_RECORD_COUNT')) {
-        $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'Split File: Record Count', 'DBIO_SPLIT_RECORD_COUNT', '2000', 'Sometimes, splitting a .csv file into multiple, smaller files can help if your server is timing out on an <em>import</em> operation or if an exported .csv is too large to download in a single chunk.<br /><br />Enter the number of records (default: 2000) at which to split these files using the <em>DbIo Manager</em>.', $cgi, 25, now(), NULL, NULL)");    
-    }
-    if (!defined ('DBIO_FILE_SORT_DEFAULT')) {
-        $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'Default File Sort Order', 'DBIO_FILE_SORT_DEFAULT', '3d', 'Choose the default sort-order that the <em>Database I/O Manager</em> uses when displaying the I/O files it has discovered, one of:<br /><br /><b>1a</b>: File Name, ascending<br /><b>1d</b>: File Name, descending<br /><b>2a</b>: File Size, ascending<br /><b>2d</b>: File Size, descending<br /><b>3a</b>: File Date, ascending<br /><b>3d</b>: File Date, descending', $cgi, 26, now(), NULL, 'zen_cfg_select_option(array(\'1a\', \'1d\', \'2a\', \'2d\', \'3a\', \'3d\'),')");
-    }
 }
 
 // -----
@@ -74,7 +67,6 @@ if (!defined ('DBIO_MODULE_VERSION')) {
 //
 if (DBIO_MODULE_VERSION != $version_release_date) {
     $db->Execute ("UPDATE " . TABLE_CONFIGURATION . " SET configuration_value = '" . $version_release_date . "' WHERE configuration_key = 'DBIO_MODULE_VERSION' LIMIT 1");
-  
 }
 
 // ----

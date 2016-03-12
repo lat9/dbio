@@ -38,7 +38,7 @@ class DbIoStatsHandler extends DbIoHandler
         $this->config = self::getHandlerInformation ();
         $this->config['tables'] = array (
             TABLE_DBIO_STATS => array (
-                'short_name' => 'd',
+                'alias' => 'ds',
             ),
         );
     }
