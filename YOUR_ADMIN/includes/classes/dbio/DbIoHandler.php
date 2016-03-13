@@ -424,9 +424,7 @@ abstract class DbIoHandler extends base
     public function exportPrepareFields (array $fields) 
     {
         $this->stats['record_count']++;
-        $fields = (DBIO_CHARSET === 'utf8') ? $this->encoding->toUTF8 ($fields) : $this->encoding->toWin1252 ($fields, ForceUTF8\Encoding::ICONV_IGNORE_TRANSLIT);
-        return $fields;
-    
+        return $this->exportEncodeData ($fields);
     }
 
     public function importInitialize ($language = 'all', $operation = 'check') 
@@ -786,6 +784,16 @@ abstract class DbIoHandler extends base
 // ----------------------------------------------------------------------------------
 //                      P R O T E C T E D   F U N C T I O N S 
 // ----------------------------------------------------------------------------------
+
+    protected function exportEncodeData ($fields)
+    {
+       return (DBIO_CHARSET === 'utf8') ? $this->encoding->toUTF8 ($fields) : $this->encoding->toWin1252 ($fields, ForceUTF8\Encoding::ICONV_IGNORE_TRANSLIT);
+    }
+    
+    protected final static function loadHandlerMessageFile ($handler_name)
+    {
+        include_once (DIR_FS_ADMIN . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIo' . $handler_name . 'Handler.php');
+    }
     
     // -----
     // This abstract function, required to be supplied for the actual handler, is called during the class
@@ -1031,7 +1039,7 @@ abstract class DbIoHandler extends base
 // ----------------------------------------------------------------------------------
 //                      P R I V A T E   F U N C T I O N S 
 // ----------------------------------------------------------------------------------
-  
+    
     private function initializeDbIo () 
     {
         $this->message = '';
