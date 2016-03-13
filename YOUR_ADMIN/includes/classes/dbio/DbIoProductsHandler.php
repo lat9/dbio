@@ -16,7 +16,7 @@ class DbIoProductsHandler extends DbIoHandler
     public static function getHandlerInformation ()
     {
         global $db;
-        include_once (DIR_FS_ADMIN . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoProductsHandler.php');
+        DbIoHandler::loadHandlerMessageFile ('Products'); 
         
         $manufacturers_options = array ();
         $manufacturers_info = $db->Execute ("SELECT manufacturers_id as `id`, manufacturers_name as `text` FROM " . TABLE_MANUFACTURERS . " ORDER BY manufacturers_name ASC");
