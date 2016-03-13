@@ -66,15 +66,5 @@ class DbIoProductsOptionsHandler extends DbIoHandler
             ),
         );
     }
-    
-    protected function importBuildSqlQuery ($table_name, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
-    {
-        global $db;
-        if ($this->import_is_insert && $table_name == TABLE_PRODUCTS_OPTIONS) {
-            $key_check = $db->Execute ("SELECT MAX(products_options_id)+1 AS products_options_id FROM " . TABLE_PRODUCTS_OPTIONS);
-            $table_fields['products_options_id']['value'] = $key_check->fields['products_options_id'];
-        }
-        return parent::importBuildSqlQuery ($table_name, $table_fields, $extra_where_clause, $is_override, $is_insert);
-    }
 
 }  //-END class DbIoProductsOptionsHandler
