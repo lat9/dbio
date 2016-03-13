@@ -34,6 +34,9 @@ abstract class DbIoHandler extends base
     const DBIO_KEY_IS_FIXED      = 2;       //- The key is mapped to a fixed database field.
     const DBIO_KEY_SELECTED      = 4;       //- The key value should be selected as part of the key-checking SQL (at least one required).
     const DBIO_KEY_IS_MASTER     = 8;       //- The key value should be selected as part of the query, but is not mapped
+    // ----- Handler language_override values -----
+    const DBIO_OVERRIDE_ALL      = 1;       //- ALL fields within the language-based table use only the DEFAULT_LANGUAGE
+    const DBIO_OVERRIDE_STRING   = 2;       //- String fields are I/O with language; others aren't.
 // ----------------------------------------------------------------------------------
 //                             P U B L I C   F U N C T I O N S 
 // ----------------------------------------------------------------------------------
@@ -292,11 +295,9 @@ abstract class DbIoHandler extends base
                                     if ($first_language) {
                                         $this->select_clause .= "$table_prefix$current_field, ";
                                         $this->config['tables'][$config_table_name]['select'] .= "$current_field, ";
-                            
                                     }
                                     if ($field_info['include_in_export'] === true) {
                                         $this->headers[] = 'v_' . $current_field . '_' . $language_code;
-                            
                                     }
                                 }
                             }
@@ -311,7 +312,6 @@ abstract class DbIoHandler extends base
                                 $this->select_clause .= "$table_prefix$current_field, ";
                                 if ($field_info['include_in_export'] === true) {
                                     $this->headers[] = 'v_' . $current_field;
-                          
                                 }
                             }
                         }
@@ -894,19 +894,19 @@ abstract class DbIoHandler extends base
                         }
                         break;
                     default:
-                        $field_value = $field_value['value'];
+                        $field_value = $field_info['value'];
                         if ($field_value != 'null' && $field_value != 'NULL') {
                             $field_value = "'" . $db->prepare_input ($field_value) . "'";
                         }
                         break;
                 }
-                $sql_query .= $field_value . ', ';
+                $sql_query .= "$field_value, ";
             }
             $sql_query = substr ($sql_query, 0, -2) . ")";
         } else {
             $sql_query = "UPDATE $table_name SET ";
             $where_clause = $this->where_clause;
-            foreach ($table_fields as $field_name =>$field_info) {
+            foreach ($table_fields as $field_name => $field_info) {
                 if ($field_name != self::DBIO_NO_IMPORT && !isset ($this->variable_keys[$field_name])) {
                     switch ($field_info['type']) {
                         case 'integer':
@@ -1063,7 +1063,6 @@ abstract class DbIoHandler extends base
             $this->tables = array ();
             foreach ($this->config['tables'] as $table_name => $table_info) {
                 $this->initializeTableFields ($table_name, $table_info);
-                $this->initializeSqlInputs ($table_name);
             }
         }
     }  //-END function initialize
@@ -1085,6 +1084,7 @@ abstract class DbIoHandler extends base
         $table_keys = (isset ($this->config['keys'][$table_name])) ? $this->config['keys'][$table_name] : array ();
         $this->tables[$table_name] = array ();
         $this->tables[$table_name]['fields'] = array ();
+        $uses_language = false;
         
         $sql_query = "
              SELECT COLUMN_NAME as `column_name`, COLUMN_DEFAULT as `default`, IS_NULLABLE as `nullable`, DATA_TYPE as `data_type`, 
@@ -1096,6 +1096,9 @@ abstract class DbIoHandler extends base
         $table_info = $db->Execute ($sql_query);
         while (!$table_info->EOF) {
             $column_name = $table_info->fields['column_name'];
+            if ($column_name == 'language_id' || $column_name == 'languages_id') {
+                $uses_language = true;
+            }
             if ("$table_name.$column_name" == TABLE_PRODUCTS_DESCRIPTION . '.products_id') {
                 $table_info->fields['extra'] = '';
             }
@@ -1110,49 +1113,10 @@ abstract class DbIoHandler extends base
             $this->tables[$table_name]['fields'][$column_name] = $table_info->fields;
           
             $table_info->MoveNext ();
-        }   
+        }
+        $language_override = (isset ($this->config['tables'][$table_name]['language_override']) && $this->config['tables'][$table_name]['language_override'] === self::DBIO_OVERRIDE_ALL);
+        $this->tables[$table_name]['uses_language'] = (!$language_override && $uses_language);
+        
     }  //-END function initializeTableFields
-  
-    private function initializeSqlInputs ($table_name) 
-    {
-        global $db;
-        $this->tables[$table_name]['sql_update'] = array ();
-        $this->tables[$table_name]['sql_insert'] = array ();
-        
-        $indexes_info = $db->Execute ("SHOW indexes IN $table_name WHERE Key_name = 'PRIMARY'");
-        $table_indexes = '';
-        while (!$indexes_info->EOF) {
-            $table_indexes .= ($indexes_info->fields['Column_name'] . ',');
-            $indexes_info->MoveNext ();
-          
-        }
-        unset ($indexes_info);
 
-        $required_fields = '';
-        $uses_language = false;
-        $insert_data_array = array ();
-        $update_data_array = array ();
-        $language_override = (isset ($this->config['tables'][$table_name]['language_override']) && $this->config['tables'][$table_name]['language_override'] === true);
-        foreach ($this->tables[$table_name]['fields'] as $field_name => $field_info) {
-            if (!$language_override && ($field_name == 'language_id' || $field_name == 'languages_id')) {
-                $uses_language = true;
-            }
-            if (isset ($this->config['tables'][$table_name]['insert_now']) && $this->config['tables'][$table_name]['insert_now'] == $field_name) {
-                $insert_data_array[$field_name] = 'now()';
-            }
-            if (isset ($this->config['tables'][$table_name]['update_now']) && $this->config['tables'][$table_name]['update_now'] == $field_name) {
-                $update_data_array[$field_name] = 'now()';
-            }
-        }
-        $this->tables[$table_name]['uses_language'] = $uses_language;
-        
-        $this->tables[$table_name]['sql_insert']['table_indexes'] = $table_indexes;
-        $this->tables[$table_name]['sql_insert']['required_fields'] = $required_fields;
-        $this->tables[$table_name]['sql_insert']['data'] = $insert_data_array;
-        
-        $this->tables[$table_name]['sql_update']['table_indexes'] = $table_indexes;
-        $this->tables[$table_name]['sql_update']['required_fields'] = $required_fields;
-        $this->tables[$table_name]['sql_update']['data'] = $update_data_array;   
-    
-    }  //-END function initializeSqlInputs
 }

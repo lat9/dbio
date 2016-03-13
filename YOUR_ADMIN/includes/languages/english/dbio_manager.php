@@ -75,7 +75,7 @@ define ('TEXT_SORT_DATE_DESC', 'Click here to sort by file-date, descending');
 
 define ('ERROR_CHOOSE_FILE_ACTION', 'Please choose the action to be performed on the file named &quot;%s&quot;.');
 
-define ('SUCCESSFUL_FILE_IMPORT', 'The DbIo import from file &quot;%1$s&quot; was successfully completed.  %2$u records were imported.');
+define ('SUCCESSFUL_FILE_IMPORT', 'The DbIo import from file &quot;%1$s&quot; was successfully completed.  %2$u records were processed.');
 define ('CAUTION_FILE_IMPORT', 'The DbIo import from file &quot;%1$s&quot; was completed with %2$u errors and %3$u warnings. %4$u records were inserted or updated.');
 
 define ('ERROR_CANT_DELETE_FILE', 'The requested file (%s) was not deleted; it was not found or its permissions are not set properly.');
@@ -89,7 +89,7 @@ define ('WARNING_FILE_TOO_SMALL_TO_SPLIT', 'The file (%1$s) contains too few rec
 define ('FILE_SUCCESSFULLY_SPLIT', 'The file (%1$s) was successfully split into %2$u chunks.'); 
 
 define ('ERROR_FILE_IS_EXPORT_ONLY', 'The file (%s) was not imported.  It is associated with an <em>export-only</em> report.');
-define ('DBIO_MGR_EXPORT_SUCCESSFUL', 'Your <em>%1$s</em> export was successfully completed into %2$s.');
+define ('DBIO_MGR_EXPORT_SUCCESSFUL', 'Your <em>%1$s</em> export was successfully completed into %2$s, creating %3$u records.');
 
 define ('ERROR_NO_FILE_TO_UPLOAD', 'No file was selected for the upload.  Please try again.');
 define ('FILE_UPLOADED_SUCCESSFULLY', 'The file <em>%s</em> was successfully uploaded.');

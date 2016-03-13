@@ -77,7 +77,7 @@ if (!$ok_to_proceed) {
                         if ($export_info['status'] === false) {
                             $messageStack->add ($export_info['message']);
                         } else {
-                            $messageStack->add_session (sprintf (DBIO_MGR_EXPORT_SUCCESSFUL, $_POST['handler'], $export_info['export_filename']), 'success');
+                            $messageStack->add_session (sprintf (DBIO_MGR_EXPORT_SUCCESSFUL, $_POST['handler'], $export_info['export_filename'], $export_info['stats']['record_count']), 'success');
                             $_SESSION['dbio_vars'] = $_POST;
                             $_SESSION['dbio_last_export'] = $export_info;
                             zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
