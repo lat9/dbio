@@ -73,6 +73,7 @@ abstract class DbIoHandler extends base
 
         }       
         $this->encoding = new ForceUTF8\Encoding;
+        $this->charset_is_utf8 = (strtoupper (CHARSET) == 'UTF-8');
         
         $this->setHandlerConfiguration ();
         
@@ -682,6 +683,8 @@ abstract class DbIoHandler extends base
         }
         $this->debugMessage ("importCsvRecord: starting ...");
         
+        $data = ($this->charset_is_utf8) ? $this->encoding->toUTF8 ($data) : $this->encoding->toWin1252 ($data, ForceUTF8\Encoding::ICONV_IGNORE_TRANSLIT);
+        
         // -----
         // Indicate, initially, that the record is OK to import and increment the count of lines processed.  The last value
         // will be used in any debug-log information to note the location of any processing.
@@ -984,7 +987,7 @@ abstract class DbIoHandler extends base
                         }
                         break;
                     case 'float':
-                        if (!(ctype_digit (mb_str_replace ('.', '', $field_value)) && mb_substr_count ($field_value, '.') <= 1)) {
+                        if (!preg_match ('/^-?(?:\d+|\d*\.\d+)$/', $field_value)) {
                             $field_error = true;
                             $this->debugMessage ("[*] $import_table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is not a floating-point value.", self::DBIO_ERROR);
                         }
