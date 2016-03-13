@@ -131,7 +131,8 @@ class DbIoProductsHandler extends DbIoHandler
                 if ($language_id != 1) {
                     $description_info = $db->Execute (sprintf ($this->saved_data['products_description_sql'], $products_id, $language_id));
                     if (!$description_info->EOF) {
-                        foreach ($description_info->fields as $field_name => $field_value) {
+                        $encoded_fields = $this->exportEncodeData ($description_info->fields);
+                        foreach ($encoded_fields as $field_name => $field_value) {
                             if ($field_name != 'products_id' && $field_name != 'language_id') {
                                 $fields[$field_name . '_' . $language_code] = $field_value;
                             }
