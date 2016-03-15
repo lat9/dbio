@@ -264,8 +264,9 @@ if (!$ok_to_proceed) {
 <meta http-equiv="Content-Type" content="text/html; charset=<?php echo CHARSET; ?>">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title><?php echo TITLE; ?></title>
-<link rel="stylesheet" type="text/css" href="includes/stylesheet.css">
-<link rel="stylesheet" type="text/css" href="includes/cssjsmenuhover.css" media="all" id="hoverJS">
+<link rel="stylesheet" type="text/css" href="includes/stylesheet.css" />
+<link rel="stylesheet" type="text/css" href="includes/cssjsmenuhover.css" media="all" id="hoverJS" />
+<link rel="stylesheet" type="text/css" href="includes/javascript/dbio/colorbox.css" />
 <style type="text/css">
 <!--
 hr { background: #333 linear-gradient(to right, #ccc, #333, #ccc) repeat scroll 0 0; border: 0 none; height: 1px; }
@@ -317,59 +318,19 @@ select { padding: 0.1em; margin: 0.5em; }
 .file-sorter a { font-size: 20px; text-decoration: none; line-height: 11px; color: #599659; }
 .file-sorter.selected-sort a { color: red; }
 div.export-only span { color: red; font-weight: bold; }
+#flii-details { list-style-type: none; }
+.flii-label { display: inline-block; width: 15em; text-align: right; font-weight: bold; }
+.flii-value { display: inline-block; text-align: left; padding-left: 0.5em; }
+#flii-message-intro { padding-bottom: 1em; }
+.flii-error .flii-item { color: red; }
+.flii-warning .flii-item { color: yellow; }
+.flii-info .flii-item { color: green; }
 -->
 </style>
 <script type="text/javascript" src="includes/menu.js"></script>
-<script type="text/javascript">
-    <!--
-    function init()
-    {
-        cssjsmenu('navbar');
-        if (document.getElementById) {
-            var kill = document.getElementById('hoverJS');
-            kill.disabled = true;
-        }
-    }
-  
-    function checkSubmit () 
-    {
-        var e = document.getElementById( 'file-action' );
-        var file_action = e.options[e.selectedIndex].value;
-        if (file_action == 'none') {
-            alert( '<?php echo JS_MESSAGE_CHOOSE_ACTION; ?>' );
-            return false;
-        }
-        return true;
-    }
-    
-    function checkDelete ()
-    {
-        var submitOK = false;
-        var e = document.getElementsByClassName( 'delete-hash' );
-        var n = e.length;
-        var selected = 0;
-        for (var i = 0; i < n; i++) {
-            if (e[i].checked) {
-                selected++;
-            }
-        }
-        if (selected == 0) {
-            alert( '<?php echo JS_MESSAGE_NO_FILES_SELECTED; ?>' );
-        } else {
-            submitOK = confirm( '<?php echo JS_MESSAGE_OK2DELETE_PART1; ?>'+selected+'<?php echo JS_MESSAGE_OK2DELETE_PART2; ?>' );
-        }
-        return submitOK;
-    }
-    
-    function checkFileOptions ()
-    {
-    }
-  // -->
-</script>
 </head>
 <body onload="init();">
 <?php require(DIR_WS_INCLUDES . 'header.php'); ?>
-
   <div id="main-wrapper">
     <h1><?php echo HEADING_TITLE; ?> <span class="smaller">v<?php echo DBIO_MODULE_VERSION; ?></span></h1>
 <?php
@@ -578,8 +539,12 @@ if (!$ok_to_proceed || $error_message !== '') {
         $sort_1a = $sort_1d = $sort_2a = $sort_2d = $sort_3a = $sort_3d = '';
         $sort_type = 'sort_' . ((isset ($_GET['sort']) && in_array ($_GET['sort'], explode (',', '1a,1d,2a,2d,3a,3d'))) ? $_GET['sort'] : DBIO_FILE_SORT_DEFAULT);
         $$sort_type = ' selected-sort';
+        $last_update_button = '';
+        if (isset ($_SESSION['dbio_import_result'])) {
+            $last_update_button = '<a class="import-info" href="#file-last-import">' . zen_image (DIR_WS_IMAGES . 'icons/dbio_information.png', TEXT_IMPORT_LAST_STATS) . '</a>';
+        }
 ?>
-            <div class="file-row-caption"><?php echo TEXT_CHOOSE_ACTION . ' ' . zen_draw_pull_down_menu ('file_action', $file_actions_array, $file_action, 'id="file-action"'); ?>&nbsp;&nbsp;<?php echo zen_draw_input_field ('go_button', DBIO_BUTTON_GO, 'title="' . DBIO_BUTTON_GO_TITLE . '" onclick="return checkSubmit ();"', false, 'submit'); ?><hr /><?php echo TEXT_FILE_ACTION_DELETE_INSTRUCTIONS; ?><span id="file-delete-action"> <?php echo zen_draw_input_field ('delete_button', DBIO_BUTTON_DELETE, 'title="' . DBIO_BUTTON_DELETE_TITLE . '" onclick="return checkDelete ();"', false, 'submit'); ?></span></div>
+            <div class="file-row-caption"><?php echo TEXT_CHOOSE_ACTION . ' ' . zen_draw_pull_down_menu ('file_action', $file_actions_array, $file_action, 'id="file-action"'); ?>&nbsp;&nbsp;<?php echo zen_draw_input_field ('go_button', DBIO_BUTTON_GO, 'title="' . DBIO_BUTTON_GO_TITLE . '" onclick="return checkSubmit ();"', false, 'submit') . "&nbsp;&nbsp;$last_update_button"; ?><hr /><?php echo TEXT_FILE_ACTION_DELETE_INSTRUCTIONS; ?><span id="file-delete-action"> <?php echo zen_draw_input_field ('delete_button', DBIO_BUTTON_DELETE, 'title="' . DBIO_BUTTON_DELETE_TITLE . '" onclick="return checkDelete ();"', false, 'submit'); ?></span></div>
             <div class="file-row-header">
                 <div class="file-item"><?php echo HEADING_CHOOSE_FILE; ?></div>
                 <div class="file-item left"><span class="file-sorter<?php echo $sort_1a; ?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=1a'); ?>" title="<?php echo TEXT_SORT_NAME_ASC; ?>">&utrif;</a></span><?php echo HEADING_FILENAME; ?><span class="file-sorter<?php echo $sort_1d;?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=1d'); ?>" title="<?php echo TEXT_SORT_NAME_DESC; ?>">&dtrif;</a></span></div>
@@ -617,14 +582,10 @@ if (!$ok_to_proceed || $error_message !== '') {
         $even_odd = 'even';
         $first_file = true;
         foreach ($dbio_files as $name_hash => $file_info) {
-            $file_details = '';
-            if (isset ($_SESSION['dbio_import_result']) && $_SESSION['dbio_import_result']['import_filename'] == $file_info['full_filepath']) {
-                $file_details = ' X ';
-            }
 ?>
             <div class="file-row <?php echo $even_odd; ?>">
                 <div class="file-item"><?php echo zen_draw_radio_field ('filename_hash', $name_hash, $first_file, '', 'onclick="checkFileOptions ();"'); ?></div>
-                <div class="file-item left"><?php echo $file_info['filename_only'] . $file_details; ?></div>
+                <div class="file-item left"><?php echo $file_info['filename_only']; ?></div>
                 <div class="file-item"><?php echo $file_info['bytes']; ?></div>
                 <div class="file-item"><?php echo date (DBIO_DEBUG_DATE_FORMAT, $file_info['last_modified']); ?></div>
                 <div class="file-item"><?php echo zen_draw_checkbox_field ('delete_hash[' . $name_hash . ']', '', false, '', 'class="delete-hash"'); ?></div>
@@ -634,8 +595,41 @@ if (!$ok_to_proceed || $error_message !== '') {
             $even_odd = ($even_odd == 'even') ? 'odd' : 'even';
         }
     }
+?>        
+            <div style="display: none;"><div id="file-last-import">
+                <div id="file-last-import-info">
+                    <p>Statistics for the last file imported in the current admin session:</p>
+                    <ul id="flii-details">
+                        <li><span class="flii-label">Import File Name:</span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['import_filename']; ?></span></li>
+                        <li><span class="flii-label">Operation:</span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['action']; ?></span></li>                        
+                        <li><span class="flii-label">Records Read:</span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['record_count']; ?></span></li>
+                        <li><span class="flii-label">Records Inserted:</span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['inserts']; ?></span></li>
+                        <li><span class="flii-label">Records Updated:</span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['updates']; ?></span></li>                        
+                        <li><span class="flii-label">Warnings:</span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['warnings']; ?></span></li>
+                        <li><span class="flii-label">Errors:</span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['errors']; ?></span></li>
+                        <li><span class="flii-label">Parse Time:</span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['parse_time']; ?></span></li>
+                    </ul>
+                </div>
+<?php
+    if (isset ($_SESSION['dbio_import_result']['io_errors']) && count ($_SESSION['dbio_import_result']['io_errors']) > 0) {
 ?>
+                <div id="flii-messages"><hr />
+                    <div id="flii-message-intro">The following warnings/errors were generated by the above action:</div>
+<?php
+        foreach ($_SESSION['dbio_import_result']['io_errors'] as $current_error) {
+            $message_status = ($current_error[2] & DbIoHandler::DBIO_WARNING) ? 'warning' : (($current_error[2] & DbIoHandler::DBIO_ERROR) ? 'error' : 'info');
+?>
+                    <div class="flii-<?php echo $message_status; ?>"><?php echo str_replace ('[*]', '<span class="flii-item">&cross;</span>', $current_error[0]); ?></div>
+<?php
+        }
+?>
+                </div>
+<?php
+    }
+?>
+            </div></div>
         </form></div>
+
     </div>
 <?php
 }  //-END processing, configuration OK
@@ -643,6 +637,66 @@ if (!$ok_to_proceed || $error_message !== '') {
   </div>
 
 <?php require(DIR_WS_INCLUDES . 'footer.php'); ?>
+
+<?php
+$zen_cart_version = PROJECT_VERSION_MAJOR . '.' . PROJECT_VERSION_MINOR;
+if (version_compare ($zen_cart_version, '1.5.5', '<')) {
+?>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<?php
+}
+?>
+<script type="text/javascript" src="includes/javascript/dbio/jquery.colorbox-min.js"></script>
+<script type="text/javascript">
+<!--
+    $(document).ready( function() {
+        $(".import-info").colorbox({inline:true, width:"auto"});
+    });
+
+    function init()
+    {
+        cssjsmenu('navbar');
+        if (document.getElementById) {
+            var kill = document.getElementById('hoverJS');
+            kill.disabled = true;
+        }
+    }
+  
+    function checkSubmit () 
+    {
+        var e = document.getElementById( 'file-action' );
+        var file_action = e.options[e.selectedIndex].value;
+        if (file_action == 'none') {
+            alert( '<?php echo JS_MESSAGE_CHOOSE_ACTION; ?>' );
+            return false;
+        }
+        return true;
+    }
+    
+    function checkDelete ()
+    {
+        var submitOK = false;
+        var e = document.getElementsByClassName( 'delete-hash' );
+        var n = e.length;
+        var selected = 0;
+        for (var i = 0; i < n; i++) {
+            if (e[i].checked) {
+                selected++;
+            }
+        }
+        if (selected == 0) {
+            alert( '<?php echo JS_MESSAGE_NO_FILES_SELECTED; ?>' );
+        } else {
+            submitOK = confirm( '<?php echo JS_MESSAGE_OK2DELETE_PART1; ?>'+selected+'<?php echo JS_MESSAGE_OK2DELETE_PART2; ?>' );
+        }
+        return submitOK;
+    }
+    
+    function checkFileOptions ()
+    {
+    }
+  // -->
+</script>
 </body>
 </html>
 <?php require(DIR_WS_INCLUDES . 'application_bottom.php'); ?>

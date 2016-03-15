@@ -73,6 +73,8 @@ define ('TEXT_SORT_SIZE_DESC', 'Click here to sort by file-size, descending');
 define ('TEXT_SORT_DATE_ASC', 'Click here to sort by file-date, ascending');
 define ('TEXT_SORT_DATE_DESC', 'Click here to sort by file-date, descending');
 
+define ('TEXT_IMPORT_LAST_STATS', 'Click here to view the details about the last DbIo import');
+
 define ('ERROR_CHOOSE_FILE_ACTION', 'Please choose the action to be performed on the file named &quot;%s&quot;.');
 
 define ('SUCCESSFUL_FILE_IMPORT', 'The DbIo import from file &quot;%1$s&quot; was successfully completed.  %2$u records were processed.');
