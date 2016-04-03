@@ -14,7 +14,7 @@ class DbIoStatsHandler extends DbIoHandler
 {
     public static function getHandlerInformation ()
     {
-        include_once (DIR_FS_ADMIN . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIoStatsHandler.php');
+        DbIoHandler::loadHandlerMessageFile ('Stats'); 
         return array (
             'version' => '0.0.0',
             'handler_version' => '0.0.0',
