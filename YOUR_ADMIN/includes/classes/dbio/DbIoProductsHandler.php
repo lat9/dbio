@@ -375,7 +375,7 @@ class DbIoProductsHandler extends DbIoHandler
     //
     protected function importUpdateRecordKey ($table_name, $table_fields, $new_products_id) 
     {
-        if ($products_id !== false) {
+        if ($new_products_id !== false) {
             global $db;
             if ($table_name != TABLE_PRODUCTS) {
                 if ($this->import_is_insert) {
