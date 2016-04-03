@@ -80,7 +80,7 @@ abstract class DbIoHandler extends base
         if ($this->stats['report_name'] != self::DBIO_UNKNOWN_VALUE) {
             $this->debug_log_file = DIR_FS_DBIO_LOGS . "/dbio-" . $this->stats['report_name'] . "-$log_file_suffix.log";
         }
-        $this->debugMessage ('Configured CHARSET (' . CHARSET . '), DB_CHARSET (' . DB_CHARSET . '), DBIO_CHARSET (' . DBIO_CHARSET . '), PHP multi-byte settings: ' . var_export (mb_get_info (), true));
+        $this->debugMessage ('Configured CHARSET (' . CHARSET . '), DB_CHARSET (' . DB_CHARSET . '), DBIO_CHARSET (' . DBIO_CHARSET . '), PHP multi-byte settings: ' . print_r (mb_get_info (), true));
         
         $this->initializeDbIo ();
     }
@@ -227,7 +227,7 @@ abstract class DbIoHandler extends base
         } else {
             $return_date = false;
             if ($log) {
-                $this->debugMessage ("formatValidateDate: Invalid date ($date_value) supplied.\n" . var_export ($parsed_date, true), self::DBIO_WARNING);
+                $this->debugMessage ("formatValidateDate: Invalid date ($date_value) supplied.\n" . print_r ($parsed_date, true), self::DBIO_WARNING);
             }
         }
         return $return_date;
@@ -358,8 +358,8 @@ abstract class DbIoHandler extends base
             $initialized = $this->exportFinalizeInitialization ();
         }
         $this->debugMessage ("exportInitialize ($language), " . (($initialized) ? 'Successful' : ('Unsuccessful (' . $this->message . ')')) . 
-                             "\nTables:\n" . var_export ($this->tables, true) . 
-                             "\nHeaders:\n" . var_export ($this->headers, true));
+                             "\nTables:\n" . print_r ($this->tables, true) . 
+                             "\nHeaders:\n" . print_r ($this->headers, true));
         return $initialized;
     }
     
@@ -373,7 +373,7 @@ abstract class DbIoHandler extends base
     //
     public function exportFinalizeInitialization ()
     {
-        $this->debugMessage ("exportFinalizeInitialization\n" . var_export ($this, true));
+        $this->debugMessage ("exportFinalizeInitialization\n" . print_r ($this, true));
         return true;
     }
   
@@ -458,7 +458,9 @@ abstract class DbIoHandler extends base
             $no_header_fields = (isset ($this->config['fixed_fields_no_header']) && is_array ($this->config['fixed_fields_no_header'])) ? $this->config['fixed_fields_no_header'] : array ();
             foreach ($this->config['fixed_headers'] as $field_name => $table_name) {
                 if (!in_array ($field_name, $no_header_fields)) {
-                    if (!isset ($this->config['tables'][$table_name]['language_field'])) {
+                    if ($table_name == self::DBIO_NO_IMPORT || $table_name == self::DBIO_SPECIAL_IMPORT) {
+                        $this->headers[] = $field_name;  
+                    } elseif (!isset ($this->config['tables'][$table_name]['language_field'])) {
                         $this->headers[] = "v_$field_name";
                     } else {
                         foreach ($this->languages as $language_code => $language_id) {
@@ -507,7 +509,7 @@ abstract class DbIoHandler extends base
                 }
             }
         }
-        $this->debugMessage ("importInitialize completed.\n" . var_export ($this, true));
+        $this->debugMessage ("importInitialize completed.\n" . print_r ($this, true));
         return $import_error;
     }
   
@@ -522,7 +524,7 @@ abstract class DbIoHandler extends base
             $header = $this->headers;
         }
 
-        $this->debugMessage ("importGetHeader, using headers:\n" . var_export ($header, true));
+        $this->debugMessage ("importGetHeader, using headers:\n" . print_r ($header, true));
         $this->import_sql_data = array ();
         $this->table_names = array ();
         $this->language_id = array ();
@@ -659,14 +661,14 @@ abstract class DbIoHandler extends base
         if (!$initialization_complete) {
             $this->table_names = array ();
         }
-        $this->debugMessage ("importGetHeader: finished ($initialization_complete).\n" . $this->prettify (array (
+        $this->debugMessage ("importGetHeader: finished ($initialization_complete).\n" . print_r (array (
             $this->import_sql_data, 
             $this->table_names, 
             $this->language_id, 
             $this->header_field_count, 
             $this->key_index,
             $this->variable_keys,
-            $this->headers)));
+            $this->headers), true));
         return $initialization_complete;
     
     }
@@ -795,7 +797,7 @@ abstract class DbIoHandler extends base
     
     protected final static function loadHandlerMessageFile ($handler_name)
     {
-        include_once (DIR_FS_DBIO_LANGUAGES . $_SESSION['language'] . '/dbio/DbIo' . $handler_name . 'Handler.php');
+        include_once (DIR_FS_ADMIN . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIo' . $handler_name . 'Handler.php');
     }
     
     // -----
@@ -809,7 +811,7 @@ abstract class DbIoHandler extends base
     //
     protected function prettify (array $data) 
     {
-        return mb_str_replace (array ("',\n", "=> \n", "array (\n", "0,\n", '  '), array("',", "=> ", "array (", "0,", ' '), var_export ($data, true));
+        return mb_str_replace (array ("',\n", "=> \n", "array (\n", "0,\n", '  '), array("',", "=> ", "array (", "0,", ' '), print_r ($data, true));
     }
  
     protected function importCheckKeyValue ($data) 
@@ -945,7 +947,7 @@ abstract class DbIoHandler extends base
             }
             $sql_query = substr ($sql_query, 0, -2) . ' WHERE ' . $where_clause . $extra_where_clause;
         }
-        $this->debugMessage ("importBuildSqlQuery ($table_name, " . var_export ($table_fields, true));
+        $this->debugMessage ("importBuildSqlQuery ($table_name, " . print_r ($table_fields, true));
         $this->debugMessage ("importBuildSqlQuery for $table_name:\n$sql_query", self::DBIO_STATUS);  //- Forces the generated SQL to be logged!!
         return $sql_query;
     }
@@ -1050,7 +1052,7 @@ abstract class DbIoHandler extends base
         if (!isset ($this->config) || !is_array ($this->config) || 
             !( (isset ($this->config['tables']) && is_array ($this->config['tables'])) ||
                (isset ($this->config['fixed_headers']) && is_array ($this->config['fixed_headers'])) ) ) {
-            trigger_error ('DbIo configuration not set prior to initialize.  Current class: ' . var_export ($this, true), E_USER_ERROR);
+            trigger_error ('DbIo configuration not set prior to initialize.  Current class: ' . print_r ($this, true), E_USER_ERROR);
             exit();
         }
     
@@ -1089,7 +1091,7 @@ abstract class DbIoHandler extends base
     private function initializeTableFields ($table_name, $table_config)
     {
         global $db;
-        $this->debugMessage ("initializeTableFields for $table_name, table configuration\n" . var_export ($table_config, true));
+        $this->debugMessage ("initializeTableFields for $table_name, table configuration\n" . print_r ($table_config, true));
         $field_overrides = (isset ($table_config['io_field_overrides']) && is_array ($table_config['io_field_overrides'])) ? $table_config['io_field_overrides'] : false;
         $key_fields_only = (isset ($table_config['key_fields_only'])) ? $table_config['key_fields_only'] : false;
         $table_keys = (isset ($this->config['keys'][$table_name])) ? $this->config['keys'][$table_name] : array ();
