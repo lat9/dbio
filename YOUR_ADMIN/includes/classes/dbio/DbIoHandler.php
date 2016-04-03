@@ -769,7 +769,7 @@ abstract class DbIoHandler extends base
                                 $sql_query = $this->importBuildSqlQuery ($table_name, $table_fields, $extra_where_clause);
                                 if ($sql_query !== false && $this->operation != 'check') {
                                     $db->Execute ($sql_query);
-                                    if ($capture_key_value) {
+                                    if ($capture_key_value && $this->import_is_insert) {
                                         $record_key_value = $db->insert_ID ();
                                     }
                                 }
