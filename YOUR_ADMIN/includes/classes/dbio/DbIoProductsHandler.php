@@ -98,7 +98,7 @@ class DbIoProductsHandler extends DbIoHandler
     //
     public function exportFinalizeInitialization ()
     {
-        $this->debugMessage ('exportFinalizeInitialization for Products. POST variables:' . var_export ($_POST, true));
+        $this->debugMessage ('exportFinalizeInitialization for Products. POST variables:' . print_r ($_POST, true));
         
         // -----
         // Check to see if any of this handler's filter variables have been set.  If set, check the values and then
@@ -247,7 +247,7 @@ class DbIoProductsHandler extends DbIoHandler
     //
     protected function importRecordPostProcess ($products_id)
     {
-        $this->debugMessage ("Products::importRecordPostProcess ($products_id): " . $this->data_key_sql . "\n" . var_export ($this->key_fields, true), self::DBIO_WARNING);
+        $this->debugMessage ("Products::importRecordPostProcess ($products_id): " . $this->data_key_sql . "\n" . print_r ($this->key_fields, true), self::DBIO_WARNING);
         if (!$this->import_is_insert) {
             $products_id = $this->key_fields['products_id'];
         }
