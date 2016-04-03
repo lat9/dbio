@@ -795,7 +795,6 @@ abstract class DbIoHandler extends base
     
     protected final static function loadHandlerMessageFile ($handler_name)
     {
-        include_once (DIR_FS_ADMIN . DIR_WS_LANGUAGES . $_SESSION['language'] . '/dbio/DbIo' . $handler_name . 'Handler.php');
     }
     
     // -----
