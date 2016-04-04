@@ -42,6 +42,8 @@ abstract class DbIoHandler extends base
 // ----------------------------------------------------------------------------------
     public function __construct ($log_file_suffix) 
     {
+        global $queryCache;
+        $this->queryCache = (isset ($queryCache) && is_object ($queryCache) && method_exists ($queryCache, 'reset')) ? $queryCache : null;
         $this->debug = (DBIO_DEBUG != 'false');
         switch (DBIO_DEBUG) {
             case 'true':
@@ -688,6 +690,14 @@ abstract class DbIoHandler extends base
         $data = ($this->charset_is_utf8) ? $this->encoding->toUTF8 ($data) : $this->encoding->toWin1252 ($data, ForceUTF8\Encoding::ICONV_IGNORE_TRANSLIT);
         
         // -----
+        // If the queryCache handler is loaded, reset the cache at the start of each record's import.  This helps to reduce
+        // the amount of memory required for an import script's execution.
+        //
+        if ($this->queryCache !== null) {
+            $this->queryCache->reset ('ALL');
+        }
+        
+        // -----
         // Indicate, initially, that the record is OK to import and increment the count of lines processed.  The last value
         // will be used in any debug-log information to note the location of any processing.
         //
@@ -917,7 +927,8 @@ abstract class DbIoHandler extends base
             }
             $sql_query = substr ($sql_query, 0, -2) . ")";
         } else {
-            $sql_query = "UPDATE $table_name SET ";
+            $table_alias = (isset ($this->config['tables'][$table_name])) ? ('AS ' . $this->config['tables'][$table_name]['alias']) : '';
+            $sql_query = "UPDATE $table_name $table_alias SET ";
             $where_clause = $this->where_clause;
             foreach ($table_fields as $field_name => $field_info) {
                 if ($field_name != self::DBIO_NO_IMPORT && !isset ($this->variable_keys[$field_name])) {
