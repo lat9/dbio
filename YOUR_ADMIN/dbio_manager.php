@@ -322,8 +322,9 @@ div.export-only span { color: red; font-weight: bold; }
 .flii-label { display: inline-block; width: 15em; text-align: right; font-weight: bold; }
 .flii-value { display: inline-block; text-align: left; padding-left: 0.5em; }
 #flii-message-intro { padding-bottom: 1em; }
+.flii-item { font-weight: bold; }
 .flii-error .flii-item { color: red; }
-.flii-warning .flii-item { color: yellow; }
+.flii-warning .flii-item { color: #cccc00; }
 .flii-info .flii-item { color: green; }
 -->
 </style>
