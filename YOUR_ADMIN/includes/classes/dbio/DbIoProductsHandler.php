@@ -247,11 +247,7 @@ class DbIoProductsHandler extends DbIoHandler
     //
     protected function importRecordPostProcess ($products_id)
     {
-        $this->debugMessage ("Products::importRecordPostProcess ($products_id): " . $this->data_key_sql . "\n" . print_r ($this->key_fields, true), self::DBIO_WARNING);
-        if (!$this->import_is_insert) {
-            $products_id = $this->key_fields['products_id'];
-        }
-        
+        $this->debugMessage ('Products::importRecordPostProcess: ' . $this->data_key_sql . "\n" . print_r ($this->key_fields, true), self::DBIO_INFORMATIONAL);
         if ($products_id !== false && $this->operation != 'check') {
             zen_update_products_price_sorter ($products_id);
         }
@@ -379,27 +375,21 @@ class DbIoProductsHandler extends DbIoHandler
     //
     protected function importUpdateRecordKey ($table_name, $table_fields, $products_id) 
     {
-        if ($products_id === false && !$this->import_is_insert) {
-            $products_id = $this->key_fields['products_id'];
+        global $db;
+        if ($table_name != TABLE_PRODUCTS) {
+            if ($this->import_is_insert) {
+                $table_fields['products_id'] = array ( 'value' => $products_id, 'type' => 'integer' );
+            } else {
+                $this->where_clause = 'products_id = ' . (int)$this->key_fields['products_id'];
+            }
         }
-        
-        if ($products_id !== false) {
-            global $db;
-            if ($table_name != TABLE_PRODUCTS) {
-                if ($this->import_is_insert) {
-                    $table_fields['products_id'] = array ( 'value' => $products_id, 'type' => 'integer' );
-                } else {
-                    $this->where_clause = 'products_id = ' . (int)$this->key_fields['products_id'];
+        if ($table_name == TABLE_PRODUCTS_TO_CATEGORIES) {
+            if ($this->operation != 'check') {
+                foreach ($table_fields as $field_name => $field_data) {
+                    $db->Execute ("INSERT IGNORE INTO $table_name (products_id, categories_id) VALUES ( $products_id, " . (int)$field_data['value'] . ")");
                 }
             }
-            if ($table_name == TABLE_PRODUCTS_TO_CATEGORIES) {
-                if ($this->operation != 'check') {
-                    foreach ($table_fields as $field_name => $field_data) {
-                        $db->Execute ("INSERT IGNORE INTO $table_name (products_id, categories_id) VALUES ( $products_id, " . (int)$field_data['value'] . ")");
-                    }
-                }
-                $table_fields = false;
-            }
+            $table_fields = false;
         }
         return parent::importUpdateRecordKey ($table_name, $table_fields, $products_id);
       

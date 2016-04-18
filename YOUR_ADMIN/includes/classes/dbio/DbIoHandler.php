@@ -221,17 +221,38 @@ abstract class DbIoHandler extends base
         }
     }
     
-    public function formatValidateDate ($date_value, $log = false)
+    public function formatValidateDate ($date_value_in, $field_type = 'date', $log = false)
     {
+        $date_value = $date_value_in;
+        if (DBIO_IMPORT_DATE_FORMAT != 'm-d-y') {
+            $date_time_split = explode (' ', $date_value);
+            $needle = (strpos ($date_time_split[0], '/') !== false) ? '/' : '-';
+            $date_split = explode ($needle, $date_time_split[0]);
+            if (count ($date_split) == 3) {
+                if (DBIO_IMPORT_DATE_FORMAT == 'd-m-y') {
+                    $date_value = sprintf ('%u-%02u-%02u', $date_split[2], $date_split[1], $date_split[0]);
+                } else {
+                    $date_value = sprintf ('%u-%02u-%02u', $date_split[0], $date_split[1], $date_split[2]);
+                }
+                if ($field_type == 'datetime' && isset ($date_time_split[1])) {
+                    $date_value .= ' ' . $date_time_split[1];
+                }
+            }
+        }
+
         $parsed_date = date_parse ($date_value);
         if ($parsed_date['error_count'] == 0 && checkdate ($parsed_date['month'], $parsed_date['day'], $parsed_date['year'])) {
             $return_date = sprintf ('%u-%02u-%02u', $parsed_date['year'], $parsed_date['month'], $parsed_date['day']);
+            if ($field_type == 'datetime') {
+                $return_date .= sprintf (' %02u:%02u:%02u', $parsed_date['hour'], $parsed_date['minute'], $parsed_date['second']);
+            }
         } else {
             $return_date = false;
             if ($log) {
                 $this->debugMessage ("formatValidateDate: Invalid date ($date_value) supplied.\n" . print_r ($parsed_date, true), self::DBIO_WARNING);
             }
         }
+        $this->debugMessage ("formatValidateDate: ($date_value_in, $field_type), DBIO_IMPORT_DATE_FORMAT = '" . DBIO_IMPORT_DATE_FORMAT . "', returning ($return_date). Parsed date: " . print_r ($parsed_date, true)); 
         return $return_date;
     }
     
@@ -445,7 +466,6 @@ abstract class DbIoHandler extends base
             $language = key ($this->languages);
         }
         $this->operation = $operation;
-        $this->check_values = ($operation == 'check' || $operation == 'run-check');
         $this->stats['record_count'] = ($this->config['include_header']) ? 1 : 0;
         $this->stats['action'] = "import-$language-$operation";
         $this->unused_fields = array ( ', ' . self::DBIO_SPECIAL_IMPORT, ', ' . self::DBIO_NO_IMPORT );
@@ -615,7 +635,7 @@ abstract class DbIoHandler extends base
                                 break;
                             case 'date':
                             case 'datetime':
-                                $field_type = ($this->tables[$table_name]['fields'][$current_field]['default'] === NULL) ? 'null_date' : 'date';
+                                $field_type = $this->tables[$table_name]['fields'][$current_field]['data_type'];
                                 break;
                             case 'char':
                             case 'text':
@@ -688,7 +708,6 @@ abstract class DbIoHandler extends base
         $this->debugMessage ("importCsvRecord: starting ...");
         
         $data = ($this->charset_is_utf8) ? $this->encoding->toUTF8 ($data) : $this->encoding->toWin1252 ($data, ForceUTF8\Encoding::ICONV_IGNORE_TRANSLIT);
-        
         // -----
         // If the queryCache handler is loaded, reset the cache at the start of each record's import.  This helps to reduce
         // the amount of memory required for an import script's execution.
@@ -774,12 +793,14 @@ abstract class DbIoHandler extends base
                                     $extra_where_clause = " AND " . $this->config['tables'][$table_name]['alias'] . '.' . $this->config['tables'][$table_name]['language_field'] . " = $language_id";
                                 }
                             }
+                            
+                            $table_alias = $this->config['tables'][$table_name]['alias'];
                             $table_fields = $this->importUpdateRecordKey ($table_name, $table_fields, $record_key_value);
                             if ($table_fields !== false) {
-                                $sql_query = $this->importBuildSqlQuery ($table_name, $table_fields, $extra_where_clause);
+                                $sql_query = $this->importBuildSqlQuery ($table_name, $table_alias, $table_fields, $extra_where_clause);
                                 if ($sql_query !== false && $this->operation != 'check') {
                                     $db->Execute ($sql_query);
-                                    if ($capture_key_value && $this->import_is_insert) {
+                                    if ($capture_key_value) {
                                         $record_key_value = $db->insert_ID ();
                                     }
                                 }
@@ -894,12 +915,12 @@ abstract class DbIoHandler extends base
         return $sql_template;
     }
     
-    protected function importBuildSqlQuery ($table_name, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
+    protected function importBuildSqlQuery ($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
     {
         global $db;
         $record_is_insert = ($is_override) ? $is_insert : $this->import_is_insert;
         if ($record_is_insert) {
-            $sql_query = "INSERT INTO $table_name (" . implode (', ', array_keys ($table_fields)) . ")\nVALUES (";
+            $sql_query = "INSERT INTO $table_name $table_alias (" . implode (', ', array_keys ($table_fields)) . ")\nVALUES (";
             $sql_query = str_replace ($this->unused_fields, '', $sql_query);
             foreach ($table_fields as $field_name => $field_info) {
                 switch ($field_info['type']) {
@@ -910,7 +931,7 @@ abstract class DbIoHandler extends base
                         $field_value = (float)$field_info['value'];
                         break;
                      case 'date':           //-Fall-through ...
-                     case 'null_date':
+                     case 'datetime':
                         $field_value = $field_info['value'];
                         if ($field_value != 'null' && $field_value != 'NULL' && $field_value != 'now()') {
                             $field_value = "'" . $db->prepare_input ($field_value) . "'";
@@ -927,7 +948,6 @@ abstract class DbIoHandler extends base
             }
             $sql_query = substr ($sql_query, 0, -2) . ")";
         } else {
-            $table_alias = (isset ($this->config['tables'][$table_name])) ? ('AS ' . $this->config['tables'][$table_name]['alias']) : '';
             $sql_query = "UPDATE $table_name $table_alias SET ";
             $where_clause = $this->where_clause;
             foreach ($table_fields as $field_name => $field_info) {
@@ -940,7 +960,7 @@ abstract class DbIoHandler extends base
                             $field_value = (float)$field_info['value'];
                             break;
                          case 'date':
-                         case 'null_date':
+                         case 'datetime':
                             $field_value = $field_info['value'];
                             if ($field_value != 'null' && $field_value != 'NULL' && $field_value != 'now()') {
                                 $field_value = "'" . $db->prepare_input ($field_value) . "'";
@@ -991,40 +1011,42 @@ abstract class DbIoHandler extends base
             }
             $field_type = $this->import_sql_data[$import_table_name][$field_name]['type'];
             $field_error = false;
-            if ($this->check_values) {
-                switch ($field_type) {
-                    case 'integer':
-                        if (!ctype_digit ($field_value)) {
-                            $field_error = true;
-                            $this->debugMessage ("[*] $import_table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is not an integer", self::DBIO_ERROR);
-                        }
-                        break;
-                    case 'float':
-                        if (!preg_match ('/^-?(?:\d+|\d*\.\d+)$/', $field_value)) {
-                            $field_error = true;
-                            $this->debugMessage ("[*] $import_table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is not a floating-point value.", self::DBIO_ERROR);
-                        }
-                        break;
-                    case 'null_date':
-                        if ($field_value == 'NULL' || $field_value == 'null' || $field_value == NULL) {
-                            $field_value = 'NULL';
-                            break;
-                        }                   //-Fall through for date checking if not null
-                    case 'date':
-                        if (!$this->formatValidateDate ($field_value)) {
-                            $field_error = true;
-                            $this->debugMessage ("[*] $import_table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is not a recognized date value.", self::DBIO_ERROR);
-                        }
-                        break;
-                    case 'string':
-                        break;
-                    default:
+
+            $this->debugMessage ("importProcessField, current field type: $field_type");
+            switch ($field_type) {
+                case 'integer':
+                    if (!ctype_digit ($field_value)) {
                         $field_error = true;
-                        $message = "Unknown datatype (" . $field_type . ") for $table_name::$field_name on line #" . $this->stats['record_count'];
-                        $this->debugMessage ("[*] importProcessField: $message", self::DBIO_ERROR);
-                        break;
-                }
+                        $this->debugMessage ("[*] $import_table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is not an integer", self::DBIO_ERROR);
+                    }
+                    break;
+                case 'float':
+                    if (!preg_match ('/^-?(?:\d+|\d*\.\d+)$/', $field_value)) {
+                        $field_error = true;
+                        $this->debugMessage ("[*] $import_table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is not a floating-point value.", self::DBIO_ERROR);
+                    }
+                    break;
+                case 'date':                //-Fall-through for date-related processing
+                case 'datetime':
+                    $formatted_field_value = $this->formatValidateDate ($field_value, $field_type);
+                    if ($formatted_field_value === false) {
+                        $this->debugMessage ("[*] $import_table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is not a recognized date value; the default value for the field will be used.", self::DBIO_WARNING);
+                        $formatted_field_value = $this->tables[$table_name]['fields'][$field_name]['default'];
+                        if ($formatted_field_value == '') {
+                            $formatted_field_value = 'null';
+                        }
+                    }
+                    $field_value = $formatted_field_value;
+                    break;
+                case 'string':
+                    break;
+                default:
+                    $field_error = true;
+                    $message = "Unknown datatype (" . $field_type . ") for $table_name::$field_name on line #" . $this->stats['record_count'];
+                    $this->debugMessage ("[*] importProcessField: $message", self::DBIO_ERROR);
+                    break;
             }
+
             if ($field_error) {
                 $this->record_status = false;
             } else {
