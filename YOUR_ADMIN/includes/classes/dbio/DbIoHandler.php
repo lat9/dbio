@@ -473,6 +473,7 @@ abstract class DbIoHandler extends base
         $this->charset_is_utf8 = (mb_strtolower (CHARSET) == 'utf-8');
         $this->headers = array ();
         
+        $this->handler_does_import = (isset ($this->config['handler_does_import']) && $this->config['handler_does_import'] === true);
         $import_error = $this->importInitializeKeys ();
         
         $extra_select_clause = '';
@@ -722,6 +723,7 @@ abstract class DbIoHandler extends base
         //
         $this->record_status = true;
         $this->stats['record_count']++;
+        $this->saved_data = array ();
         
         // -----
         // Determine the "key" value associated with the record.  If there are fewer columns of data than required to access
@@ -766,6 +768,7 @@ abstract class DbIoHandler extends base
                     }
                     $data_index++;
                 }
+                
 
                 // -----
                 // If the record didn't have errors preventing its insert/update ...
@@ -776,42 +779,43 @@ abstract class DbIoHandler extends base
                     } else {
                         $this->stats['updates']++;
                     }
-                    $record_key_value = false;
-                    foreach ($this->import_sql_data as $database_table => $table_fields) {
-                        if ($database_table != self::DBIO_NO_IMPORT) {
-                            $table_name = $database_table;
-                            $extra_where_clause = '';
-                            $capture_key_value = ($this->import_is_insert && isset ($this->config['keys'][$database_table]['capture_key_value']));
+                    
+                    if ($this->handler_does_import === true) {
+                        $this->importFinishProcessing ();
+                    } else {
+                        $record_key_value = false;
+                        foreach ($this->import_sql_data as $database_table => $table_fields) {
+                            if ($database_table != self::DBIO_NO_IMPORT) {
+                                $table_name = $database_table;
+                                $extra_where_clause = '';
+                                $capture_key_value = ($this->import_is_insert && isset ($this->config['keys'][$database_table]['capture_key_value']));
 
-                            if (mb_strpos ($table_name, '^') !== false) {
-                                $language_tables = explode ('^', $table_name);
-                                $table_name = $language_tables[0];
-                                $language_id = $language_tables[1];
-                                if ($this->import_is_insert) {
-                                    $table_fields[$this->config['tables'][$table_name]['language_field']] = array ( 'value' => $language_id, 'type' => 'integer' );
-                                } else {
-                                    $extra_where_clause = " AND " . $this->config['tables'][$table_name]['alias'] . '.' . $this->config['tables'][$table_name]['language_field'] . " = $language_id";
+                                if (mb_strpos ($table_name, '^') !== false) {
+                                    $language_tables = explode ('^', $table_name);
+                                    $table_name = $language_tables[0];
+                                    $language_id = $language_tables[1];
+                                    if ($this->import_is_insert) {
+                                        $table_fields[$this->config['tables'][$table_name]['language_field']] = array ( 'value' => $language_id, 'type' => 'integer' );
+                                    } else {
+                                        $extra_where_clause = " AND " . $this->config['tables'][$table_name]['alias'] . '.' . $this->config['tables'][$table_name]['language_field'] . " = $language_id";
+                                    }
                                 }
-                            }
-                            
-                            $table_alias = $this->config['tables'][$table_name]['alias'];
-                            $table_fields = $this->importUpdateRecordKey ($table_name, $table_fields, $record_key_value);
-                            if ($table_fields !== false) {
-                                $sql_query = $this->importBuildSqlQuery ($table_name, $table_alias, $table_fields, $extra_where_clause);
-                                if ($sql_query !== false && $this->operation != 'check') {
-                                    $db->Execute ($sql_query);
-                                    if ($capture_key_value) {
-                                        $record_key_value = $db->insert_ID ();
+                                
+                                $table_alias = $this->config['tables'][$table_name]['alias'];
+                                $table_fields = $this->importUpdateRecordKey ($table_name, $table_fields, $record_key_value);
+                                if ($table_fields !== false) {
+                                    $sql_query = $this->importBuildSqlQuery ($table_name, $table_alias, $table_fields, $extra_where_clause);
+                                    if ($sql_query !== false && $this->operation != 'check') {
+                                        $db->Execute ($sql_query);
+                                        if ($capture_key_value) {
+                                            $record_key_value = $db->insert_ID ();
+                                        }
                                     }
                                 }
                             }
                         }
+                        $this->importRecordPostProcess ($record_key_value);
                     }
-                    $this->importRecordPostProcess ($record_key_value);
-                    
-                } elseif ($this->record_status === 'processed') {
-                    $this->importFinishProcessing ();
-                    
                 }
             }  //-Record's key value is OK to continue processing
         }
@@ -987,9 +991,16 @@ abstract class DbIoHandler extends base
     {
     }        
     
-    protected function importFinishProcessing () 
+    // -----
+    // This function, required/used **only** if the current handler sets its config['handler_does_import'] to true, is called to process the
+    // current record's import.
+    //
+    // Note: If a handler sets config['handler_does_import'] = true and does NOT supply this function, an error log will be generated.
+    //
+    protected function importFinishProcessing ()
     {
-    } 
+        $this->debugMessage (sprintf (DBIO_ERROR_HANDLER_MISSING_FUNCTION, $this->stats['report_name'], 'importFinishProcessing'), self::DBIO_ERROR);
+    }
     
     protected function importProcessField ($table_name, $field_name, $language_id, $field_value) 
     {

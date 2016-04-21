@@ -216,7 +216,9 @@ class DbIo extends base
                 trigger_error ($this->message, E_USER_WARNING);
             
             } else {
-                if ($this->handler->importInitialize ($language, $operation)) {
+                if (!$this->handler->importInitialize ($language, $operation)) {
+                    $this->message = $this->handler->getHandlerMessage ();
+                } else {
                     $this->csv_parms = $this->handler->getCsvParameters ();
                     if (!$this->handler->importGetHeader (($this->handler->isHeaderIncluded ()) ? $this->getCsvRecord () : false)) {
                         $this->message = $this->handler->getHandlerMessage ();

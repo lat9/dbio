@@ -82,6 +82,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
     {
         $this->stats['report_name'] = 'ProductsAttribsBasic';
         $this->config = self::getHandlerInformation ();
+        $this->config['handler_does_import'] = true;  //-Indicate that **all** the import-based database manipulations are performed by this handler
         $this->config['keys'] = array (
             TABLE_PRODUCTS => array (
                 'alias' => 'p',
@@ -151,14 +152,19 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
     
     protected function importProcessField ($table_name, $field_name, $language_id, $field_value)
     {
-        if ($table_name == TABLE_PRODUCTS_OPTIONS) {
-            if (!isset ($this->saved_data['option'])) {
-                $this->saved_data['option'] = array ();
-            }
-            $this->saved_data['option'][$field_name] = $field_value;
-            
-        } elseif ($table_name == TABLE_PRODUCTS_OPTIONS_VALUES) {
-            $this->saved_data['option_values'] = $field_value;
+        switch ($field_name) {
+            case 'products_options_type':
+            case 'products_options_name':
+                if (!isset ($this->saved_data['option'])) {
+                    $this->saved_data['option'] = array ();
+                }
+                $this->saved_data['option'][$field_name] = $field_value;
+                break;
+            case 'products_options_values_name':
+                $this->saved_data['option_values'] = $field_value;
+                break;
+            default:
+                break;
         }
     }
     
@@ -186,19 +192,19 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
             } else {
                 $products_options_id = $option_check->fields['products_options_id'];
 
-                $option_values_names = explode ('^', $this->saved_data['option_values']);
+                $options_values_names = explode ('^', $this->saved_data['option_values']);
                 $options_values_list = '';
                 foreach ($options_values_names as $current_value_name) {
                     $options_values_list .= "'$current_value_name', ";
                 }
                 $options_values_list = substr ($options_values_list, 0, -2);
-                $option_values_check = $db->Execute ("SELECT pov.products_options_values_id, pov.products_options_values_name
-                                                        FROM " . TABLE_PRODUCTS_OPTIONS_VALUES . " pov, " . TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS . " pov2po
-                                                       WHERE pov.products_options_values_name IN ($options_values_list)
-                                                         AND pov.language_id = $language_id
-                                                         AND pov.products_options_values_id = pov2po.products_options_values_id
-                                                         AND pov2po.products_options_id = $products_options_id", false, false, 0, true);
-                if (count ($options_values_list) != $option_values_check->RecordCount ()) {
+                $options_values_check = $db->Execute ("SELECT pov.products_options_values_id, pov.products_options_values_name
+                                                         FROM " . TABLE_PRODUCTS_OPTIONS_VALUES . " pov, " . TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS . " pov2po
+                                                        WHERE pov.products_options_values_name IN ($options_values_list)
+                                                          AND pov.language_id = $language_id
+                                                          AND pov.products_options_values_id = pov2po.products_options_values_id
+                                                          AND pov2po.products_options_id = $products_options_id", false, false, 0, true);
+                if (count ($options_values_names) != $options_values_check->RecordCount ()) {
                     $values_found = array ();
                     while (!$options_values_check->EOF) {
                         $values_found = $options_values_check->fields['products_options_values_name'];
@@ -220,7 +226,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
                                                    AND options_values_id = " . $options_values_check->fields['products_options_values_id'] . " LIMIT 1", false, false, 0, true);
                         if ($check->EOF) {
                             $attributes_insert_sql['options_values_id']['value'] = $options_values_check->fields['products_options_values_id'];
-                            $attrib_insert_query = $this->importBuildSqlQuery (TABLE_PRODUCTS_ATTRIBUTES, $attributes_insert_sql, '', true);
+                            $attrib_insert_query = $this->importBuildSqlQuery (TABLE_PRODUCTS_ATTRIBUTES, '', $attributes_insert_sql, '', true, true);
                             if ($this->operation != 'check') {
                                 $db->Execute ($attrib_insert_query);
                             }
@@ -237,9 +243,9 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
         }
     }
     
-    protected function importBuildSqlQuery ($table_name, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
+    protected function importBuildSqlQuery ($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
     {
-        return ($table_name == TABLE_PRODUCTS) ? false : parent::importBuildSqlQuery ($table_name, $table_fields, $extra_where_clause, $is_override, $is_insert);
+        return ($table_name == TABLE_PRODUCTS) ? false : parent::importBuildSqlQuery ($table_name, $table_alias, $table_fields, $extra_where_clause, $is_override, $is_insert);
     }
 
 }  //-END class DbIoProductsAttribsBasicHandler
