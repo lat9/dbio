@@ -33,3 +33,4 @@ define ('DBIO_FORMAT_MESSAGE_IMPORT_MISSING_KEY', 'Import aborted: Missing key c
 define ('DBIO_TEXT_ERROR', 'Error: ');  //-Used to prefix processing messages with errors
 define ('DBIO_MESSAGE_KEY_CONFIGURATION_ERROR', 'There is an error in the key-configuration for the selected handler; the handler cannot be used.');
 define ('DBIO_ERROR_HANDLER_MISSING_FUNCTION', 'The current handler (%$1s) is missing the (required) "%$2s" function; the import is disallowed.');
+define ('DBIO_ERROR_HEADER_MISSING_KEYS', 'The current import-file is missing these (%s) required columns; the import is disallowed.');

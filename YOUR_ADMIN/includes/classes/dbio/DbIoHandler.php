@@ -344,7 +344,6 @@ abstract class DbIoHandler extends base
             }
             
             if (isset ($this->config['fixed_headers'])) {
-                $this->debugMessage ('exportInitialize: Processing fixed headers');
                 $no_header_array = (isset ($this->config['fixed_fields_no_header']) && is_array ($this->config['fixed_fields_no_header'])) ? $this->config['fixed_fields_no_header'] : array ();
                 $current_language = ($this->export_language == 'all') ? DEFAULT_LANGUAGE : $this->export_language;
                 foreach ($this->config['fixed_headers'] as $field_name => $table_name) {
@@ -672,7 +671,18 @@ abstract class DbIoHandler extends base
         $this->header_columns = count ($header);   
         $initialization_complete = true;
         
-        if ($this->header_field_count == 0) {
+        $missing_keys = '';
+        foreach ($this->variable_keys as $field_name => $field_info) {
+            if (!isset ($field_info['index'])) {
+                $missing_keys .= ', v_' . $field_name;
+            }
+        }
+        
+        if ($missing_keys != '') {
+            $this->message = sprintf (DBIO_ERROR_HEADER_MISSING_KEYS, substr ($missing_keys, 2));
+            $initialization_complete = false;
+            
+        } elseif ($this->header_field_count == 0) {
             $this->message = DBIO_MESSAGE_IMPORT_MISSING_HEADER;
             $initialization_complete = false;
           
@@ -683,7 +693,10 @@ abstract class DbIoHandler extends base
         }
         if (!$initialization_complete) {
             $this->table_names = array ();
+        } else {
+            $initialization_complete = $this->importFinalizeHeader ();
         }
+        
         $this->debugMessage ("importGetHeader: finished ($initialization_complete).\n" . print_r (array (
             $this->import_sql_data, 
             $this->table_names, 
@@ -769,7 +782,6 @@ abstract class DbIoHandler extends base
                     $data_index++;
                 }
                 
-
                 // -----
                 // If the record didn't have errors preventing its insert/update ...
                 //
@@ -908,6 +920,15 @@ abstract class DbIoHandler extends base
                                     WHERE " . $this->key_where_clause . " LIMIT 1";
         }
         return $keys_ok;
+    }
+    
+    // -----
+    // Called as the very last step of an import's header processing (so long as no previous error), giving a handler
+    // one last time to verify that the header is acceptable.  Return true if the initialization is successful; false, otherwise.
+    //
+    protected function importFinalizeHeader ()
+    {
+        return true;
     }
     
     protected function importBindKeyValues ($data, $sql_template)
