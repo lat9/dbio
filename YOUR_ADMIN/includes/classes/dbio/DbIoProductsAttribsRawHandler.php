@@ -173,6 +173,11 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
         return $this->record_status;
     }
     
+    // -----
+    // This function, called to create an import-record's associated SQL, checks to see if the current attribute is to have a download-file associated with it.
+    // That's tested by the presence of a value (unchecked) in the 'products_attributes_filename' field.  If the value is present, the associated record in the
+    // 'products_attributes_download' table is created/modified; if that field's value is empty (a null-string), then any existing record will be removed.
+    //
     protected function importBuildSqlQuery ($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
     {
         $this->debugMessage ("ProductsAttribsRaw::importBuildSqlQuery  ($table_name, $table_alias, $table_fields, $extra_where_clause, $is_override, $is_insert): " . print_r ($this, true));
@@ -180,6 +185,8 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
         if ($table_name == TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
             if (empty ($this->import_sql_data[TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD]['products_attributes_filename']['value'])) {
                 $proceed_with_query = false;
+                global $db;
+                $db->Execute ("DELETE FROM " . TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD . " WHERE products_attributes_id = " . $this->key_fields['products_attributes_id'] . " LIMIT 1");
             } else {
                 if ($this->import_is_insert) {
                     $this->import_sql_data[TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD]['products_attributes_id']['value'] = $this->key_fields['products_attributes_id'];
