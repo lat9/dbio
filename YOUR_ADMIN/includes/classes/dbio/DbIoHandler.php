@@ -14,7 +14,7 @@ abstract class DbIoHandler extends base
 //                                    C O N S T A N T S 
 // ----------------------------------------------------------------------------------
     // ----- Interface Constants -----
-    const DBIO_HANDLER_VERSION   = '0.0.0';
+    const DBIO_HANDLER_VERSION   = '1.0.0';
     // ----- Field-Import Status Values -----
     const DBIO_IMPORT_OK         = '--ok--';
     const DBIO_NO_IMPORT         = '--none--';
@@ -1127,7 +1127,7 @@ abstract class DbIoHandler extends base
             $this->config['include_header'] = true;
         }
         if (!isset ($this->config['delimiter'])) {
-            $this->config['delimiter'] = DBIO_CSV_DELIMITER;
+            $this->config['delimiter'] = (DBIO_CSV_DELIMITER === 'TAB') ? "\t" : DBIO_CSV_DELIMITER;
         }
         if (!isset ($this->config['enclosure'])) {
             $this->config['enclosure'] = DBIO_CSV_ENCLOSURE;
