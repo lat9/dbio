@@ -374,7 +374,7 @@ if (!$ok_to_proceed || $error_message !== '') {
 <?php
             foreach ($handler_info['export_filters'] as $field_name => $field_parms) {
                 if (!isset ($field_parms['type']) || !isset ($field_parms['label'])) {
-                    trigger_error ("DbIo: Missing type and/or label for $handler_name::$field_name export filters:\n" . var_export ($field_parms, true), E_USER_WARNING);
+                    trigger_error ("DbIo: Missing type and/or label for $handler_name::$field_name export filters:\n" . print_r ($field_parms, true), E_USER_WARNING);
                     
                 } else {
                     $extra_field_class = '';
@@ -390,7 +390,7 @@ if (!$ok_to_proceed || $error_message !== '') {
                         case 'dropdown':
                             if (!isset ($field_parms['dropdown_options']) || !is_array ($field_parms['dropdown_options'])) {
                                 $form_field = false;
-                                trigger_error ("DbIo: Missing dropdown_options for $handler_name::$field_name export filter:\n" . var_export ($field_parms, true), E_USER_WARNING);
+                                trigger_error ("DbIo: Missing dropdown_options for $handler_name::$field_name export filter:\n" . print_r ($field_parms, true), E_USER_WARNING);
                             } else {
                                 $form_field = zen_draw_pull_down_menu ($field_name . $dropdown_field_suffix, $field_parms['dropdown_options'], dbioGetFieldValue ($field_name), $dropdown_options);
                             }
@@ -419,7 +419,7 @@ if (!$ok_to_proceed || $error_message !== '') {
                                         case 'dropdown':
                                             if (!isset ($subfield_parms['dropdown_options']) || !is_array ($subfield_parms['dropdown_options'])) {
                                                 $form_field = false;
-                                                trigger_error ("DbIo: Missing dropdown_options for $handler_name::$field_name export filter:\n" . var_export ($subfield_parms, true), E_USER_WARNING);
+                                                trigger_error ("DbIo: Missing dropdown_options for $handler_name::$field_name export filter:\n" . print_r ($subfield_parms, true), E_USER_WARNING);
                                             } else {
                                                 $form_field .= zen_draw_pull_down_menu ($subfield_name . $dropdown_field_suffix, $subfield_parms['dropdown_options'], dbioGetFieldValue ($subfield_name), $dropdown_options);
                                             }
