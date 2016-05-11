@@ -945,7 +945,7 @@ abstract class DbIoHandler extends base
         global $db;
         $record_is_insert = ($is_override) ? $is_insert : $this->import_is_insert;
         if ($record_is_insert) {
-            $sql_query = "INSERT INTO $table_name $table_alias (" . implode (', ', array_keys ($table_fields)) . ")\nVALUES (";
+            $sql_query = "INSERT INTO $table_name (" . implode (', ', array_keys ($table_fields)) . ")\nVALUES (";
             $sql_query = str_replace ($this->unused_fields, '', $sql_query);
             foreach ($table_fields as $field_name => $field_info) {
                 switch ($field_info['type']) {
