@@ -837,6 +837,15 @@ abstract class DbIoHandler extends base
 //                      P R O T E C T E D   F U N C T I O N S 
 // ----------------------------------------------------------------------------------
 
+    protected function importGetFieldValue ($field_name, $data)
+    {
+        $field_value = false;
+        if (is_string ($field_name) && is_array ($data)) {
+            $field_value = array_search ($field_name, $this->headers);
+        }
+        return $field_value;
+    }
+    
     protected function exportEncodeData ($fields)
     {
        return (DBIO_CHARSET === 'utf8') ? $this->encoding->toUTF8 ($fields) : $this->encoding->toWin1252 ($fields, ForceUTF8\Encoding::ICONV_IGNORE_TRANSLIT);

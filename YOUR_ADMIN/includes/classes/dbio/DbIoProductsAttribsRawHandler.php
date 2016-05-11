@@ -150,27 +150,54 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     {
         global $db;
         if ($this->import_is_insert) {
-            $check = $db->Execute ("SELECT products_id FROM " . TABLE_PRODUCTS . " WHERE products_id = " . $this->key_fields['products_id'] . " LIMIT 1");
+            $products_id = $this->importGetFieldValue ('products_id', $data);
+            $check = $db->Execute ("SELECT products_id FROM " . TABLE_PRODUCTS . " WHERE products_id = '$products_id' LIMIT 1");
             if ($check->EOF) {
                 $this->record_status = false;
-                $this->debugMessage ('ProductsAttribsRawHandler::importCheckKeyValue: Unknown products_id (' . $this->key_fields['products_id'] . ') at line #' . $this->stats['record_count'] . ', record not inserted.', self::DBIO_WARNING);
+                $this->debugMessage ("ProductsAttribsRawHandler::importCheckKeyValue: Unknown products_id ($products_id) at line #" . $this->stats['record_count'] . ', record not inserted.', self::DBIO_WARNING);
             }
             unset ($check);
             
-            $check = $db->Execute ("SELECT products_options_id FROM " . TABLE_PRODUCTS_OPTIONS . " WHERE products_options_id = " . $this->key_fields['options_id'] . " LIMIT 1");
+            $options_id = $this->importGetFieldValue ('options_id', $data);
+            $check = $db->Execute ("SELECT products_options_id FROM " . TABLE_PRODUCTS_OPTIONS . " WHERE products_options_id = '$options_id' LIMIT 1");
             if ($check->EOF) {
                 $this->record_status = false;
-                $this->debugMessage ('ProductsAttribsRawHandler::importCheckKeyValue: Unknown options_id (' . $this->key_fields['options_id'] . ') at line #' . $this->stats['record_count'] . ', record not inserted.', self::DBIO_WARNING);
+                $this->debugMessage ("ProductsAttribsRawHandler::importCheckKeyValue: Unknown options_id ($options_id) at line #" . $this->stats['record_count'] . ', record not inserted.', self::DBIO_WARNING);
             }
             unset ($check);
             
-            $check = $db->Execute ("SELECT products_options_values_id FROM " . TABLE_PRODUCTS_OPTIONS_VALUES . " WHERE products_options_values_id = " . $this->key_fields['options_values_id'] . " LIMIT 1");
+            $options_values_id = $this->importGetFieldValue ('options_values_id', $data);
+            $check = $db->Execute ("SELECT products_options_values_id FROM " . TABLE_PRODUCTS_OPTIONS_VALUES . " WHERE products_options_values_id = '$options_values_id' LIMIT 1");
             if ($check->EOF) {
                 $this->record_status = false;
-                $this->debugMessage ('ProductsAttribsRawHandler::importCheckKeyValue: Unknown options_values_id (' . $this->key_fields['options_values_id'] . ') at line #' . $this->stats['record_count'] . ', record not inserted.', self::DBIO_WARNING);
+                $this->debugMessage ("ProductsAttribsRawHandler::importCheckKeyValue: Unknown options_values_id ($options_values_id) at line #" . $this->stats['record_count'] . ', record not inserted.', self::DBIO_WARNING);
             }
         }
         return $this->record_status;
+    }
+    
+    // -----
+    // Fix-up any blank values in the attribute's download maxdays/maxcount fields (they're output as blank if no associated downloads-table
+    // record is found) to prevent unwanted warnings from being issued.
+    //
+    protected function importProcessField ($table_name, $field_name, $language_id, $field_value) 
+    {
+        if ($table_name == TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
+            if (($field_name == 'products_attributes_maxdays' || $field_name == 'products_attributes_maxcount') && empty ($field_value)) {
+                $field_value = '0';
+            }
+        } else {
+            switch ($field_name) {
+                case 'products_id':             //-Fall through ...
+                case 'options_id':              //-Fall through ...
+                case 'options_values_id':
+                    $this->saved_data[$field_name] = $field_value;
+                    break;
+                default:
+                    break;
+            }
+        }
+        parent::importProcessField ($table_name, $field_name, $language_id, $field_value);
     }
     
     // -----
@@ -180,14 +207,11 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     //
     protected function importBuildSqlQuery ($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
     {
-        $this->debugMessage ("ProductsAttribsRaw::importBuildSqlQuery  ($table_name, $table_alias, $table_fields, $extra_where_clause, $is_override, $is_insert): " . print_r ($this, true));
         $proceed_with_query = true;
         if ($table_name == TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
             if (empty ($this->import_sql_data[TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD]['products_attributes_filename']['value'])) {
                 $proceed_with_query = false;
-                global $db;
-                $db->Execute ("DELETE FROM " . TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD . " WHERE products_attributes_id = " . $this->key_fields['products_attributes_id'] . " LIMIT 1");
-            } else {
+            } elseif ($this->operation != 'check') {
                 if ($this->import_is_insert) {
                     $this->import_sql_data[TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD]['products_attributes_id']['value'] = $this->key_fields['products_attributes_id'];
                 } else {
@@ -204,15 +228,19 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     protected function importRecordPostProcess ($record_key_value)
     {
         global $db;
-        if ($this->import_is_insert) {
+        if ($this->operation != 'check' && $this->import_is_insert) {
+            $record_inserted = 'no';
             $check = $db->Execute ("SELECT products_options_id FROM " . TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS . " 
-                                     WHERE products_options_id = " . $this->key_fields['options_id'] . "
-                                       AND products_options_values_id = " . $this->key_fields['options_values_id'] . "
+                                     WHERE products_options_id = " . $this->saved_data['options_id'] . "
+                                       AND products_options_values_id = " . $this->saved_data['options_values_id'] . "
                                    LIMIT 1");
             if ($check->EOF) {
-                $db->Execute ("INSERT INTO " . TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS . " (products_options_id, products_options_values_id)
-                                  VALUES ( " . $this->key_fields['options_id'] . ', ' . $this->key_fields['options_values_id'] . ')');
+                $record_inserted = 'yes';
+                $sql_query = "INSERT INTO " . TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS . " (products_options_id, products_options_values_id) VALUES ( " . $this->saved_data['options_id'] . ', ' . $this->saved_data['options_values_id'] . ')';
+                $this->debugMessage ("ProductsAttribsRaw::importRecordPostProcess\n$sql_query", self::DBIO_STATUS);  //- Forces the generated SQL to be logged!!
+                $db->Execute ($sql_query);
             }
+            $this->debugMessage ("ProductsAttribsRaw::importRecordPostProcess, record updated ($record_inserted), options: " . print_r ($this->saved_data, true));
         }
     }
 
