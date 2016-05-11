@@ -49,7 +49,7 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
         $this->stats['report_name'] = 'ProductsOptionsValues';
         $this->config = self::getHandlerInformation ();
         $this->config['keys'] = array (
-            TABLE_PRODUCTS_OPTIONS => array (
+            TABLE_PRODUCTS_OPTIONS_VALUES => array (
                 'alias' => 'pov',
                 'products_options_values_id' => array (
                     'type' => self::DBIO_KEY_IS_VARIABLE | self::DBIO_KEY_SELECTED,
