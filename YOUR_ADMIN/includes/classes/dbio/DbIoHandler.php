@@ -43,7 +43,15 @@ abstract class DbIoHandler extends base
     public function __construct ($log_file_suffix) 
     {
         global $queryCache;
-        $this->queryCache = (isset ($queryCache) && is_object ($queryCache) && method_exists ($queryCache, 'reset')) ? $queryCache : null;
+        $this->queryCache = null;
+        $this->queryCacheOlder = null;
+        if (isset ($queryCache) && is_object ($queryCache)) {
+            if (method_exists ($queryCache, 'reset')) {
+                $this->queryCache = $queryCache;
+            } else {
+                $this->queryCacheOlder = $queryCache;
+            }
+        }
         $this->debug = (DBIO_DEBUG != 'false');
         switch (DBIO_DEBUG) {
             case 'true':
@@ -722,12 +730,17 @@ abstract class DbIoHandler extends base
         $this->debugMessage ("importCsvRecord: starting ...");
         
         $data = ($this->charset_is_utf8) ? $this->encoding->toUTF8 ($data) : $this->encoding->toWin1252 ($data, ForceUTF8\Encoding::ICONV_IGNORE_TRANSLIT);
+        
         // -----
         // If the queryCache handler is loaded, reset the cache at the start of each record's import.  This helps to reduce
         // the amount of memory required for an import script's execution.
         //
+        // Note: For older versions of the queryCache object, we need to reset the class's cache-array directly.
+        //
         if ($this->queryCache !== null) {
             $this->queryCache->reset ('ALL');
+        } elseif ($this->queryCacheOlder !== null) {
+            $this->queryCacheOlder->queries = array ();
         }
         
         // -----
@@ -837,15 +850,6 @@ abstract class DbIoHandler extends base
 //                      P R O T E C T E D   F U N C T I O N S 
 // ----------------------------------------------------------------------------------
 
-    protected function importGetFieldValue ($field_name, $data)
-    {
-        $field_value = false;
-        if (is_string ($field_name) && is_array ($data)) {
-            $field_value = array_search ($field_name, $this->headers);
-        }
-        return $field_value;
-    }
-    
     protected function exportEncodeData ($fields)
     {
        return (DBIO_CHARSET === 'utf8') ? $this->encoding->toUTF8 ($fields) : $this->encoding->toWin1252 ($fields, ForceUTF8\Encoding::ICONV_IGNORE_TRANSLIT);
