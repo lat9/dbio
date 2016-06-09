@@ -43,7 +43,7 @@ if (!defined ('DBIO_MODULE_VERSION')) {
   
     $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'CSV: Escape', 'DBIO_CSV_ESCAPE', '\\\\', 'Enter the single character used as the escape-character within any DbIo CSV file.  (Default: <b>backslash</b>)', $cgi, 7, now(), NULL, NULL)");
   
-    $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'CSV: Encoding', 'DBIO_CHARSET', 'utf8', 'Choose the type of encoding to be associated with DbIo CSV files.  If you use Microsoft&reg; Excel, choose <b>latin1</b>.  (Default: <b>utf8</b>.', $cgi, 10, now(), NULL, 'zen_cfg_select_option(array(\'utf8\', \'latin1\'),')");
+    $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'CSV: Encoding', 'DBIO_CHARSET', 'utf8', 'Choose the type of encoding to be associated with DbIo CSV files.  If you use Microsoft&reg; Excel, choose <b>latin1</b>.  (Default: <b>utf8</b>).', $cgi, 10, now(), NULL, 'zen_cfg_select_option(array(\'utf8\', \'latin1\'),')");
   
     $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'CSV: Import Date Format', 'DBIO_IMPORT_DATE_FORMAT', 'm-d-y', 'Choose the format used for <em>date</em> and <em>datetime</em> fields in any DbIo CSV file.  (Default: <b>m-d-y</b>)', $cgi, 11, now(), NULL, 'zen_cfg_select_option(array(\'m-d-y\', \'d-m-y\', \'y-m-d\'),')");
 
@@ -93,11 +93,13 @@ if (!$sniffer->field_exists (TABLE_DBIO_STATS, 'report_name')) {
 // -----
 // Register the admin-level pages for use.
 //
-if (!zen_page_key_exists ('toolsDbIo')) {
-    zen_register_admin_page ('toolsDbIo', 'BOX_TOOLS_DBIO', 'FILENAME_DBIO_MANAGER', '', 'tools', 'Y', init_dbio_next_sort ('tools'));
-  
-}
-if (!zen_page_key_exists ('configDbIo')) {
-    zen_register_admin_page('configDbIo', 'BOX_CONFIGURATION_DBIO', 'FILENAME_CONFIGURATION', "gID=$cgi", 'configuration', 'Y', init_dbio_next_sort ('configuration'));
-  
+if (function_exists ('zen_page_key_exists')) {
+    if (!zen_page_key_exists ('toolsDbIo')) {
+        zen_register_admin_page ('toolsDbIo', 'BOX_TOOLS_DBIO', 'FILENAME_DBIO_MANAGER', '', 'tools', 'Y', init_dbio_next_sort ('tools'));
+      
+    }
+    if (!zen_page_key_exists ('configDbIo')) {
+        zen_register_admin_page('configDbIo', 'BOX_CONFIGURATION_DBIO', 'FILENAME_CONFIGURATION', "gID=$cgi", 'configuration', 'Y', init_dbio_next_sort ('configuration'));
+      
+    }
 }
