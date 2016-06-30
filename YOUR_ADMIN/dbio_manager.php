@@ -306,8 +306,7 @@ select { padding: 0.1em; margin: 0.5em; }
 .file-row-header, .config-header, .reports-details-name { font-weight: bold; }
 .file-row, .file-row-header, #top-block-row, .reports-details-row { display: table-row; }
 .reports-details-select, .reports-details, .reports-filter-label { display: table-cell; padding: 0.5em; }
-.reports-filter-label { font-weight: bold; color: #599659; }
-.reports-filter-label {  padding-left: 2em; clear: both; float: left; }
+.reports-filter-label { color: #0000ff; padding-left: 2em; clear: both; float: left; }
 .reports-filter-label.multi { font-style: italic; }
 .reports-filter-field.multi { clear: both; }
 .filter-subfield-label { padding: 0 1em; width: 14em; text-align: right; display: inline-block; clear: both; }
