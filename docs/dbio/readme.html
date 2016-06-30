@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Database I/O Manager (DbIo)</title>
+<link rel="icon" href="../vinos_favicon.ico" type="image/x-icon" />
+<link href="http://fonts.googleapis.com/css?family=Roboto" rel="stylesheet" type="text/css">
+<style type="text/css">
+<!--
+a, a:active, a:visited { color: #006666; text-decoration: none; }
+a:hover { color:#00CC99; text-decoration: underline; }
+body, p, h1, h2, h3, h4, h5, h6, li, td, dd, img, dt, dl, table { font-family: Roboto, verdana, avantgarde, tahoma, arial, sans-serif; font-size: 12pt; color: black; padding: 0px; margin: 10px 20px; line-height: 1.75em; }
+h1, h2, h3, h4 { font-weight: bold; padding: 5px; }
+h1 { font-size: 20px; text-align: center; border-bottom: 1px solid #666; }
+h2 { font-size: 16px; }
+h2, h3 { border: 1px solid #666; background-color: #eee; }
+h1+h3 { border: none; background-color: inherit; }
+h5 { border-bottom: 1px dashed #666; padding-bottom: 5px; }
+code.no-pad, pre.no-pad { padding: 0; margin: 0; }
+.tableHead { background-color: #eee; }
+ol li, ol li p { margin-left: 0; }
+img { margin: 0 20px; float: left; border: 1px solid #666; }
+img.wide { width: 95%; float: none; margin: 0 2.5%; }
+table, td, th { border: 1px solid black; border-collapse: collapse; }
+td, th { padding: 5px; }
+th { text-align: left; }
+span.title { font-style: italic; font-weight: bold; color: #006666; }
+.corefile, .red { color: red; }
+.template { color: green; }
+.added { color: blue; }
+.removed { text-decoration: line-through; }
+.osh { color: blue; }
+.minspacing li { margin: 0; }
+.smallimg { float: left; width: auto; margin: 0.5% 0.25% 0.25% auto; }
+ol li, ul li { margin-top: 5px; margin-bottom: 5px; }
+ul li ul { padding-left: 0; }
+dt { font-weight: bold; margin-bottom: 0; }
+dd { margin-top: 0; padding-left: 40px; }
+.table { display: table; padding-left: 0.5%; font-size: smaller; }
+.head_outer, .item_outer { display: table-row; }
+.thead, .item { display: table-cell; padding: 0.25% 0.25%;}
+.thead { font-weight: bold; }
+.table ul { list-style-type: none; padding-left: 0; margin: 0; }
+.table ul li { margin: 0; }
+.c1 { text-align: center; font-weight: bold; width: 15%; color: #333333; vertical-align: top; }
+.c3 { vertical-align: top; }
+.clearBoth { clear: both; }
+.smaller { font-size: smaller; }
+.e { background-color: #eee; }
+ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0; }
+#table-config-osm tr td:first-child, #table-config-osm tr th:first-child { width: 30em; }
+#overview-images { margin-right: 0.5em; }
+.back { float: left; }
+#fdcv ol { margin: 0; }
+.nowrap { white-space: nowrap; }
+.h-name { font-style: italic; font-weight: bold; }
+#t-handlers td, #t-handlers th { vertical-align: top; }
+
+.etabs { margin: 0; padding: 0; }
+.tab { display: inline-block; zoom:1; *display:inline; background: #eee; border: solid 1px #999; border-bottom: none; border-radius: 4px 4px 0 0; margin: 0; }
+.tab a { font-size: 14px; line-height: 2em; display: block; padding: 0 10px; outline: none; }
+.tab a:hover { text-decoration: underline; }
+.tab.active { background: #fff; padding-top: 6px; position: relative; top: 1px; border-color: #666; }
+.tab a.active { font-weight: bold; }
+.tab-container .panel-container { background: #fff; border: solid #666 1px; padding: 10px; border-radius: 0 4px 4px 4px; }
+.panel-container { margin-bottom: 10px; }
+
+#dbio_layout { text-align: center; float: right; background-color: #ebebeb; }
+#dbio_layout2 { padding: 0; }
+#dbio_layout2 table, #dbio_layout2 td { margin: 0; border: none; }
+#dbio_layout2 tr:first-child td { border-bottom: 1px solid black; }
+-->
+</style>
+<link rel="stylesheet" type="text/css" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" />
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script> 
+<script src="../jquery.easytabs.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+    $(document).ready( function() {
+        $('#tab-container').easytabs();
+    });
+</script>
+</head>
+
+<body>
+  <h1 id="title">Database I/O Manager (DbIo) for Zen Cart&reg;</h1>
+  <p>Version 1.0.0.  Copyright &copy; 2015-2016, <a href="http://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.  Current Support Thread on the Zen Cart forums: <a href="https://github.com/lat9/image_swatch_support" target="_blank">https://github.com/lat9/image_swatch_support</a></p>
+  
+  <div class="tab-container" id="outer-container">
+    <ul class="etabs">
+      <li class="tab"><a href="#overview">Overview</a></li>
+      <li class="tab"><a href="#installation">Installation</a></li>
+      <li class="tab"><a href="#customization">Customization</a></li>
+      <li class="tab"><a href="#dbio_manager">Using the DbIo Manager</a></li>
+      <li class="tab"><a href="#history">Change History</a></li>
+    </ul>
+    
+    <div class="panel-container">
+  
+      <!-- start overview section -->
+      <div id="overview">
+        <noscript><h2>Overview</h2></noscript>
+        <p><em>DbIo</em> emulates one of the more popular Zen Cart plugins &mdash; <em>Easy Populate</em> &mdash; providing &quot;handlers&quot; to easily input (import) data to your cart's database and output (export) that data via a comma-separated-value (CSV) or tab-delimited file.  In the <em>DbIo</em>, a &quot;handler&quot; is responsible for all I/O actions required to support a specific operation &hellip; like importing a set of product specifications or exporting a list of customer orders.</p>
+        
+        <hr />  
+        <p>Why <em>emulate</em> rather than <em>contribute to</em> the <em>EP-4</em> plugin's development?  Given the principles which guided <em>DbIo</em>'s development:</p>
+        <ol>
+          <li>Use Zen Cart's built-in processing, especially the database interfaces.</li>
+          <li>Use a class-based approach, enabling a higher degree of code reuse.</li>
+          <li>Let the database drive the data; use the database settings to guide &quot;proper&quot; input processing.</li>
+          <li>Keep the data-pool consistent; broadly define the character-encoding of the .CSV repositories.</li>
+          <li>Keep to, where possible, the <em>EP-4</em> interface described in its <a href="https://www.zen-cart.com/wiki/index.php/Easy_Populate" target="_blank">wiki</a>.</li>
+          <li>Multi-language awareness.</li>
+          <li>Be <em>data-driven</em>.  If you've installed a plugin that simply adds a field to an existing table (like products or orders), that field is a candidate for any I/O operation on that database table without additional coding.</li>
+        </ol>
+        <p>&hellip; the <em>DbIo</em> processing is a <span class="red"><em>revolutionary</em></span> spin-off of <em>Easy Populate</em>; any differences between the <em>EP-4</em> and <em>DbIo</em> handling will be identified in this readme.</p> 
+        
+      </div>
+      <!-- end overview section -->
+    
+      <!-- start installation section -->
+      <div id="installation">
+        <noscript><h2>Installing, Upgrading or Uninstalling</h2></noscript>
+        <div class="tab-container" id="inner-container1">
+          
+          <p>This section identifies the processes you'll use to initially install <em>DbIo</em> or uninstall <em>DbIo</em> entirely.</p>
+          
+          <ul class="etabs">
+            <li class="tab"><a href="#initial">Initial Installation</a></li>
+            <li class="tab"><a href="#uninstall">Uninstalling</a></li>
+          </ul>
+
+          <div class="panel-container">
+
+            <div id="initial">
+              <noscript><h3>Initial Installation</h3></noscript>
+              <p>There are neither <span class="corefile">core-file overwrites</span> nor <span class="template">template-overrides</span> used by this plugin; you should <strong>always</strong> backup your cart's database and files prior to making any changes. Unzip the plugin's package file and then:</p>
+              <ol type="A">
+                <li>Rename the YOUR_ADMIN folder to match your custom admin folder's name.</li>
+                <li>Sign into your Zen Cart's admin panel.</li>
+                <li>Copy the plugin's files to your store's folder structure:<ol>
+                  <li>/YOUR_ADMIN/dbio_manager.php</li>
+                  <li>/YOUR_ADMIN/dbio/*.*</li>
+                  <li>/YOUR_ADMIN/images/icons/dbio_information.png</li>
+                  <li>/YOUR_ADMIN/includes/auto_loaders/config.dbio_admin.php</li>
+                  <li>/YOUR_ADMIN/includes/classes/dbio/*.*</li>
+                  <li>/YOUR_ADMIN/includes/extra_datafiles/dbio_file_database_names_admin.php</li>
+                  <li>/YOUR_ADMIN/includes/functions/dbio_manager_functions.php</li>
+                  <li>/YOUR_ADMIN/includes/functions/extra_functions/dbio_functions.php</li>
+                  <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                  <li>/YOUR_ADMIN/includes/javascript/dbio/*.*</li>
+                  <li>/YOUR_ADMIN/includes/languages/english/dbio_manager.php</li>
+                  <li>/YOUR_ADMIN/includes/languages/english/dbio/*.*</li>
+                  <li>/YOUR_ADMIN/includes/languages/english/extra_definitions/dbio_admin_extra_definitions.php</li>
+                </ol></li>
+                <li>Click the &quot;Admin Home&quot; link in your Zen Cart's top admin menu.  This action will cause the plugin's installation script to run.</li>
+              </ol>
+            </div>
+            
+            <div id="uninstall">
+              <noscript><h3>Uninstalling</h3></noscript>
+              <p>First, delete the files that were copied to your Zen Cart's file-system, then copy the contents of the plugin's <code>/docs/dbio/uninstall/uninstall_dbio.sql</code> to your clipboard and paste into your admin's <em>Tools-&gt;Install SQL Patches</em> to complete the uninstall process.</p>
+            </div>
+
+          </div>
+        </div>
+       </div>
+       <!-- end installation section -->
+       
+      <!-- start customization section -->
+      <div id="customization">
+        <noscript><h2>Customizing Your <em>DbIo</em> Installation</h2></noscript>
+        <p>This section identifies the steps you'll take to customize your <em>Database I/O Manager</em> installation.</p>
+        <div class="tab-container" id="inner-container2">
+          <ul class="etabs">
+            <li class="tab"><a href="#considerations">Considerations</a></li>
+            <li class="tab"><a href="#configure">Configure</a></li>
+            <li class="tab"><a href="#handlers">I/O Handlers</a></li>
+          </ul>
+          
+          <div class="panel-container">
+            <div id="considerations">
+              <noscript><h3>Considerations</h3></noscript>
+              <p>Here are some things to consider as you're setting up and configuring your <em>DbIo</em> installation:</p>
+              <ol>
+                <li><span class="title">Character encoding.</span> I know, boring stuff, but it's <b>very important</b> to the proper operation of <em>DbIo</em>! The plugin's installation verifies that your store's base character-encoding is &quot;proper&quot; by checking that your store's <code>CHARSET</code> is compatible with your store's <code>DB_CHARSET</code> values.  It's <b>your</b> job to properly identify the character-set used by the spreadsheet tool you are also using (e.g. Apache OpenOffice or Microsoft Excel).<p>You'll use the <em>Configuration-&gt;DbIo Manager Settings-&gt;CSV: Encoding</em> setting to instruct <em>DbIo</em> how to interpret the data coming from or going to a <code>.csv</code> file.  Set that value to <b>utf8</b> if you are using <em>Apache OpenOffice</em> (or any other known utf8-generating program) or to <b>latin1</b> if you are using <em>Microsoft Excel</em>.</p></li>
+                <li><span class="title">File naming.</span> <em>DbIo</em> uses the name of an I/O &quot;handler&quot; to identify files to-be-processed by that handler.  For example, any <code>.csv</code> files to be processed by the <em>Featured</em> handler reside in the <code>/YOUR_ADMIN/dbio/</code> folder and are named <code class="nowrap">dbio.<b>Featured</b>.<em>anything</em>.csv</code></li>
+                <li><span class="title">Language-specific Fields.</span> While <em>EP-4</em> uses the convention of appending the <code>language_id</code> (e.g. v_products_name<b>_1</b>) to identify language-specific fields, <em>DbIo</em> appends the (more portable) <code>language_code</code> (e.g. v_products_name<b>_en</b>) when identifying language-specific values.</li>
+              </ol>
+            </div>
+            
+            <div id="configure">
+              <noscript><h3>Configuration-&gt;DbIo Manager Settings</h3></noscript>
+              <p>Once you've installed <em>DbIo</em>, you can customize its base settings via <em>Configuration-&gt;DbIo Manager Settings</em>:</p>
+              <table>
+                <tr class="tableHead">
+                  <th>Field Name</th>
+                  <th>Field Description</th>
+                </tr>
+                <tr>
+                  <td>Version/Release Date</td>
+                  <td>Displays the plugin's version number and release date.</td>
+                </tr>
+                <tr>
+                  <td>CSV: Delimiter</td>
+                  <td>Enter the single character that is used to separate columns within any DbIo CSV file. To use the tab-character as the delimiter value, enter the word <b>TAB</b>.  Defaults to the comma (,) character.</td>
+                </tr>
+                <tr>
+                  <td>CSV: Enclosure</td>
+                  <td>Enter the single character used to enclose fields within any DbIo CSV file. Defaults to the double-quote (") character.</td>
+                </tr>
+                <tr>
+                  <td>CSV: Escape</td>
+                  <td>Enter the single character used as the escape-character within any DbIo CSV file. Defaults to the backslash (\) character.</td>
+                </tr>
+                <tr>
+                  <td>CSV: Encoding</td>
+                  <td>Choose the type of encoding to be associated with <b>all</b> DbIo I/O files. If you use Microsoft&reg; Excel, choose <em>latin1</em>; if you use Apache OpenOffice, choose <em>utf8</em>.</td>
+                </tr>
+                <tr>
+                  <td>CSV: Import Date Format</td>
+                  <td>Choose the format used by any DbIo CSV file when importing <code>date</code> and <code>datetime</code> fields, one of:<ul class="simple">
+                    <li><b>m-d-y</b></li>
+                    <li><b>d-m-y</b></li>
+                    <li><b>y-m-d</b></li>
+                  </ul>Default: <b>m-d-y</b></td>
+                </tr>
+                <tr>
+                  <td>Maximum Execution Time (seconds)</td>
+                  <td>Enter the maximum execution time for a DbIo operation, in seconds.  Default: <b>60</b></td>
+                </tr>
+                <tr>
+                  <td>Split File: Record Count</td>
+                  <td>Sometimes, splitting a .csv file into multiple, smaller files can help if your server is timing out on an import operation or if an exported .csv is too large to download in a single chunk. Enter the number of records (Default: <b>2000</b>) at which to split these files using the <em>Database I/O Manager</em>.</td>
+                </tr>
+                <tr>
+                  <td>Default File Sort Order</td>
+                  <td>Choose the default sort-order that the <em>Database I/O Manager</em> uses when displaying the I/O files it has discovered, one of:<ul class="simple">
+                    <li><b>1a</b>: File name, ascending</li>
+                    <li><b>1d</b>: File name, descending</li>
+                    <li><b>2a</b>: File size, ascending</li>
+                    <li><b>2d</b>: File size, descending</li>
+                    <li><b>3a</b>: File date, ascending</li>
+                    <li><b>3d</b>: File date, descending (default)</li>
+                  </ul></td>
+                </tr>
+                <tr>
+                  <td>Enable Debug?</td>
+                  <td>Identify whether (<b>true</b>) or not (<b>false</b>, the default) the DbIo debug is to be enabled. When enabled, all I/O status is written to a dbio-*.log file in your store's <code>/YOUR_ADMIN/dbio/logs</code> folder.</td>
+                </tr> 
+                <tr>
+                  <td>Debug Date Format</td>
+                  <td>Enter the formatting string used to timestamp all DbIo log entries; see the description of the PHP <a href="http://php.net/manual/en/function.date.php" target="_blank">date</a> function for more information. (Default: <b>Y-m-d H:i:s</b>).</td>
+                </tr>
+              </table>
+              
+            </div>
+            
+            <div id="handlers">
+              <noscript><h3>DbIo Handlers</h3></noscript>
+              <p><em>DbIo</em> uses &quot;Handler&quot; scripts to customize an I/O action; the following table shows the <em>Handlers</em> currently provided.</p>
+              <table id="t-handlers">
+                <tr>
+                  <th>Handler Name</th>
+                  <th>Actions</th>
+                  <th>Export Filters</th>
+                  <th>Descripton</th>
+                  <th>EP-4 Name</th>
+                </tr>
+                
+                <tr>
+                  <td class="h-name">Customers</td>
+                  <td>Export</td>
+                  <td>None</td>
+                  <td>This handler provides the export-only of all fields in the database's <code>customers</code> table.</td>
+                  <td>&mdash;</td>
+                </tr> 
+                
+                <tr>
+                  <td class="h-name">Featured</td>
+                  <td>Import, Export</td>
+                  <td>None</td>
+                  <td>This handler provides the import and export of all fields in the database's <code>featured</code> table.</td>
+                  <td>Featured Products</td>
+                </tr> 
+                
+                <tr>
+                  <td class="h-name">Orders</td>
+                  <td>Export</td>
+                  <td>Orders Status, ID Range, Date Range</td>
+                  <td>This handler supports <em>export-only</em> of all fields within the <code>orders</code> table.  The information <em>does not</em> include the associated products or their attributes.</td>
+                  <td>&mdash;</td>
+                </tr> 
+                
+                <tr>
+                  <td class="h-name">OrdersProducts</td>
+                  <td>Export</td>
+                  <td>Orders Status, ID Range, Date Range</td>
+                  <td>This handler supports the <em>export-only</em> of an order's customer information and associated products' model-numbers and names. </td>
+                  <td>&mdash;</td>
+                </tr>
+                
+                <tr>
+                  <td class="h-name">OrdersProductsAttributes</td>
+                  <td>Export</td>
+                  <td>Orders Status, ID Range, Date Range</td>
+                  <td>This handler supports an <em>export-only</em> of an order's customer information and associated products' model-numbers, names and attributes (option name/value pairs).</td>
+                  <td>Filterable Order Exports: Orders Full</td>
+                </tr>
+                
+                <tr>
+                  <td class="h-name">Products</td>
+                  <td>Import, Export</td>
+                  <td>Product Status, Manufacturer, Category</td>
+                  <td>This handler supports import/export of <b>all</b> fields within the <code>products</code> and <code>products_description</code> tables, the basic product information.</td>
+                  <td>Complete Products</td>
+                </tr> 
+                 
+                <tr>
+                  <td class="h-name">ProductsOptions</td>
+                  <td>Import, Export</td>
+                  <td>None</td>
+                  <td>This handler supports import/export of <b>all</b> fields within the <code>products_options</code> table, the products' options' information.  When importing <b>new</b> records for a multi-language store, the import should be run once per language value.  Otherwise, the products_options_id will get "out-of-sync" between the multiple languages.</td>
+                  <td>&mdash;</td>
+                </tr> 
+                 
+                <tr>
+                  <td class="h-name">ProductsOptionsValues</td>
+                  <td>Import, Export</td>
+                  <td>None</td>
+                  <td>This handler supports import/export of <b>all</b> fields within the <code>products_options_values</code> table, the products' options' values' information.  When importing <b>new</b> records for a multi-language store, the import should be run once per language value.  Otherwise, the products_options_id will get "out-of-sync" between the multiple languages.</td>
+                  <td>&mdash;</td>
+                </tr>  
+                 
+                <tr>
+                  <td class="h-name">ProductsAttribsBasic</td>
+                  <td>Import, Export</td>
+                  <td>None</td>
+                  <td>This handler supports import/export of the basic fields associated with the <code>products_attributes</code> table, using a <code>products_model</code> value to associate a product to the attribute-values (<code>products_options_type, products_options_name, and products_options_values name</code>).</td>
+                  <td>Basic Products Attributes</td>
+                </tr>  
+                
+                <tr>
+                  <td class="h-name">ProductsAttribsRaw</td>
+                  <td>Import, Export</td>
+                  <td>None</td>
+                  <td>This handler supports import/export of <b>all</b> fields associated with the <code>products_attributes</code> table, using the <code>products_id</code>, <code>options_id</code>, and <code>options_values_id</code> values to identify a record in the table and, thus, whether the record is an insert or an update.</td>
+                  <td>Detailed Products Attributes</td>
+                </tr>  
+                
+                <tr>
+                  <td class="h-name">Stats</td>
+                  <td>Export</td>
+                  <td>None</td>
+                  <td>This handler supports export of <b>all</b> fields present in the <code>dbio_stats</code> table, where <em>DbIo</em> records its statistics.</td>
+                  <td>&mdash;</td>
+                </tr>  
+                
+              </table>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+      <!-- end customization section -->
+      
+      <!-- start dbio_manager section -->
+      <div id="dbio_manager">
+        <noscript><h2>Using the DbIo Manager</h2></noscript>
+        <p>This section describes how to use the <em>Tools-&gt;Database I/O Manager</em> tool.</p>
+        <div class="tab-container" id="inner-container3">
+          <ul class="etabs">
+            <li class="tab"><a href="#manager">Display Organization</a></li>
+            <li class="tab"><a href="#export-area">Export Area</a></li>
+            <li class="tab"><a href="#config-area">Configuration Area</a></li>
+            <li class="tab"><a href="#upload-area">File-Upload Area</a></li>
+            <li class="tab"><a href="#import-area">Import/File-Action Area</a></li>
+            <li class="tab"><a href="#dbio_files">File Locations</a></li>
+          </ul>
+          <div class="panel-container">
+            
+            <div id="manager">
+              <noscript><h3>Display Organization</h3></noscript>
+              <table id="dbio_layout">
+                <tr>
+                  <td>Export Area</td>
+                  <td id="dbio_layout2"><table>
+                    <tr><td>Configuration Area</td></tr>
+                    <tr><td>File-Upload Area</td></tr>
+                  </table></td>
+                </tr>
+                <tr>
+                  <td colspan="2">Import/File-Action Area</td>
+                </tr>
+              </table>
+              <div id="dbio_layout_desc">
+                <p>The <em>Database I/O Manager</em> organizes its display into three (3) sections:</p>
+                <ol>
+                  <li><b>Export Area</b>:  The upper-left portion of the display identifies the <em>Handlers</em> that are available for export.  Some of these handlers (like <em>Orders</em>) provide additional filters to limit their output selections.</li>
+                  <li><b>Configuration Area</b>: The upper-right portion of the display shows you the <em>DbIo Manager Settings</em> that you've currently got configured as well as some pertinent system-related settings.</li>
+                  <li><b>File-Upload Area</b>: Just below the <em>Configuration Area</em> is the area that you'll use when you want to upload a <code class="no-pad">.csv</code> file from your computer for the <em>DbIo</em> to handle.  That file, once successfully uploaded, is stored in the <code class="no-pad">/YOUR_ADMIN/dbio</code> folder.</li>
+                  <li><b>Import/File-Action Area</b>: The bottom portion of the display displays the list of <code class="no-pad">.csv</code> files available.  Within this section, you can choose a file to import, split, download or delete; see the <b><em>Other File Actions</em></b> tab for additional details.</li>
+                </ol>
+              </div>
+              <div class="clearBoth"></div>
+            </div>
+            
+            <div id="export-area">
+              <noscript><h3>Export Area</h3></noscript>
+              <p>This section can get a bit &quot;busy&quot;, listing each of the <em>Handlers</em> currently available to provide database exports and a short description of each.  Some of the <em>Handlers</em> make use of additional filters that enable you to limit the export's output.</p>
+              <p>Simply select the <em>Handler</em> you're interested in and click the <b><em>Export</em></b> button; the file will be created in the <code class="no-pad">/YOUR_ADMIN/dbio</code> folder.</p>
+              <p><strong>Note:</strong> Additional processing time will be required for the <em>DbIo Manager</em> export if you have the plugin's debug-mode enabled.</p>
+              <img class="wide" src="export_area.jpg" alt="DbIo Export Area" title="DbIo Export Area" />
+            </div>
+            
+            <div id="config-area">
+              <noscript><h3>Configuration Area</h3></noscript>
+              <img src="config_area.jpg" alt="DbIo Configuration Area" title="DbIo Configuration Area" />
+              <p>This section simply displays the <em>DbIo</em>'s current configuration settings (and some of the applicable system settings) so you're aware of how the <em>DbIo Manager</em> is going to process your request.  Clicking on the link takes you to the <em>Configuration-&gt;Database I/O Manager Settings</em> page.</p>
+              <div class="clearBoth"></div>
+            </div>
+             
+            <div id="upload-area">
+              <noscript><h3>File-Upload Area</h3></noscript>
+              <img src="upload_area.jpg" alt="DbIo Upload Area" title="DbIo Upload Area" />
+              <p>You'll use this section to upload any <code class="no-pad">.csv</code> files that you plan on importing into your site's database.  Use the &quot;Browse&quot; button to select your file, making sure that the file is not larger than the <b>Maximum File Upload Size</b> shown in the <em>DbIo</em> configuration area, and then click the &quot;Upload&quot; button.  The file will be saved in the <code class="no-pad">/YOUR_ADMIN/dbio</code> folder.</p>
+              <div class="clearBoth"></div>
+            </div>
+            
+            <div id="import-area">
+              <noscript><h3>Import/File-Action Area</h3></noscript>
+              <img src="import_area.jpg" alt="DbIo Import/Action Area" title="DbIo Import/Action Area" />
+              <p>This section of the <em>DbIo Manager</em> enables you to manage the .csv files present in your site's <code class="no-pad">/YOUR_ADMIN/dbio</code> folder.</p>
+              <p>You can delete selected files by ticking the associated checkbox(es) in the <b>Delete?</b> column and then clicking the &quot;Delete&quot; button &mdash; you'll receive a confirmation pop-up just to make sure.</p>
+              <p>You can also use the dropdown selection at the top of the display to perform additional actions on the selected via associated radio-button in the <b>Choose File</b> column:</p>
+              <ol>
+                <li><b>Split</b>.  Causes the associated .csv file to be <em>split</em> into multiple (and, thus, smaller) files to enable their download.  Refer to the <em>Split Record Count</em> displayed in the configuration area and change that if needed; the value identifies the number of records (i.e. lines in the .csv) that will be associated with each &quot;split&quot;.</li>
+                <li><b>Import (Full)</b>. Results in the associated .csv file to be <em>imported</em> into your site's database.  Make sure that you've created a database backup, just in case something goes awry!  Note also that a full import should <b>never, ever</b> be run with the <em>DbIo's</em> debug enabled; that will severely reduce the amount of processing that can be performed!</li>
+                <li><b>Import (Check-Only)</b>.  Results in the associated .csv file to be processed like it's going to be imported, <em>but no database changes are performed</em>.  You'll use this action, for example, to check your import file for any errors (like invalid dates) before actually updating the database.  This action, too, is severely hindered by the <em>DbIo's</em> debug-mode.</li>
+                <li><b>Download</b>.  Results in the associated .csv file being downloaded from your site to your computer.</li>
+              </ol>
+              <p>You can sort the files discovered by the <em>DbIo Manager</em> by the file-name, file-size or the last-modified date using the arrow-links in the file-list header.</p>
+              <div class="clearBoth"></div>
+            </div>
+            
+            <div id="dbio_files">
+              <noscript><h3>DbIo File Locations</h3></noscript>
+              <p><em>DbIo</em> pre-defines the folder <code class="no-pad">/YOUR_ADMIN/dbio</code> as the location that your comma-separated-value (CSV) files reside.  Whenever <em>DbIo</em> outputs (exports) a datafile, the file is created in this folder; any <code class="no-pad">.csv</code> files found in this folder are displayed within the <em>DbIo</em>'s &quot;Import/File-Action Area&quot;.</p>
+              <p>When you enable <em>DbIo's</em> debug, using <em>Configuration-&gt;DbIo Manager Settings-&gt;Enable Debug?</em>, the log files are created within the folder <code class="no-pad">/YOUR_ADMIN/dbio/logs</code>.</p>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+      <!-- end dbio_manager section -->
+      
+      <!-- start history section -->
+      <div id="history">
+        <noscript><h2>Change History</h2></noscript>
+        <p>This section contains the plugin's version-history and an association of files changed in each version.</p>
+        <div class="tab-container" id="inner-container4">
+          <ul class="etabs">
+            <li class="tab"><a href="#version">Version History</a></li>
+            <li class="tab"><a href="#fdcv">File/Database Changes by Version</a></li>
+          </ul>
+          <div class="panel-container">
+
+            <div id="version">
+              <noscript><h3>Version History</h3></noscript>
+               <ul>
+                <li>v1.0.0, 2016-05-xx, Initial release.</li>
+              </ul>
+            </div>
+
+            <div id="fdcv">
+              <noscript><h3>File/Database History by Version</h3></noscript>
+              <p>Legend for the <b>File Changes</b>: Changed &mdash; <span class="added">Added</span> &mdash; <span class="removed">Removed</span> &mdash; <span class="corefile">Core File</span> &mdash; <span class="template">Template-Override</span></p>
+              <table>
+                <tr class="o">
+                  <th class="c1">Version</th>
+                  <th>Files Changed/Added</th>
+                  <th>Database Changes</th>
+                </tr>
+                
+                 <tr class="e">
+                  <td class="c1">1.0.0</td>
+                  <td>&mdash;</td>
+                  <td class="c3">&mdash;</td>
+                </tr>  
+                
+              </table>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+      <!-- end history section -->
+      
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    $( '#outer-container, #inner-container1, #inner-container2, #inner-container3, #inner-container4' ).easytabs();
+    
+    $( '.side-link' ).click( function() {
+        window.location.hash = $(this).attr( 'href' );
+        location.reload();
+    });
+  </script>
+</body>
+</html>
