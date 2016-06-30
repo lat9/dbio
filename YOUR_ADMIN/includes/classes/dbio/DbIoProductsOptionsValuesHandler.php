@@ -28,8 +28,8 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile ('ProductsOptionsValues'); 
         return array (
-            'version' => '0.0.0',
-            'handler_version' => '0.0.0',
+            'version' => '1.0.0',
+            'handler_version' => '1.0.0',
             'include_header' => true,
             'export_only' => false,
             'description' => DBIO_PRODUCTSOPTIONSVALUES_DESCRIPTION,

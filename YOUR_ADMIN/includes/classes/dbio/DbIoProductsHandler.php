@@ -36,8 +36,8 @@ class DbIoProductsHandler extends DbIoHandler
         unset ($categories_options[0]);
         
         $my_config = array (
-            'version' => '0.0.0',
-            'handler_version' => '0.0.0',
+            'version' => '1.0.0',
+            'handler_version' => '1.0.0',
             'include_header' => true,
             'export_only' => false,
             'description' => DBIO_PRODUCTS_DESCRIPTION,

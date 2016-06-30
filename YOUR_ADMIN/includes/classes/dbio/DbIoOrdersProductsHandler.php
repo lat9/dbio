@@ -17,8 +17,8 @@ class DbIoOrdersProductsHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile ('OrdersProducts'); 
         return array (
-            'version' => '0.0.0',
-            'handler_version' => '0.0.0',
+            'version' => '1.0.0',
+            'handler_version' => '1.0.0',
             'include_header' => true,
             'export_only' => true,
             'description' => DBIO_ORDERSPRODUCTS_DESCRIPTION,

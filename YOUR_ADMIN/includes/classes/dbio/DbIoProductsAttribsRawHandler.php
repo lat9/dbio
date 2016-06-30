@@ -4,7 +4,7 @@
 // Copyright (c) 2016, Vinos de Frutas Tropicales.
 //
 if (!defined ('IS_ADMIN_FLAG')) {
-  exit ('Illegal access');
+    exit ('Illegal access');
 }
 
 // -----
@@ -21,8 +21,8 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile ('ProductsAttribsRaw'); 
         return array (
-            'version' => '0.0.0',
-            'handler_version' => '0.0.0',
+            'version' => '1.0.0',
+            'handler_version' => '1.0.0',
             'include_header' => true,
             'export_only' => false,
             'description' => DBIO_PRODUCTSATTRIBSRAW_DESCRIPTION,
