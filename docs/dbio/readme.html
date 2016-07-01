@@ -84,7 +84,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
 
 <body>
   <h1 id="title">Database I/O Manager (DbIo) for Zen Cart&reg;</h1>
-  <p>Version 1.0.0.  Copyright &copy; 2015-2016, <a href="http://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.  Current Support Thread on the Zen Cart forums: <a href="https://github.com/lat9/image_swatch_support" target="_blank">https://github.com/lat9/image_swatch_support</a></p>
+  <p>Version 1.0.0.  Copyright &copy; 2015-2016, <a href="http://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.  Current Support Thread on the Zen Cart forums: <a href="https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread</a></p>
   
   <div class="tab-container" id="outer-container">
     <ul class="etabs">
@@ -143,6 +143,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <li>/YOUR_ADMIN/dbio/*.*</li>
                   <li>/YOUR_ADMIN/images/icons/dbio_information.png</li>
                   <li>/YOUR_ADMIN/includes/auto_loaders/config.dbio_admin.php</li>
+                  <li>/YOUR_ADMIN/includes/boxes/extra_boxes/dbio_tools_dhtml.php</li>
                   <li>/YOUR_ADMIN/includes/classes/dbio/*.*</li>
                   <li>/YOUR_ADMIN/includes/extra_datafiles/dbio_file_database_names_admin.php</li>
                   <li>/YOUR_ADMIN/includes/functions/dbio_manager_functions.php</li>
@@ -176,6 +177,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
             <li class="tab"><a href="#considerations">Considerations</a></li>
             <li class="tab"><a href="#configure">Configure</a></li>
             <li class="tab"><a href="#handlers">I/O Handlers</a></li>
+            <li class="tab"><a href="#naming">Naming Conventions</a></li>
           </ul>
           
           <div class="panel-container">
@@ -359,6 +361,19 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
               </table>
             </div>
             
+            <div id="naming">
+              <noscript><h3>Naming Conventions</h3></noscript>
+              <p>Following are the <em>naming conventions</em> used by the <em>Database I/O Manager</em>:</p>
+              <ol>
+                <li><span class="title">Handler Names.</span> A <em>handler's</em> name consists of characters matching [a-zA-Z0-9_], allowing the handler name to be presumed as its class name. No checks performed; you'll get a PHP error if the name's not a &quot;good&quot; PHP variable.</li>
+                <li><span class="title">Handler Files.</span> A handler named <b>MyHandler</b> provides two files (and, yes, <b>case is significant</b>):<ol>
+                  <li><code class="no-pad">/YOUR_ADMIN/includes/classes/dbio/DbIo<b>MyHandler</b>Handler.php</code></li>
+                  <li><code class="no-pad">/YOUR_ADMIN/includes/languages/english/dbio/DbIo<b>MyHandler</b>Handler.php</code></li>
+                </ol></li>
+                <li><span class="title">Handler Messages.</span> Message defines in a handler's language-file should be named based on the <b>handlerName</b>: DBIO_<b>HANDLERNAME</b>_*.</li>
+              </ol>
+            </div>
+            
           </div>
         </div>
       </div>
@@ -468,7 +483,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
             <div id="version">
               <noscript><h3>Version History</h3></noscript>
                <ul>
-                <li>v1.0.0, 2016-05-xx, Initial release.</li>
+                <li>v1.0.0, 2016-07-01, Initial release.</li>
               </ul>
             </div>
 
