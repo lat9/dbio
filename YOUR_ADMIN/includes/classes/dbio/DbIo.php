@@ -50,6 +50,9 @@ class DbIo extends base
     // -----
     // Returns some basic information about the DbIo handlers available.
     //
+    // Note: A handler can "refuse" availability if it's missing some of its pre-requisites by returning
+    // a non-array value (like false) in its getHandlerInformation function.
+    //
     public function getAvailableHandlers () 
     {
         $handlers = glob (DIR_FS_DBIO_CLASSES . 'DbIo*Handler.php');
@@ -59,14 +62,16 @@ class DbIo extends base
                 $handler_class = str_replace (array (DIR_FS_DBIO_CLASSES, '.php'), '', $current_handler);
                 if ($handler_class != 'DbIoHandler') {
                     $dbio_type = str_replace (array ('DbIo', 'Handler'), '', $handler_class);
-                    $handler_info[$dbio_type] = $handler_class::getHandlerInformation ();
-                    $handler_info[$dbio_type]['class_name'] = $handler_class;
+                    $current_handler_info = $handler_class::getHandlerInformation ();
+                    if (is_array ($current_handler_info)) {
+                        $handler_info[$dbio_type] = $current_handler_info;
+                        $handler_info[$dbio_type]['class_name'] = $handler_class;
+                    }
                 }
             }
         }
         $this->message = (count ($handler_info) == 0) ? DBIO_MESSAGE_NO_HANDLERS_FOUND : '';
         return $handler_info;
-
     }
   
     // -----
