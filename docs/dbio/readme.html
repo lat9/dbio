@@ -84,7 +84,8 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
 
 <body>
   <h1 id="title">Database I/O Manager (DbIo) for Zen Cart&reg;</h1>
-  <p>Version 1.0.1.  Copyright &copy; 2015-2016, <a href="http://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.  Current Support Thread on the Zen Cart forums: <a href="https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread</a></p>
+  <p>Version 1.0.1.  Copyright &copy; 2015-2016, <a href="http://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
+  <p>Current Support Thread on the Zen Cart forums: <a href="https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread</a></p>
   
   <div class="tab-container" id="outer-container">
     <ul class="etabs">
@@ -471,55 +472,23 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
       
       <!-- start history section -->
       <div id="history">
-        <noscript><h2>Change History</h2></noscript>
-        <p>This section contains the plugin's version-history and an association of files changed in each version.</p>
-        <div class="tab-container" id="inner-container4">
-          <ul class="etabs">
-            <li class="tab"><a href="#version">Version History</a></li>
-            <li class="tab"><a href="#fdcv">File/Database Changes by Version</a></li>
-          </ul>
-          <div class="panel-container">
-
-            <div id="version">
-              <noscript><h3>Version History</h3></noscript>
-               <ul>
-                <li>v1.0.1, 2016-09-xx:<ul>
-                  <li>BUGFIX: Missing &quot;Customers&quot; handler's language file.</li>
-                  <li>BUGFIX: Only default language exported by &quot;Products&quot; handler on multi-lingual stores.</li>
-                  <li>BUGFIX: v_categories_name field not properly encoded by the &quot;Products&quot; export.</li>
-                  <li>BUGFIX: Empty dates should be allowed when a date/datetime field is <em>nullable</em>.</li>
-                  <li>The following files were changed/<span class="added">added</span>:<ol>
-                    <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
-                    <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
-                    <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
-                    <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/DbIoCustomersHandler.php</span></li>
-                  </ol></li>
-                </ul></li>
-                <li>v1.0.0, 2016-07-01, Initial release.</li>
-              </ul>
-            </div>
-
-            <div id="fdcv">
-              <noscript><h3>File/Database History by Version</h3></noscript>
-              <p>Legend for the <b>File Changes</b>: Changed &mdash; <span class="added">Added</span> &mdash; <span class="removed">Removed</span> &mdash; <span class="corefile">Core File</span> &mdash; <span class="template">Template-Override</span></p>
-              <table>
-                <tr class="o">
-                  <th class="c1">Version</th>
-                  <th>Files Changed/Added</th>
-                  <th>Database Changes</th>
-                </tr>
-                
-                 <tr class="e">
-                  <td class="c1">1.0.0</td>
-                  <td>&mdash;</td>
-                  <td class="c3">&mdash;</td>
-                </tr>  
-                
-              </table>
-            </div>
-            
-          </div>
-        </div>
+        <noscript><h3>Version History</h3></noscript>
+        <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
+         <ul>
+          <li>v1.0.1, 2016-09-xx:<ul>
+            <li>BUGFIX: Missing &quot;Customers&quot; handler's language file.</li>
+            <li>BUGFIX: Only default language exported by &quot;Products&quot; handler on multi-lingual stores.</li>
+            <li>BUGFIX: v_categories_name field not properly encoded by the &quot;Products&quot; export.</li>
+            <li>BUGFIX: Empty dates should be allowed when a date/datetime field is <em>nullable</em>.</li>
+            <li>The following files were changed/<span class="added">added</span>:<ol>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/DbIoCustomersHandler.php</span></li>
+            </ol></li>
+          </ul></li>
+          <li>v1.0.0, 2016-07-01, Initial release.</li>
+        </ul>
       </div>
       <!-- end history section -->
       
