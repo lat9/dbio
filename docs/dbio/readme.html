@@ -480,7 +480,9 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
             <li>BUGFIX: Only default language exported by &quot;Products&quot; handler on multi-lingual stores.</li>
             <li>BUGFIX: v_categories_name field not properly encoded by the &quot;Products&quot; export.</li>
             <li>BUGFIX: Empty dates should be allowed when a date/datetime field is <em>nullable</em>.</li>
+            <li>CHANGE: Allow a handler to be conditionally enabled.</li>
             <li>The following files were changed/<span class="added">added</span>:<ol>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
               <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
