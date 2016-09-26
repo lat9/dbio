@@ -230,35 +230,36 @@ abstract class DbIoHandler extends base
         }
     }
     
-    public function formatValidateDate ($date_value_in, $field_type = 'date', $log = false)
+    public function formatValidateDate ($date_value_in, $field_type = 'date', $is_nullable = false)
     {
-        $date_value = $date_value_in;
-        if (DBIO_IMPORT_DATE_FORMAT != 'm-d-y') {
-            $date_time_split = explode (' ', $date_value);
-            $needle = (strpos ($date_time_split[0], '/') !== false) ? '/' : '-';
-            $date_split = explode ($needle, $date_time_split[0]);
-            if (count ($date_split) == 3) {
-                if (DBIO_IMPORT_DATE_FORMAT == 'd-m-y') {
-                    $date_value = sprintf ('%u-%02u-%02u', $date_split[2], $date_split[1], $date_split[0]);
-                } else {
-                    $date_value = sprintf ('%u-%02u-%02u', $date_split[0], $date_split[1], $date_split[2]);
-                }
-                if ($field_type == 'datetime' && isset ($date_time_split[1])) {
-                    $date_value .= ' ' . $date_time_split[1];
-                }
-            }
-        }
-
-        $parsed_date = date_parse ($date_value);
-        if ($parsed_date['error_count'] == 0 && checkdate ($parsed_date['month'], $parsed_date['day'], $parsed_date['year'])) {
-            $return_date = sprintf ('%u-%02u-%02u', $parsed_date['year'], $parsed_date['month'], $parsed_date['day']);
-            if ($field_type == 'datetime') {
-                $return_date .= sprintf (' %02u:%02u:%02u', $parsed_date['hour'], $parsed_date['minute'], $parsed_date['second']);
-            }
+        if (empty ($date_value_in)) {
+            $return_date = ($is_nullable) ? 'null' : false;
         } else {
-            $return_date = false;
-            if ($log) {
-                $this->debugMessage ("formatValidateDate: Invalid date ($date_value) supplied.\n" . print_r ($parsed_date, true), self::DBIO_WARNING);
+            $date_value = $date_value_in;
+            if (DBIO_IMPORT_DATE_FORMAT != 'm-d-y') {
+                $date_time_split = explode (' ', $date_value);
+                $needle = (strpos ($date_time_split[0], '/') !== false) ? '/' : '-';
+                $date_split = explode ($needle, $date_time_split[0]);
+                if (count ($date_split) == 3) {
+                    if (DBIO_IMPORT_DATE_FORMAT == 'd-m-y') {
+                        $date_value = sprintf ('%u-%02u-%02u', $date_split[2], $date_split[1], $date_split[0]);
+                    } else {
+                        $date_value = sprintf ('%u-%02u-%02u', $date_split[0], $date_split[1], $date_split[2]);
+                    }
+                    if ($field_type == 'datetime' && isset ($date_time_split[1])) {
+                        $date_value .= ' ' . $date_time_split[1];
+                    }
+                }
+            }
+
+            $parsed_date = date_parse ($date_value);
+            if ($parsed_date['error_count'] == 0 && checkdate ($parsed_date['month'], $parsed_date['day'], $parsed_date['year'])) {
+                $return_date = sprintf ('%u-%02u-%02u', $parsed_date['year'], $parsed_date['month'], $parsed_date['day']);
+                if ($field_type == 'datetime') {
+                    $return_date .= sprintf (' %02u:%02u:%02u', $parsed_date['hour'], $parsed_date['minute'], $parsed_date['second']);
+                }
+            } else {
+                $return_date = false;
             }
         }
         $this->debugMessage ("formatValidateDate: ($date_value_in, $field_type), DBIO_IMPORT_DATE_FORMAT = '" . DBIO_IMPORT_DATE_FORMAT . "', returning ($return_date). Parsed date: " . print_r ($parsed_date, true)); 
@@ -1074,7 +1075,7 @@ abstract class DbIoHandler extends base
                     break;
                 case 'date':                //-Fall-through for date-related processing
                 case 'datetime':
-                    $formatted_field_value = $this->formatValidateDate ($field_value, $field_type);
+                    $formatted_field_value = $this->formatValidateDate ($field_value, $field_type, $this->tables[$table_name]['fields'][$field_name]['nullable']);
                     if ($formatted_field_value === false) {
                         $this->debugMessage ("[*] $import_table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is not a recognized date value; the default value for the field will be used.", self::DBIO_WARNING);
                         $formatted_field_value = $this->tables[$table_name]['fields'][$field_name]['default'];
@@ -1200,7 +1201,7 @@ abstract class DbIoHandler extends base
             } else {
                 $table_info->fields['include_in_export'] = ($field_overrides !== false && isset ($field_overrides[$column_name])) ? $field_overrides[$column_name] : true;
             }
-            $table_info->fields['nullable'] = ($table_info->fields['nullable'] === 'TRUE');
+            $table_info->fields['nullable'] = ($table_info->fields['nullable'] === 'YES' || $table_info->fields['nullable'] === 'TRUE');
             $table_info->fields['sort_order'] = 0;
             $this->tables[$table_name]['fields'][$column_name] = $table_info->fields;
           
