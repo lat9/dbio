@@ -151,14 +151,14 @@ class DbIoProductsHandler extends DbIoHandler
         $fields['tax_class_title'] = ($tax_class_info->EOF) ? '' : $tax_class_info->fields['tax_class_title'];
       
         $cPath_array = explode ('_', zen_get_product_path ($products_id));
-        $default_language_id = $this->languages[$default_language_code];
+        $default_language_id = $this->languages[DEFAULT_LANGUAGE];
         $categories_name = '';
         foreach ($cPath_array as $next_category_id) {
             $category_info = $db->Execute ("SELECT categories_name FROM " . TABLE_CATEGORIES_DESCRIPTION . " WHERE categories_id = $next_category_id AND language_id = $default_language_id LIMIT 1");
             $categories_name .= (($category_info->EOF) ? self::DBIO_UNKNOWN_VALUE : $category_info->fields['categories_name']) . '^';
         
         }
-        $fields['categories_name'] = substr ($categories_name, 0, -1);
+        $fields['categories_name'] = $this->exportEncodeData (substr ($categories_name, 0, -1));
 
         return $fields;
       
