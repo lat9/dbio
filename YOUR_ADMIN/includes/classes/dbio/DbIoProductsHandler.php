@@ -78,7 +78,7 @@ class DbIoProductsHandler extends DbIoHandler
                 $this->where_clause .= ' AND ';
         
             }
-            $export_language = ($this->export_language == 'all') ? $this->languages[DEFAULT_LANGUAGE] : $this->languages[$this->export_language];
+            $export_language = ($this->export_language == 'all') ? $this->languages[$this->first_language_code] : $this->languages[$this->export_language];
             $this->where_clause .= "p.products_id = pd.products_id AND pd.language_id = $export_language";
             $this->order_by_clause .= 'p.products_id ASC';
             
@@ -98,7 +98,7 @@ class DbIoProductsHandler extends DbIoHandler
     //
     public function exportFinalizeInitialization ()
     {
-        $this->debugMessage ('exportFinalizeInitialization for Products. POST variables:' . print_r ($_POST, true));
+        $this->debugMessage ('Products::exportFinalizeInitialization. POST variables:' . print_r ($_POST, true));
         
         // -----
         // Check to see if any of this handler's filter variables have been set.  If set, check the values and then
@@ -124,11 +124,14 @@ class DbIoProductsHandler extends DbIoHandler
         $products_id = $fields['products_id'];
         $tax_class_id = $fields['products_tax_class_id'];
         unset ($fields['products_id'], $fields['products_tax_class_id']);
+        
+        $default_language_code = $this->first_language_code;
       
         global $db;     
         if ($this->export_language == 'all') {
+            $this->debugMessage ('Products::exportPrepareFields, language = ' . $this->export_language . ', default language = ' . $default_language_code . ', sql: ' . $this->saved_data['products_description_sql'] . ', languages: ' . print_r ($this->languages, true));
             foreach ($this->languages as $language_code => $language_id) {
-                if ($language_id != 1) {
+                if ($language_code != $default_language_code) {
                     $description_info = $db->Execute (sprintf ($this->saved_data['products_description_sql'], $products_id, $language_id));
                     if (!$description_info->EOF) {
                         $encoded_fields = $this->exportEncodeData ($description_info->fields);
@@ -148,7 +151,7 @@ class DbIoProductsHandler extends DbIoHandler
         $fields['tax_class_title'] = ($tax_class_info->EOF) ? '' : $tax_class_info->fields['tax_class_title'];
       
         $cPath_array = explode ('_', zen_get_product_path ($products_id));
-        $default_language_id = $this->languages[DEFAULT_LANGUAGE];
+        $default_language_id = $this->languages[$default_language_code];
         $categories_name = '';
         foreach ($cPath_array as $next_category_id) {
             $category_info = $db->Execute ("SELECT categories_name FROM " . TABLE_CATEGORIES_DESCRIPTION . " WHERE categories_id = $next_category_id AND language_id = $default_language_id LIMIT 1");

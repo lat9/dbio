@@ -76,6 +76,7 @@ abstract class DbIoHandler extends base
             $this->languages[$iso_code_2] = $language_info['id'];
           
         }
+        $this->first_language_code = current (array_keys ($this->languages));
         unset ($languages);
         
         if (!class_exists ('ForceUTF8\Encoding')) {
@@ -353,14 +354,14 @@ abstract class DbIoHandler extends base
             
             if (isset ($this->config['fixed_headers'])) {
                 $no_header_array = (isset ($this->config['fixed_fields_no_header']) && is_array ($this->config['fixed_fields_no_header'])) ? $this->config['fixed_fields_no_header'] : array ();
-                $current_language = ($this->export_language == 'all') ? DEFAULT_LANGUAGE : $this->export_language;
+                $current_language_code = ($this->export_language == 'all') ? $this->first_language_code : $this->export_language;
                 foreach ($this->config['fixed_headers'] as $field_name => $table_name) {
                     $field_alias = (isset ($this->config['tables'][$table_name]['alias'])) ? ($this->config['tables'][$table_name]['alias'] . '.') : '';
                     $this->select_clause .= "$field_alias$field_name, ";
                     if (!in_array ($field_name, $no_header_array)) {
                         $language_suffix = '';
                         if (isset ($this->config['tables'][$table_name]['language_field'])) {
-                            $language_suffix = "_$current_language";
+                            $language_suffix = "_$current_language_code";
                         }
                         $this->headers[] = "v_$field_name$language_suffix";
                     }
