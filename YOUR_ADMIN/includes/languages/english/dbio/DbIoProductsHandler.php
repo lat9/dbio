@@ -12,7 +12,7 @@ define ('DBIO_PRODUCTS_DESCRIPTION', 'This report-format supports import/export 
 // -----
 // Definitions that are used for the export-filters, displayed on Tools->Database I/O Manager
 //
-define ('DBIO_PRODUCTS_FILTERS_LABEL', 'Limit the output to selected manufacturers or categories by holding down the Ctrl key when you click on an option; leave all options unselected to choose all values for the manufacturers and categories.');
+define ('DBIO_PRODUCTS_FILTERS_LABEL', 'Filter the output to selected manufacturers or categories. Select/deselect multiple options by using Ctrl key + click; leave all options deselected to output all manufacturers and categories.');
 define ('DBIO_PRODUCTS_MANUFACTURERS_LABEL', 'Limit Manufacturers:');
 define ('DBIO_PRODUCTS_CATEGORIES_LABEL', 'Limit Categories:');
 define ('DBIO_PRODUCTS_STATUS_LABEL', 'Product Status:');
