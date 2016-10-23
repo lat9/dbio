@@ -475,13 +475,15 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <noscript><h3>Version History</h3></noscript>
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
          <ul>
-          <li>v1.0.1, 2016-09-xx:<ul>
+          <li>v1.0.1, 2016-10-xx:<ul>
+            <li>BUGFIX: Unwanted HTML included in CSV-download in some configurations.</li>
             <li>BUGFIX: Missing &quot;Customers&quot; handler's language file.</li>
             <li>BUGFIX: Only default language exported by &quot;Products&quot; handler on multi-lingual stores.</li>
             <li>BUGFIX: v_categories_name field not properly encoded by the &quot;Products&quot; export.</li>
             <li>BUGFIX: Empty dates should be allowed when a date/datetime field is <em>nullable</em>.</li>
             <li>CHANGE: Allow a handler to be conditionally enabled.</li>
             <li>The following files were changed/<span class="added">added</span>:<ol>
+              <li>/YOUR_ADMIN/dbio_manager.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>

@@ -244,6 +244,7 @@ if (!$ok_to_proceed) {
                                 }
                                 fpassthru ($fp);
                                 fclose ($fp);
+                                exit ();
                             }
                             break;
                         default:
