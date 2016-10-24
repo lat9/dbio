@@ -237,6 +237,8 @@ class DbIo extends base
                     }
                 }
                 fclose ($this->import_fp);
+                
+                $this->handler->importPostProcess ();
             }
             $this->handler->stopTimer ();
         }

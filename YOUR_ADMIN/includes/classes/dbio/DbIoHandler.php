@@ -847,6 +847,14 @@ abstract class DbIoHandler extends base
             }  //-Record's key value is OK to continue processing
         }
     }
+    
+    // -----
+    // This function, called as the final step in a CSV-import action, gives the current handler
+    // the opportunity to perform some post-processing of the imported records.
+    //
+    public function importPostProcess ()
+    {
+    }
   
 // ----------------------------------------------------------------------------------
 //                      P R O T E C T E D   F U N C T I O N S 
