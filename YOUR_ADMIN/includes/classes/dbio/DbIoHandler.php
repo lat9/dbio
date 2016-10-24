@@ -812,7 +812,7 @@ abstract class DbIoHandler extends base
                     } else {
                         $record_key_value = false;
                         foreach ($this->import_sql_data as $database_table => $table_fields) {
-                            if ($database_table != self::DBIO_NO_IMPORT) {
+                            if ($database_table != self::DBIO_NO_IMPORT && $database_table != self::DBIO_SPECIAL_IMPORT) {
                                 $table_name = $database_table;
                                 $extra_where_clause = '';
                                 $capture_key_value = ($this->import_is_insert && isset ($this->config['keys'][$database_table]['capture_key_value']));
@@ -884,6 +884,16 @@ abstract class DbIoHandler extends base
     protected function importUpdateRecordKey ($table_name, $table_fields, $key_value) 
     {
         return $table_fields;
+    }
+    
+    // -----
+    // Retrieve the value associated with the specified field name in the current data record.
+    //
+    protected function importGetFieldValue ($field_name, $data)
+    {
+        $this->debugMessage ("importGetFieldValue for '$field_name' from " . print_r ($data, true) . print_r ($this->headers, true));
+        $field_index = array_search ($field_name, $this->headers);
+        return ($field_index === false) ? false : $data[$field_index];
     }
     
     protected function importInitializeKeys ()
@@ -1211,5 +1221,51 @@ abstract class DbIoHandler extends base
         $this->tables[$table_name]['uses_language'] = (!$language_override && $uses_language);
         
     }  //-END function initializeTableFields
+    
+    // -----
+    // Function to insert an array after a specified key in another array.
+    //
+    // $input ....... The base array, into which the additional array is to be inserted
+    // $after_key ... The key in the input array after which the insert input is inserted
+    // $insert ...... Either an associative array or a string value, depending on the type of the $input array
+    //
+    // Returns:
+    // false ........... If either input is not an array or the key is not found in the input
+    // array ........... The input array, with the insert element inserted after the specified key
+    //
+    protected function arrayInsertAfter ($input, $after_key, $insert) 
+    {
+       $return_value = false;
+        if (is_array ($input)) {
+            if (is_array ($insert)) {
+                $key_indices = array_flip (array_keys ($input));
+                if (isset ($key_indices[$after_key])) {
+                    $offset = $key_indices[$after_key];
+                    $return_value = array_slice ($input, 0, $offset+1, true) + $insert + array_slice ($input, $offset+1, null, true);
+                }
+            } else {
+                $offset = array_search ($after_key, $input);
+                if ($offset !== false) {
+                    $return_value = array_slice ($input, 0, $offset+1);
+                    $return_value[] = $insert;
+                    $return_value = array_merge ($return_value, array_slice ($input, $offset+1));
+                }
+            }
+        }
+        return $return_value;
+    }
+    
+    protected function headerInsertColumns ($after_key, $insert_array)
+    {
+        if (array_search ($after_key, $this->headers) === false) {
+            trigger_error ("Unknown key ($after_key) requested", E_USER_ERROR);
+            exit();
+        } else {
+            foreach ($insert_array as $current_value) {
+                $this->headers = $this->arrayInsertAfter ($this->headers, $after_key, $current_value);
+                $after_key = $current_value;
+            }
+        }
+    }
 
 }
