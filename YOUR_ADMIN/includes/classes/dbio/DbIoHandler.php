@@ -490,9 +490,9 @@ abstract class DbIoHandler extends base
             $no_header_fields = (isset ($this->config['fixed_fields_no_header']) && is_array ($this->config['fixed_fields_no_header'])) ? $this->config['fixed_fields_no_header'] : array ();
             foreach ($this->config['fixed_headers'] as $field_name => $table_name) {
                 if (!in_array ($field_name, $no_header_fields)) {
-                    if ($table_name == self::DBIO_NO_IMPORT || $table_name == self::DBIO_SPECIAL_IMPORT) {
+                    if ($table_name == self::DBIO_NO_IMPORT) {
                         $this->headers[] = $field_name;  
-                    } elseif (!isset ($this->config['tables'][$table_name]['language_field'])) {
+                    } elseif ($table_name == self::DBIO_SPECIAL_IMPORT || !isset ($this->config['tables'][$table_name]['language_field'])) {
                         $this->headers[] = "v_$field_name";
                     } else {
                         foreach ($this->languages as $language_code => $language_id) {
