@@ -91,7 +91,7 @@ abstract class DbIoHandler extends base
         if ($this->stats['report_name'] != self::DBIO_UNKNOWN_VALUE) {
             $this->debug_log_file = DIR_FS_DBIO_LOGS . "/dbio-" . $this->stats['report_name'] . "-$log_file_suffix.log";
         }
-        $this->debugMessage ('Configured CHARSET (' . CHARSET . '), DB_CHARSET (' . DB_CHARSET . '), DBIO_CHARSET (' . DBIO_CHARSET . '), PHP multi-byte settings: ' . print_r (mb_get_info (), true));
+        $this->debugMessage ('Configured CHARSET (' . CHARSET . '), DB_CHARSET (' . DB_CHARSET . '), DBIO_CHARSET (' . DBIO_CHARSET . '), DEFAULT_LANGUAGE (' . DEFAULT_LANGUAGE . '), PHP multi-byte settings: ' . print_r (mb_get_info (), true));
         
         $this->initializeDbIo ();
     }
@@ -754,12 +754,12 @@ abstract class DbIoHandler extends base
         $this->saved_data = array ();
         
         // -----
-        // Determine the "key" value associated with the record.  If there are fewer columns of data than required to access
-        // the key-index, the record is not imported.
+        // Determine the "key" value associated with the record.  If there are fewer columns of data than are present in the
+        // header, the record is not imported.
         //
         $key_index = $this->key_index;
-        if (count ($data) < $key_index) {
-            $this->debugMessage ('Data record at line #' . $this->stats['record_count'] . ' not imported.  Column count (' . count ($data) . ') missing key column (' . $key_index . ').', self::DBIO_ERROR);
+        if (count ($data) < count ($this->headers)) {
+            $this->debugMessage ('Data record at line #' . $this->stats['record_count'] . ' not imported.  Column count (' . count ($data) . ') less than header column count (' . count ($this->headers) . ').', self::DBIO_ERROR);
           
         } else {
             $data_key_check = $db->Execute ($this->importBindKeyValues ($data, $this->data_key_sql), false, false, 0, true);
