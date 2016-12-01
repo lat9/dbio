@@ -14,12 +14,14 @@ abstract class DbIoHandler extends base
 //                                    C O N S T A N T S 
 // ----------------------------------------------------------------------------------
     // ----- Interface Constants -----
-    const DBIO_HANDLER_VERSION   = '1.0.0';
+    const DBIO_HANDLER_VERSION   = '1.0.2';
     // ----- Field-Import Status Values -----
     const DBIO_IMPORT_OK         = '--ok--';
     const DBIO_NO_IMPORT         = '--none--';
     const DBIO_SPECIAL_IMPORT    = '--special--';
     const DBIO_UNKNOWN_VALUE     = '--unknown--';
+    // ----- DbIo commands -----
+    const DBIO_COMMAND_REMOVE    = 'REMOVE';
     // ----- Message Severity ----- ** Note ** This set of constants are bit-flags!
     const DBIO_INFORMATIONAL     = 1;
     const DBIO_WARNING           = 2;
@@ -557,6 +559,8 @@ abstract class DbIoHandler extends base
         }
 
         $this->debugMessage ("importGetHeader, using headers:\n" . print_r ($header, true));
+        $initialization_complete = true;
+        
         $this->import_sql_data = array ();
         $this->table_names = array ();
         $this->language_id = array ();
@@ -568,7 +572,20 @@ abstract class DbIoHandler extends base
             $field_language_id = 0;
             if (mb_strpos ($current_field, 'v_') !== 0 || strlen ($current_field) < 3) {
                 $current_field = self::DBIO_NO_IMPORT;
-            
+            } elseif ($current_field == 'v_dbio_command') {
+                if (!isset ($this->config['supports_dbio_commands']) || $this->config['supports_dbio_commands'] !== true) {
+                    $this->debugMessage (DBIO_ERROR_HANDLER_NO_COMMANDS, self::DBIO_ERROR);
+                    $this->message = DBIO_ERROR_HANDLER_NO_COMMANDS;
+                    $initialization_complete = false;
+                } else {
+                    $current_field = self::DBIO_NO_IMPORT;
+                    if (isset ($this->dbio_command_index)) {
+                        $this->debugMessage ("importGetHeader, multiple v_dbio_command columns found; import cancelled.", self::DBIO_ERROR);
+                        $initialization_complete = false;
+                    } else {
+                        $this->dbio_command_index = $key_index;
+                    }
+                }
             } else {
                 $current_field = mb_substr ($current_field, 2);  //-Strip off leading 'v_'
                 $current_field_status = $this->importHeaderFieldCheck ($current_field);
@@ -679,7 +696,6 @@ abstract class DbIoHandler extends base
         }
         $this->headers = $header;
         $this->header_columns = count ($header);   
-        $initialization_complete = true;
         
         $missing_keys = '';
         foreach ($this->variable_keys as $field_name => $field_info) {
@@ -778,9 +794,16 @@ abstract class DbIoHandler extends base
             }
             
             // -----
-            // Continue with the import action only if the record is still "OK" to process.
+            // First, check to see if DbIo commands are included in this import and, if so, check to see if the current to-be-imported
+            // record includes a non-blank command; if so, pass that command off the the active handler.
             //
-            if ($this->importCheckKeyValue ($data) !== false) {
+            if (isset ($this->dbio_command_index) && $data[$this->dbio_command_index] != '') {
+                $this->importHandleDbIoCommand ($data[$this->dbio_command_index], $data);
+            
+            // -----
+            // Otherwise, continue with the import action only if the record is still "OK" to process.
+            //
+            } elseif ($this->importCheckKeyValue ($data) !== false) {
                 // -----
                 // Loop, processing each 'column' of data into its respective database field(s).  At the end of this processing,
                 // we'll have a couple of sql-data arrays to be used as input to the database 'perform' function; that function will
@@ -875,6 +898,14 @@ abstract class DbIoHandler extends base
     // construction to have the handler set its database-related configuration.
     //
     abstract protected function setHandlerConfiguration ();
+    
+    // -----
+    // This function, provided by the detailed handler when it's set 'supports_dbio_commands', enables a handler to support
+    // "special" functions (like "REMOVE") during its import processing.
+    //
+    protected function importHandleDbIoCommand ($command, $data)
+    {
+    }
 
     // -----
     // Local function (used when logging messages to reduce unnecessary whitespace.

@@ -34,3 +34,4 @@ define ('DBIO_TEXT_ERROR', 'Error: ');  //-Used to prefix processing messages wi
 define ('DBIO_MESSAGE_KEY_CONFIGURATION_ERROR', 'There is an error in the key-configuration for the selected handler; the handler cannot be used.');
 define ('DBIO_ERROR_HANDLER_MISSING_FUNCTION', 'The current handler (%$1s) is missing the (required) "%$2s" function; the import is disallowed.');
 define ('DBIO_ERROR_HEADER_MISSING_KEYS', 'The current import-file is missing these (%s) required columns; the import is disallowed.');
+define ('DBIO_ERROR_HANDLER_NO_COMMANDS', 'The current import-file uses DbIo commands, but the handler doesn\'t support them; the import is disallowed.');
