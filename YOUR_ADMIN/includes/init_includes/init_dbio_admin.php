@@ -7,8 +7,8 @@ if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
 }
 
-define('DBIO_CURRENT_VERSION', '1.0.1');
-define('DBIO_CURRENT_UPDATE_DATE', '2016-10-24');
+define('DBIO_CURRENT_VERSION', '1.0.2-beta1');
+define('DBIO_CURRENT_UPDATE_DATE', '2016-12-xx');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
 
@@ -56,15 +56,22 @@ if (!defined ('DBIO_MODULE_VERSION')) {
     $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'Enable Debug?', 'DBIO_DEBUG', 'false', 'Identify whether (true) or not (false, the default) the DbIo debug is to be enabled.  When enabled, <b>all</b> I/O status is written to a <em>dbio-*.log</em> file in your store\'s /YOUR_ADMIN/dbio/logs folder.', $cgi, 600, now(), NULL, 'zen_cfg_select_option(array(\'true\', \'false\'),')");
 
     $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'Debug Date Format', 'DBIO_DEBUG_DATE_FORMAT', 'Y-m-d H:i:s', 'Enter the formatting string used to timestamp all DbIo log entries.', $cgi, 601, now(), NULL, NULL)");
-    
-    define ('DBIO_MODULE_VERSION', $version_release_date);
 }
 
 // -----
 // Update the configuration table to reflect the current version, if it's not already set.
 //
-if (DBIO_MODULE_VERSION != $version_release_date) {
+if (!defined ('DBIO_MODULE_VERSION')) {
+    define ('DBIO_MODULE_VERSION', '0.0.0');
+} elseif (DBIO_MODULE_VERSION != $version_release_date) {
     $db->Execute ("UPDATE " . TABLE_CONFIGURATION . " SET configuration_value = '" . $version_release_date . "' WHERE configuration_key = 'DBIO_MODULE_VERSION' LIMIT 1");
+}
+
+// -----
+// Plugin version-specific updates ...
+//
+if (DBIO_MODULE_VERSION < '1.0.2') {
+    $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( '<em>Products</em> Import:  Allow Duplicate Models?', 'DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS', 'No', 'When performing a <em>Products</em> import, should an imported record be allowed if it would create a product with a duplicated model number?  (Default: <b>No</b>)', $cgi, 100, now(), NULL, 'zen_cfg_select_option(array(\'Yes\', \'No\'),')");
 }
 
 // ----
