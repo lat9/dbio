@@ -221,7 +221,8 @@ class DbIo extends base
                 trigger_error ($this->message, E_USER_WARNING);
             
             } else {
-                if (!$this->handler->importInitialize ($language, $operation)) {
+                $import_ok = $this->handler->importInitialize ($language, $operation);
+                if (!$import_ok) {
                     $this->message = $this->handler->getHandlerMessage ();
                 } else {
                     $this->csv_parms = $this->handler->getCsvParameters ();
@@ -238,7 +239,9 @@ class DbIo extends base
                 }
                 fclose ($this->import_fp);
                 
-                $this->handler->importPostProcess ();
+                if ($import_ok) {
+                    $this->handler->importPostProcess ();
+                }
             }
             $this->handler->stopTimer ();
         }
