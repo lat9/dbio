@@ -189,6 +189,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                 <li><span class="title">Character encoding.</span> I know, boring stuff, but it's <b>very important</b> to the proper operation of <em>DbIo</em>! The plugin's installation verifies that your store's base character-encoding is &quot;proper&quot; by checking that your store's <code>CHARSET</code> is compatible with your store's <code>DB_CHARSET</code> values.  It's <b>your</b> job to properly identify the character-set used by the spreadsheet tool you are also using (e.g. Apache OpenOffice or Microsoft Excel).<p>You'll use the <em>Configuration-&gt;DbIo Manager Settings-&gt;CSV: Encoding</em> setting to instruct <em>DbIo</em> how to interpret the data coming from or going to a <code>.csv</code> file.  Set that value to <b>utf8</b> if you are using <em>Apache OpenOffice</em> (or any other known utf8-generating program) or to <b>latin1</b> if you are using <em>Microsoft Excel</em>.</p></li>
                 <li><span class="title">File naming.</span> <em>DbIo</em> uses the name of an I/O &quot;handler&quot; to identify files to-be-processed by that handler.  For example, any <code>.csv</code> files to be processed by the <em>Featured</em> handler reside in the <code>/YOUR_ADMIN/dbio/</code> folder and are named <code class="nowrap">dbio.<b>Featured</b>.<em>anything</em>.csv</code></li>
                 <li><span class="title">Language-specific Fields.</span> While <em>EP-4</em> uses the convention of appending the <code>language_id</code> (e.g. v_products_name<b>_1</b>) to identify language-specific fields, <em>DbIo</em> appends the (more portable) <code>language_code</code> (e.g. v_products_name<b>_en</b>) when identifying language-specific values.</li>
+                <li><span class="title">Record removal.</span> While <em>EP-4</em> uses the convention of setting the <code>products_status</code> to a value of <b>9</b> to indicate a product to be removed, <em>DbIo</em> introduces a new column (<code>v_dbio_command</code>) that a handler can <em>conditionally</em> enable to support record-removal and/or other commands.  Starting with v1.0.2, the <em>Products</em> handling supports this field; set that column's value to <code>REMOVE</code> for a particular product and, if the product exists, it will be removed.</li>
               </ol>
             </div>
             
@@ -248,6 +249,10 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   </ul></td>
                 </tr>
                 <tr>
+                  <td><em>Products</em> Import:  Allow Duplicate Models?</td>
+                  <td>Choose whether (<b>Yes</b>) or not (<b>No</b>) any <code class="no-pad">Products</code> import should be allowed to change an existing product's &quot;model number&quot;.  Default: <b>No</b>. <span class="smaller">(Introduced in v1.0.2)</span></td>
+                </tr>
+                <tr>
                   <td>Enable Debug?</td>
                   <td>Identify whether (<b>true</b>) or not (<b>false</b>, the default) the DbIo debug is to be enabled. When enabled, all I/O status is written to a dbio-*.log file in your store's <code>/YOUR_ADMIN/dbio/logs</code> folder.</td>
                 </tr> 
@@ -275,7 +280,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td class="h-name">Customers</td>
                   <td>Export</td>
                   <td>None</td>
-                  <td>This handler provides the export-only of all fields in the database's <code>customers</code> table.</td>
+                  <td>This handler provides the <em>export-only</em> of all fields in the database's <code>customers</code> table.</td>
                   <td>&mdash;</td>
                 </tr> 
                 
@@ -315,7 +320,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td class="h-name">Products</td>
                   <td>Import, Export</td>
                   <td>Product Status, Manufacturer, Category</td>
-                  <td>This handler supports import/export of <b>all</b> fields within the <code>products</code> and <code>products_description</code> tables, the basic product information.</td>
+                  <td>This handler supports import/export of <b>all</b> fields within the <code>products</code> and <code>products_description</code> tables, the basic product information. Starting with <em>DbIo</em> v1.0.2, a product's record can be located via either its <code>products_id</code> or <code>products_model</code> (both columns are required in the import file) and an existing product can be <em>removed</em> by creating a <code>v_dbio_command</code> column with a product's entry set to <code>REMOVE</code>.</td>
                   <td>Complete Products</td>
                 </tr> 
                  
@@ -476,11 +481,20 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
         <ul>
           <li>v1.0.2, 2016-12-xx:<ul>
+            <li>CHANGE: Split handlers' export-filters' configuration from handlers' base configuration.</li>
+            <li>CHANGE: Allow handlers to identify a minimum version of the base <code class="no-pad">DbIoHandler</code> class.</li>
+            <li>CHANGE: Allow handlers to identify &quot;alternate&quot; keys; the <code class="no-pad">DbIoProductsHandler</code> has been updated to enable an import based on either products_id or products_model.</li>
+            <li>BUGFIX: Cease import processing fully if an initialization error is detected.</li>
             <li>BUGFIX: Disallow 'incomplete' records, i.e. fewer columns than the header.</li>
             <li>BUGFIX: Fixed-header import misses 'special import' fields.</li>
             <li>The following files were changed:<ol>
+              <li>/YOUR_ADMIN/dbio_manager.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
               <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+              <li>/YOUR_ADMIN/includes/languages/english/dbio/dbio_messages.php</li>
             </ol></li>
           </ul></li>
           <li>v1.0.1, 2016-10-24:<ul>
