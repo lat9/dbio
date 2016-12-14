@@ -16,6 +16,18 @@ class DbIoProductsHandler extends DbIoHandler
     {
         global $db;
         DbIoHandler::loadHandlerMessageFile ('Products'); 
+        return array (
+            'version' => '1.0.1',
+            'handler_version' => '1.0.2',
+            'include_header' => true,
+            'export_only' => false,
+            'description' => DBIO_PRODUCTS_DESCRIPTION,
+        );
+    }
+    
+    public static function getHandlerExportFilters ()
+    {
+        global $db;
         
         $manufacturers_options = array ();
         $manufacturers_info = $db->Execute ("SELECT manufacturers_id as `id`, manufacturers_name as `text` FROM " . TABLE_MANUFACTURERS . " ORDER BY manufacturers_name ASC");
@@ -34,39 +46,30 @@ class DbIoProductsHandler extends DbIoHandler
         $categories_options = zen_get_category_tree ();
         unset ($categories_options[0]);
         
-        $my_config = array (
-            'version' => '1.0.1',
-            'handler_version' => '1.0.2',
-            'include_header' => true,
-            'export_only' => false,
-            'description' => DBIO_PRODUCTS_DESCRIPTION,
-            'export_filters' => array (
-                'products_filters' => array (
-                    'type' => 'array',
-                    'label' => DBIO_PRODUCTS_FILTERS_LABEL,
-                    'fields' => array (
-                        'products_status' => array (
-                            'type' => 'dropdown',
-                            'dropdown_options' => $status_options,
-                            'label' => DBIO_PRODUCTS_STATUS_LABEL,
-                        ),
-                    ),
+        $export_filters['products_filters'] = array (
+            'type' => 'array',
+            'label' => DBIO_PRODUCTS_FILTERS_LABEL,
+            'fields' => array (
+                'products_status' => array (
+                    'type' => 'dropdown',
+                    'dropdown_options' => $status_options,
+                    'label' => DBIO_PRODUCTS_STATUS_LABEL,
                 ),
             ),
         );
         if (count ($manufacturers_options) > 0) {
-            $my_config['export_filters']['products_filters']['fields']['products_manufacturers'] = array (
+            $export_filters['products_filters']['fields']['products_manufacturers'] = array (
                 'type' => 'dropdown_multiple',
                 'dropdown_options' => $manufacturers_options,
                 'label' => DBIO_PRODUCTS_MANUFACTURERS_LABEL,
             );
         }
-        $my_config['export_filters']['products_filters']['fields']['products_categories'] = array (
+        $export_filters['products_filters']['fields']['products_categories'] = array (
             'type' => 'dropdown_multiple',
             'dropdown_options' => array_values ($categories_options),
             'label' => DBIO_PRODUCTS_CATEGORIES_LABEL,
         );
-        return $my_config;
+        return $export_filters;
     }
 
     // -----

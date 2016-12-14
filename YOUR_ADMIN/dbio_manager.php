@@ -29,6 +29,8 @@ if (strtolower (DB_CHARSET) == 'utf8') {
 if (!$ok_to_proceed) {
     $error_message = sprintf (DBIO_FORMAT_CONFIGURATION_ERROR, DB_CHARSET, CHARSET);
 } else {
+    $action = (isset ($_GET['action'])) ? $_GET['action'] : '';
+    
     require (DIR_FS_DBIO_CLASSES . 'DbIo.php');
     $dbio = new DbIo;
     $dbio_handlers = $dbio->getAvailableHandlers ();
@@ -64,7 +66,6 @@ if (!$ok_to_proceed) {
         }
         unset ($files_check, $current_csv_file, $file_stats, $handler_name_list);
         
-        $action = (isset ($_GET['action'])) ? $_GET['action'] : '';
         switch ($action) {
             case 'export_upload':
                 if (isset ($_POST['export_button'])) {
@@ -368,11 +369,13 @@ if (!$ok_to_proceed || $error_message !== '') {
                             <span class="reports-details-name"><?php echo $handler_name; ?>:</span>
                             <span class="reports-details-desc"><?php echo $handler_info['description']; ?></span>
 <?php
-       if (isset ($handler_info['export_filters']) && is_array ($handler_info['export_filters'])) {
+        $handler_class = 'DbIo' . $handler_name . 'Handler';
+        $handler_filters = $handler_class::getHandlerExportFilters ();
+        if (is_array ($handler_filters)) {
 ?>
                             <div class="reports-export-filters">
 <?php
-            foreach ($handler_info['export_filters'] as $field_name => $field_parms) {
+            foreach ($handler_filters as $field_name => $field_parms) {
                 if (!isset ($field_parms['type']) || !isset ($field_parms['label'])) {
                     trigger_error ("DbIo: Missing type and/or label for $handler_name::$field_name export filters:\n" . print_r ($field_parms, true), E_USER_WARNING);
                     

@@ -22,37 +22,41 @@ class DbIoOrdersHandler extends DbIoHandler
             'include_header' => true,
             'export_only' => true,
             'description' => DBIO_ORDERS_DESCRIPTION,
-            'export_filters' => array (
-                'orders_status' => array (
-                    'type' => 'select_orders_status',
-                    'label' => DBIO_ORDERS_ORDERS_STATUS_LABEL,
-                ),
-                'orders_id_range' => array (
-                    'type' => 'array',
-                    'label' => DBIO_ORDERS_ORDERS_ID_RANGE_LABEL,
-                    'fields' => array (
-                        'orders_id_min' => array (
-                            'type' => 'input',
-                            'label' => DBIO_ORDERS_ORDERS_ID_MIN_LABEL,
-                        ),
-                        'orders_id_max' => array (
-                            'type' => 'input',
-                            'label' => DBIO_ORDERS_ORDERS_ID_MAX_LABEL,
-                        ),
+        );
+    }
+    
+    public static function getHandlerExportFilters ()
+    {
+        return array (
+            'orders_status' => array (
+                'type' => 'select_orders_status',
+                'label' => DBIO_ORDERS_ORDERS_STATUS_LABEL,
+            ),
+            'orders_id_range' => array (
+                'type' => 'array',
+                'label' => DBIO_ORDERS_ORDERS_ID_RANGE_LABEL,
+                'fields' => array (
+                    'orders_id_min' => array (
+                        'type' => 'input',
+                        'label' => DBIO_ORDERS_ORDERS_ID_MIN_LABEL,
+                    ),
+                    'orders_id_max' => array (
+                        'type' => 'input',
+                        'label' => DBIO_ORDERS_ORDERS_ID_MAX_LABEL,
                     ),
                 ),
-                'orders_date_range' => array (
-                    'type' => 'array',
-                    'label' => DBIO_ORDERS_ORDERS_DATE_RANGE_LABEL,
-                    'fields' => array (
-                        'orders_date_start' => array (
-                            'type' => 'input',
-                            'label' => DBIO_ORDERS_ORDERS_DATE_MIN_LABEL,
-                        ),
-                        'orders_date_end' => array (
-                            'type' => 'input',
-                            'label' => DBIO_ORDERS_ORDERS_DATE_MAX_LABEL,
-                        ),
+            ),
+            'orders_date_range' => array (
+                'type' => 'array',
+                'label' => DBIO_ORDERS_ORDERS_DATE_RANGE_LABEL,
+                'fields' => array (
+                    'orders_date_start' => array (
+                        'type' => 'input',
+                        'label' => DBIO_ORDERS_ORDERS_DATE_MIN_LABEL,
+                    ),
+                    'orders_date_end' => array (
+                        'type' => 'input',
+                        'label' => DBIO_ORDERS_ORDERS_DATE_MAX_LABEL,
                     ),
                 ),
             ),

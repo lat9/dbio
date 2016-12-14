@@ -98,8 +98,14 @@ abstract class DbIoHandler extends base
         $this->initializeDbIo ();
     }
     
-    public static function getHandlerInformation () {
+    public static function getHandlerInformation () 
+    {
         trigger_error ("Missing handler information for the active report", E_USER_ERROR);
+    }
+    
+    public static function getHandlerExportFilters ()
+    {
+        return false;
     }
     
     // -----
