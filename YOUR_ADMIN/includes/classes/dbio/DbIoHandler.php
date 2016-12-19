@@ -388,7 +388,7 @@ abstract class DbIoHandler extends base
         if (!isset ($this->config)) {
             $this->debugMessage (DBIO_ERROR_NO_HANDLER, self::DBIO_ERROR);
         } elseif ($this->version_mismatch) {
-            $this->message = sprintf (DBIO_ERROR_HANDLER_VERSION_MISMATCH, $this->config['report_name']);
+            $this->message = sprintf (DBIO_ERROR_HANDLER_VERSION_MISMATCH, $this->stats['report_name']);
              trigger_error ('DbIoHandler version mismatch for handler "' . $this->stats['report_name'] . '".  Required: ' . $this->config['handler_version'] . ', Current: ' . self::DBIO_HANDLER_VERSION, E_USER_WARNING);
         } elseif ($language != 'all' && !isset ($this->languages[$language])) {
             $this->message = sprintf (DBIO_ERROR_EXPORT_NO_LANGUAGE, $language);
@@ -1353,7 +1353,7 @@ abstract class DbIoHandler extends base
             }
         }
         
-        if (!isset ($this->config['handler_version']) || version_compare ($this->config['handler_version'], self::DBIO_HANDLER_VERSION, '>')) {
+        if (!isset ($this->config['handler_version']) || $this->config['handler_version'] > self::DBIO_HANDLER_VERSION) {
             $this->version_mismatch = true;
         }
     }  //-END function initialize
