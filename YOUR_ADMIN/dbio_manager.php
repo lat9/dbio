@@ -608,6 +608,8 @@ if (!$ok_to_proceed || $error_message !== '') {
             $even_odd = ($even_odd == 'even') ? 'odd' : 'even';
         }
     }
+    
+    if (isset ($_SESSION['dbio_import_result'])) {
 ?>        
             <div style="display: none;"><div id="file-last-import">
                 <div id="file-last-import-info">
@@ -624,6 +626,8 @@ if (!$ok_to_proceed || $error_message !== '') {
                     </ul>
                 </div>
 <?php
+    }
+    
     if (isset ($_SESSION['dbio_import_result']['io_errors']) && count ($_SESSION['dbio_import_result']['io_errors']) > 0) {
 ?>
                 <div id="flii-messages"><hr />
