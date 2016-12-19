@@ -30,6 +30,7 @@ abstract class DbIoHandler extends base
     // ----- Handler configuration bit switches -----
     const DBIO_FLAG_NONE         = 0;       //- No special handling
     const DBIO_FLAG_PER_LANGUAGE = 1;       //- Field is handled once per language
+    const DBIO_FLAG_NO_EXPORT    = 2;       //- Possibly set during export-customization to indicate that the field should not be exported
     // ----- Handler key-configuration bit-switches -----
     const DBIO_KEY_IS_VARIABLE   = 1;       //- The associated key is mapped to an imported variable
     const DBIO_KEY_IS_FIXED      = 2;       //- The key is mapped to a fixed database field.
@@ -274,6 +275,97 @@ abstract class DbIoHandler extends base
     }
     
     // -----
+    // This function returns an associative array (indexed first by table-name) of the "customizable" fields associated with
+    // each table supported by the current handler.
+    //
+    final public function getCustomizableFields ()
+    {
+        $customizable_tables = array ();
+        if (isset ($this->config['allow_export_customizations']) && $this->config['allow_export_customizations'] === true) {
+            foreach ($this->tables as $table_name => $table_config) {
+                $customizable_tables[$table_name] = array ();
+                foreach ($table_config['fields'] as $field_name => $field_config) {
+                    if ($field_config['include_in_export'] === true) {
+                        $customizable_tables[$table_name][] = $field_name;
+                    }
+                }
+            }
+            
+            // -----
+            // If the handler has set "additional_headers", i.e. fields that require special handling, add them at the end.
+            //
+            if (isset ($this->config['additional_headers'])) {
+                $customizable_tables['additional_headers'] = array ();
+                foreach ($this->config['additional_headers'] as $field_name => $field_config) {
+                    $customizable_tables['additional_headers'][] = str_replace ('v_', '', $field_name);
+                }
+            }
+        }
+        return $customizable_tables;
+    }
+    
+    // -----
+    // This function, used by the export-customization within the admin's Tools->Database I/O Manager, allows customization of
+    // the fields exported by any DbIo handler.
+    //
+    // $customized_tables:  An associative array, indexed by the database table name (as output by getCustomizableFields), that
+    // contains a "simple" array of those fields TO KEEP in the export.
+    //
+    // Notes:
+    // 1) This function CANNOT be overridden!
+    // 2) Calling this function with an empty array essentially disables the table's export!
+    // 3) For proper operation, this function needs to be called prior to any call to the class' exportInitialize function!
+    //
+    final public function exportCustomizeFields ($customized_tables)
+    {
+        $customized = false;
+        if (is_array ($customized_tables) && isset ($this->config['allow_export_customizations']) && $this->config['allow_export_customizations'] === true) {
+            $this->debugMessage ("exportCustomizeFields:\n" . print_r ($customized_tables, true));
+            foreach ($customized_tables as $config_table_name => $fields_array) {
+                if (is_array ($fields_array) && ($config_table_name == 'additional_headers' || isset ($this->config['tables'][$config_table_name]))) {
+                    if ($config_table_name == 'additional_headers' && isset ($this->config['additional_headers'])) {
+                        foreach ($this->config['additional_headers'] as $field_name => &$field_flags) {
+                            if (!in_array (substr ($field_name, 2), $fields_array)) {
+                                $field_flags |= self::DBIO_FLAG_NO_EXPORT;
+                            }
+                        }
+                    } else {    
+                        // -----
+                        // Ensure that any "keys" required by the handler are part of the export, unconditionally!
+                        //
+                        if (isset ($this->config['keys']) && isset ($this->config['keys'][$config_table_name])) {
+                            foreach ($this->config['keys'][$config_table_name] as $current_key => $key_configuration) {
+                                if ($current_key == 'alias' || $current_key == 'capture_key_value') {
+                                    continue;
+                                }
+                                if (!isset ($fields_array[$current_key])) {
+                                    array_unshift ($fields_array, $current_key);
+                                }
+                            }
+                        }
+                        
+                        // -----
+                        // Cycle through the table's fields, marking a field as "exportable" only if it's currently exportable and its name appears within the customizations' array.
+                        //
+                        foreach ($this->tables[$config_table_name]['fields'] as $field_name => &$field_values) {
+                            if ($field_values['include_in_export'] === true) {
+                                $field_values['include_in_export'] = in_array ($field_name, $fields_array);
+                            }
+                        }
+                        unset ($field_values);
+                    }
+                }
+            }
+            // -----
+            // Indicate that the customization was successfully applied.
+            //
+            $customized = true;
+        }  
+        $this->debugMessage ("exportCustomizeFields, on return:\n" . var_export ($this->tables, true) . ((isset ($this->config['additional_headers'])) ? var_export ($this->config['additional_headers'], true) : ''));
+        return $customized;
+    }
+    
+    // -----
     // Initialize the DbIo export handling. 
     // 
     public function exportInitialize ($language = 'all') 
@@ -385,12 +477,14 @@ abstract class DbIoHandler extends base
             
             if (isset ($this->config['additional_headers']) && is_array ($this->config['additional_headers'])) {
                 foreach ($this->config['additional_headers'] as $header_value => $flags) {
-                    if ($flags & self::DBIO_FLAG_PER_LANGUAGE) {
-                        foreach ($this->languages as $language_code => $language_id) {
-                            $this->headers[] = $header_value . '_' . $language_code;
+                    if (!($flags & self::DBIO_FLAG_NO_EXPORT)) {
+                        if ($flags & self::DBIO_FLAG_PER_LANGUAGE) {
+                            foreach ($this->languages as $language_code => $language_id) {
+                                $this->headers[] = $header_value . '_' . $language_code;
+                            }
+                        } else {
+                            $this->headers[] = $header_value;
                         }
-                    } else {
-                        $this->headers[] = $header_value;
                     }
                 }
             }
@@ -1259,7 +1353,7 @@ abstract class DbIoHandler extends base
             }
         }
         
-        if (!isset ($this->config['handler_version']) || $this->config['handler_version'] > self::DBIO_HANDLER_VERSION) {
+        if (!isset ($this->config['handler_version']) || version_compare ($this->config['handler_version'], self::DBIO_HANDLER_VERSION, '>')) {
             $this->version_mismatch = true;
         }
     }  //-END function initialize

@@ -481,6 +481,8 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
         <ul>
           <li>v1.0.2, 2016-12-xx:<ul>
+            <li>CHANGE: Add class-based support for customizable exports; not yet implemented at the <em>Database I/O Manager</em> level.</li>
+            <li>CHANGE: Add support for the <code class="no-pad">v_dbio_command</code> column, allowing handlers to accept commands (like REMOVE).</li>
             <li>CHANGE: Split handlers' export-filters' configuration from handlers' base configuration.</li>
             <li>CHANGE: Allow handlers to identify a minimum version of the base <code class="no-pad">DbIoHandler</code> class.</li>
             <li>CHANGE: Allow handlers to identify &quot;alternate&quot; keys; the <code class="no-pad">DbIoProductsHandler</code> has been updated to enable an import based on either products_id or products_model.</li>

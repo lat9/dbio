@@ -74,6 +74,15 @@ if (!$ok_to_proceed) {
                     } else {
                         unset ($dbio);
                         $dbio = new DbIo ($_POST['handler']);
+                        
+                        // -----
+                        // Export-field customization will happen here, once integrated.
+                        //
+                        /*
+                        $handler_tables = $dbio->handler->getCustomizableFields ();
+                        $dbio->handler->exportCustomizeFields ($handler_tables);
+                        */
+                        
                         $export_info = $dbio->dbioExport ('file');
                         if ($export_info['status'] === false) {
                             $messageStack->add ($export_info['message']);
