@@ -7,7 +7,7 @@ if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
 }
 
-define('DBIO_CURRENT_VERSION', '1.0.2-beta1');
+define('DBIO_CURRENT_VERSION', '1.1.0-beta1');
 define('DBIO_CURRENT_UPDATE_DATE', '2016-12-xx');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
@@ -70,8 +70,8 @@ if (!defined ('DBIO_MODULE_VERSION')) {
 // -----
 // Plugin version-specific updates ...
 //
-if (DBIO_MODULE_VERSION < '1.0.2') {
-    $db->Execute ("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( '<em>Products</em> Import:  Allow Duplicate Models?', 'DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS', 'No', 'When performing a <em>Products</em> import, should an imported record be allowed if it would create a product with a duplicated model number?  (Default: <b>No</b>)', $cgi, 100, now(), NULL, 'zen_cfg_select_option(array(\'Yes\', \'No\'),')");
+if (version_compare (DBIO_MODULE_VERSION, '1.1.0', '<')) {
+    $db->Execute ("INSERT IGNORE INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( '<em>Products</em> Import:  Allow Duplicate Models?', 'DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS', 'No', 'When performing a <em>Products</em> import, should an imported record be allowed if it would create a product with a duplicated model number?  (Default: <b>No</b>)', $cgi, 100, now(), NULL, 'zen_cfg_select_option(array(\'Yes\', \'No\'),')");
 }
 
 // ----
