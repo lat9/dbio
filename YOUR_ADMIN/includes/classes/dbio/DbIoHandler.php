@@ -65,6 +65,8 @@ abstract class DbIoHandler extends base
                 break;
         }
         $this->debug_log_file = DIR_FS_DBIO_LOGS . '/dbio-' . $log_file_suffix . '.log';
+        
+        $this->operation = '';
         $this->io_errors = array ();
         
         $this->stats = array ( 'report_name' => self::DBIO_UNKNOWN_VALUE, 'errors' => 0, 'warnings' => 0, 'record_count' => 0, 'inserts' => 0, 'updates' => 0, 'date_added' => 'now()' );
