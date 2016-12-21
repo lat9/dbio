@@ -42,7 +42,7 @@ class DbIoOrdersProductsHandler extends DbIoHandler
                 $field_value = '';
             }
         }
-        return $fields;
+        return parent::exportPrepareFields ($fields);
     }
     
     
@@ -61,24 +61,24 @@ class DbIoOrdersProductsHandler extends DbIoHandler
         // update the where_clause for the to-be-issued SQL query for the export.
         //
         if ($_POST['orders_status'] != '0') {
-            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'orders_status = ' . (int)$_POST['orders_status'];
+            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'o.orders_status = ' . (int)$_POST['orders_status'];
         }
         if (zen_not_null ($_POST['orders_id_min']) && ctype_digit ($_POST['orders_id_min'])) {
-            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'orders_id >= ' . (int)$_POST['orders_id_min'];
+            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'o.orders_id >= ' . (int)$_POST['orders_id_min'];
         }
         if (zen_not_null ($_POST['orders_id_max']) && ctype_digit ($_POST['orders_id_max'])) {
-            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'orders_id <= ' . (int)$_POST['orders_id_max'];
+            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'o.orders_id <= ' . (int)$_POST['orders_id_max'];
         }
         if (zen_not_null ($_POST['orders_date_start'])) {
            $validated_date = $this->formatValidateDate ($_POST['orders_date_start']);
             if ($validated_date !== false) {
-                $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "date_purchased >= '$validated_date 00:00:00'";
+                $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "o.date_purchased >= '$validated_date 00:00:00'";
             }
         }
         if (zen_not_null ($_POST['orders_date_end'])) {
             $validated_date = $this->formatValidateDate ($_POST['orders_date_end']);
             if ($validated_date !== false) {
-                $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "date_purchased <= '$validated_date 23:59:59'";
+                $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "o.date_purchased <= '$validated_date 23:59:59'";
             }
         }
         return true;
