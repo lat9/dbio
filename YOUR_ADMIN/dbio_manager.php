@@ -84,7 +84,7 @@ if (!$ok_to_proceed) {
                 );
             }
         }
-        unset ($files_check, $current_csv_file, $file_stats, $dbio_handlers);
+        unset ($files_check, $current_csv_file, $file_stats, $dbio_handlers, $filename_hash);
         
         switch ($action) {
             case 'choose':
@@ -158,6 +158,7 @@ if (!$ok_to_proceed) {
                     zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
                 } else {
                     $action_filename = $dbio_files[$_POST['filename_hash']]['full_filepath'];
+                    $active_filename = $dbio_files[$_POST['filename_hash']]['filename_only'];
                     switch ($_POST['file_action']) {
                         case 'none':
                             $messageStack->add_session (sprintf (ERROR_CHOOSE_FILE_ACTION, $action_filename));
@@ -166,6 +167,7 @@ if (!$ok_to_proceed) {
                         case 'import-run':
                         case 'import-check':
                             unset ($dbio);
+                            $_SESSION['dbio_active_filename'] = $active_filename;
                             if ($dbio_files[$_POST['filename_hash']]['is_export_only']) {
                                 $messageStack->add_session (sprintf (ERROR_FILE_IS_EXPORT_ONLY, $action_filename));
                             } else {
@@ -186,6 +188,7 @@ if (!$ok_to_proceed) {
                             zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
                             break;
                         case 'split':
+                            $_SESSION['dbio_active_filename'] = $active_filename;
                             if (!is_readable ($action_filename) || ($fp = fopen ($action_filename, "r")) === false) {
                                 $messageStack->add_session (sprintf (ERROR_CANT_SPLIT_FILE_OPEN_ERROR, $action_filename));
                             } else {
@@ -261,6 +264,7 @@ if (!$ok_to_proceed) {
                             zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
                             break;
                         case 'download':
+                            $_SESSION['dbio_active_filename'] = $active_filename;
                             $fp = fopen ($action_filename, 'r');
                             if ($fp === false) {
                                 $_SESSION['dbio_message'] = array ( 'error', sprintf (DBIO_CANT_OPEN_FILE, $action_filename) );
@@ -632,25 +636,7 @@ if (!$ok_to_proceed || $error_message !== '') {
 <?php
             $first_file = false;
         }
-    
-        if (isset ($_SESSION['dbio_import_result']['io_errors']) && count ($_SESSION['dbio_import_result']['io_errors']) > 0) {
 ?>
-                        <tr id="flii-messages">
-                            <td colspan="5">
-                                <div id="flii-message-intro"><?php echo LAST_STATS_MESSAGES_EXIST; ?></div>
-<?php
-            foreach ($_SESSION['dbio_import_result']['io_errors'] as $current_error) {
-                $message_status = ($current_error[2] & DbIoHandler::DBIO_WARNING) ? 'warning' : (($current_error[2] & DbIoHandler::DBIO_ERROR) ? 'error' : 'info');
-?>
-                                <div class="flii-<?php echo $message_status; ?>"><?php echo str_replace ('[*]', '<span class="flii-item">&cross;</span>', $current_error[0]); ?></div>
-<?php
-            }
-?>
-                            </td>
-<?php
-        }
-?>
-                        </tr>
                     </table>
 <?php
     }
@@ -685,20 +671,38 @@ if (!$ok_to_proceed || $error_message !== '') {
 <?php
     if (isset ($_SESSION['dbio_import_result'])) {
 ?>        
-                <div style="display: none;"><div id="file-last-import">
-                    <div id="file-last-import-info">
-                        <p><?php echo LAST_STATS_LEAD_IN; ?></p>
-                        <ul id="flii-details">
-                            <li><span class="flii-label"><?php echo LAST_STATS_FILE_NAME; ?></span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['import_filename']; ?></span></li>
-                            <li><span class="flii-label"><?php echo LAST_STATS_OPERATION; ?></span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['action']; ?></span></li>                        
-                            <li><span class="flii-label"><?php echo LAST_STATS_RECORDS_READ; ?></span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['record_count']; ?></span></li>
-                            <li><span class="flii-label"><?php echo LAST_STATS_RECORDS_INSERTED; ?></span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['inserts']; ?></span></li>
-                            <li><span class="flii-label"><?php echo LAST_STATS_RECORDS_UPDATED; ?></span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['updates']; ?></span></li>                        
-                            <li><span class="flii-label"><?php echo LAST_STATS_WARNINGS; ?></span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['warnings']; ?></span></li>
-                            <li><span class="flii-label"><?php echo LAST_STATS_ERRORS; ?></span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['errors']; ?></span></li>
-                            <li><span class="flii-label"><?php echo LAST_STATS_PARSE_TIME; ?></span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['parse_time']; ?></span></li>
-                        </ul>
-                    </div>
+    <div style="display: none;"><div id="file-last-import">
+        <div id="file-last-import-info">
+            <p><?php echo LAST_STATS_LEAD_IN; ?></p>
+            <ul id="flii-details">
+                <li><span class="flii-label"><?php echo LAST_STATS_FILE_NAME; ?></span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['import_filename']; ?></span></li>
+                <li><span class="flii-label"><?php echo LAST_STATS_OPERATION; ?></span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['action']; ?></span></li>                        
+                <li><span class="flii-label"><?php echo LAST_STATS_RECORDS_READ; ?></span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['record_count']; ?></span></li>
+                <li><span class="flii-label"><?php echo LAST_STATS_RECORDS_INSERTED; ?></span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['inserts']; ?></span></li>
+                <li><span class="flii-label"><?php echo LAST_STATS_RECORDS_UPDATED; ?></span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['updates']; ?></span></li>                        
+                <li><span class="flii-label"><?php echo LAST_STATS_WARNINGS; ?></span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['warnings']; ?></span></li>
+                <li><span class="flii-label"><?php echo LAST_STATS_ERRORS; ?></span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['errors']; ?></span></li>
+                <li><span class="flii-label"><?php echo LAST_STATS_PARSE_TIME; ?></span><span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['parse_time']; ?></span></li>
+            </ul>
+        </div>
+<?php
+        if (isset ($_SESSION['dbio_import_result']['io_errors']) && count ($_SESSION['dbio_import_result']['io_errors']) > 0) {
+?>
+        <div id="flii-messages">
+            <div id="flii-message-intro"><?php echo LAST_STATS_MESSAGES_EXIST; ?></div>
+<?php
+            foreach ($_SESSION['dbio_import_result']['io_errors'] as $current_error) {
+                $message_status = ($current_error[2] & DbIoHandler::DBIO_WARNING) ? 'warning' : (($current_error[2] & DbIoHandler::DBIO_ERROR) ? 'error' : 'info');
+?>
+            <div class="flii-<?php echo $message_status; ?>"><?php echo str_replace ('[*]', '<span class="flii-item">&cross;</span>', $current_error[0]); ?></div>
+<?php
+            }
+?>
+        </div>
+<?php
+        }
+?>
+    </div></div>
 <?php
     }
 }  //-END processing, configuration OK
