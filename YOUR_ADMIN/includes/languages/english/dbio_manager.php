@@ -25,6 +25,12 @@ define ('TEXT_MAX_UPLOAD_FILE_SIZE', 'Maximum Upload File Size');
 define ('TEXT_CHARSET', 'Internal Character Encoding');
 define ('TEXT_DB_CHARSET', 'Database Character Encoding');
 define ('TEXT_DEFAULT_LANGUAGE', 'Default Language');
+define ('TEXT_CHOOSE_HANDLER', 'Choose the handler to use:');
+
+define ('LEGEND_EXPORT', 'Export');
+define ('LEGEND_CONFIGURATION', 'Configuration');
+define ('LEGEND_FILE_ACTIONS', 'File Actions');
+define ('LEGEND_FILE_UPLOADS', 'File Uploads');
 
 define ('TEXT_REPORTS_INSTRUCTIONS', 'The following <em>DbIo</em> reports are available for export:');
 
@@ -43,14 +49,16 @@ define ('BUTTON_EXPORT_TITLE', 'Click here to export the information associated 
 define ('BUTTON_UPLOAD', 'Upload');
 define ('BUTTON_UPLOAD_TITLE', 'Click here to upload the selected file.');
 
-define ('TEXT_FILE_ACTION_DELETE_INSTRUCTIONS', 'You can also remove one or more of the reports below from the server.<br />Select the file(s) to be deleted, then click the &quot;Delete&quot; button.');
+define ('TEXT_FILE_ACTION_DELETE_INSTRUCTIONS', 'You can also remove one or more of the reports below from the server. Select the file(s) to be deleted, then click the &quot;Delete&quot; button.');
 
 define ('DBIO_FORMAT_CONFIGURATION_ERROR', 'The <em>DbIo Manager</em> does not support your installation, due to a mismatch between your DB_CHARSET (%1$s) and CHARSET (%2$s) values.');
 define ('DBIO_FORM_SUBMISSION_ERROR', 'There were some missing values for your form\'s submission, please try again.');
 
-define ('TEXT_NO_DBIO_FILES_AVAILABLE', 'No import/export files available for the current handlers.');
+define ('TEXT_NO_DBIO_FILES_AVAILABLE', 'No import/export files are available for the <em>%s</em> handler.');
+define ('ERROR_FILENAME_MISMATCH', 'Please choose an upload file that is associated with the current handler (%1$s), e.g. <em>dbio.%1$s.*.csv</em>.');
+define ('TEXT_UPLOAD_FOR_IMPORT_ONLY', 'The <em>%s</em> handler does not support file-imports, so file uploads have been disabled.');
 define ('TEXT_CHOOSE_ACTION', 'Choose the action to be performed for the file chosen below:');
-define ('TEXT_FILE_UPLOAD_INSTRUCTIONS', 'You can also upload a file from your computer (extensions %s <b>only</b>) for import using the <em>DbIo Manager</em>.  Choose a file, then click the &quot;Upload&quot; button.');
+define ('TEXT_FILE_UPLOAD_INSTRUCTIONS', 'You can also upload a file from your computer (extensions %2$s <b>only</b>) for import using the <em>DbIo Manager</em>.  Choose a file that is processable by the current handler (%1$s), e.g. <em>dbio.%1$s.*.csv</em>, then click the &quot;Upload&quot; button.');
 define ('TEXT_CHOOSE_FILE', 'Your file:');
 
 define ('DBIO_ACTION_PLEASE_SELECT', 'Please select');
