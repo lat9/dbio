@@ -84,7 +84,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
 
 <body>
   <h1 id="title">Database I/O Manager (DbIo) for Zen Cart&reg;</h1>
-  <p>Version 1.1.1.  Copyright &copy; 2015-2017, <a href="http://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
+  <p>Version 1.2.0.  Copyright &copy; 2015-2017, <a href="http://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
   <p>Current Support Thread on the Zen Cart forums: <a href="https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread</a></p>
   
   <div class="tab-container" id="outer-container">
@@ -480,6 +480,24 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <noscript><h3>Version History</h3></noscript>
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
         <ul>
+          <li>v1.2.0, 2017-01-xx:<ul>
+            <li>CHANGE: Restructure admin tool's user interface.</li>
+            <li>CHANGE: Conditionally present a handler's filters for use in the database-export processing.</li>
+            <li>The following files were changed or <span class="added">added</span>:<ol>
+              <li>/YOUR_ADMIN/dbio_manager.php</li>
+              <li><span class="added">/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersBase.php</span></li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersProductsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersProductsAttribsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+              <li>/YOUR_ADMIN/includes/languages/english/dbio_manager.php</li>
+              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoOrdersHandler.php</li>
+              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoOrdersProductsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoOrdersProductsAttribsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsHandler.php</li>
+            </ol></li>
+          </ul></li>
           <li>v1.1.1, 2017-01-04:<ul>
             <li>BUGFIX: <em>OrdersProducts</em> handler generates database error when filtered.</li>
             <li>BUGFIX: <em>OrdersProducts</em> handler doesn't encode data on export.</li>
