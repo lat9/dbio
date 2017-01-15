@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2017, Vinos de Frutas Tropicales.
 //
 define ('HEADING_TITLE', 'Database I/O (DbIo) Manager');
 
@@ -50,6 +50,8 @@ define ('BUTTON_UPLOAD', 'Upload');
 define ('BUTTON_UPLOAD_TITLE', 'Click here to upload the selected file.');
 
 define ('TEXT_FILE_ACTION_DELETE_INSTRUCTIONS', 'You can also remove one or more of the reports below from the server. Select the file(s) to be deleted, then click the &quot;Delete&quot; button.');
+
+define ('TEXT_SHOW_HIDE_FILTERS', 'Click to show (or hide) the filters for <strong>all</strong> handlers.  When the filters are <em>hidden</em>, then they do not apply to the current export.');
 
 define ('DBIO_FORMAT_CONFIGURATION_ERROR', 'The <em>DbIo Manager</em> does not support your installation, due to a mismatch between your DB_CHARSET (%1$s) and CHARSET (%2$s) values.');
 define ('DBIO_FORM_SUBMISSION_ERROR', 'There were some missing values for your form\'s submission, please try again.');

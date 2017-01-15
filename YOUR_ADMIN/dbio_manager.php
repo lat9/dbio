@@ -31,6 +31,10 @@ if (!$ok_to_proceed) {
 } else {
     $action = (isset ($_GET['action'])) ? $_GET['action'] : '';
     
+    if (!isset ($_SESSION['dbio_show_filters'])) {
+        $_SESSION['dbio_show_filters'] = false;
+    }
+    
     require (DIR_FS_DBIO_CLASSES . 'DbIo.php');
     $dbio = new DbIo;
     $dbio_handlers = $dbio->getAvailableHandlers ();
@@ -50,8 +54,6 @@ if (!$ok_to_proceed) {
             );
         }
         $handler_info = $dbio_handlers[$handler_name];
-        
-        $show_filters = isset ($_POST['dbio_show_filters']);
         
         if (!isset ($_SESSION['dbio_vars'])) {
             $_SESSION['dbio_vars'] = array ();
@@ -91,6 +93,7 @@ if (!$ok_to_proceed) {
                 zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
                 break;
             case 'export':
+                $_SESSION['dbio_show_filters'] = isset ($_POST['show_filters']);
                 if (isset ($_POST['export_button'])) {
                     unset ($dbio);
                     $dbio = new DbIo ($handler_name);
@@ -112,9 +115,9 @@ if (!$ok_to_proceed) {
                         $_SESSION['dbio_vars']['handler'] = $handler_name;
                         $_SESSION['dbio_last_export'] = $export_info;
                         $_SESSION['dbio_active_filename'] = $export_info['export_filename'];
-                        zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
                     }
                 }
+                zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
                 break;
             case 'upload':
                 if (!zen_not_null ($_FILES['upload_filename']['name'])) {
@@ -331,6 +334,7 @@ legend { background-color: #fff8dc; padding: 0.3em; border: 1px solid #e5e5e5; }
 #configuration-info { padding-bottom: 0.5em; }
 #file-list, #export-form { border-right: 1px solid #e5e5e5; }
 #file-row-header { background-color: #fbf6d9; }
+#show-filters { border-bottom: 1px solid #ebebeb; margin-bottom: 0.5em; padding-bottom: 0.5em; }
 
 .centered { text-align: center; }
 .right { text-align: right; }
@@ -401,101 +405,116 @@ if (!$ok_to_proceed || $error_message !== '') {
                 <fieldset id="reports-export">
                     <legend><?php echo LEGEND_EXPORT; ?></legend>
                     <p><?php echo $handler_info['description']; ?></p>
-                    <div class="reports-details-row">
 <?php
     $handler_class = 'DbIo' . $handler_name . 'Handler';
-    $handler_filters = $handler_class::getHandlerExportFilters ();
-    if (is_array ($handler_filters)) {
+    $filter_check = new \ReflectionMethod ($handler_class, 'getHandlerExportFilters');
+    $handler_has_filters = ($filter_check->getDeclaringClass()->getName() != 'DbIoHandler');
+    unset ($filter_check);
+    
+    if ($handler_has_filters) {
+?>
+                    <div id="show-filters"><?php echo zen_draw_checkbox_field ('show_filters', '', $_SESSION['dbio_show_filters'], '', 'onchange="this.form.submit();"') . ' ' . TEXT_SHOW_HIDE_FILTERS; ?></div>
+<?php
+        if ($_SESSION['dbio_show_filters']) {
+?>
+                    <div class="reports-details-row">
+<?php
+            $handler_filters = $handler_class::getHandlerExportFilters ();
+            if (is_array ($handler_filters)) {
 ?>
                         <div class="reports-export-filters">
 <?php
-        foreach ($handler_filters as $field_name => $field_parms) {
-            if (!isset ($field_parms['type']) || !isset ($field_parms['label'])) {
-                trigger_error ("DbIo: Missing type and/or label for $handler_name::$field_name export filters:\n" . print_r ($field_parms, true), E_USER_WARNING);
-                
-            } else {
-                $extra_field_class = '';
-                $dropdown_options = '';
-                $dropdown_field_suffix = '';
-                switch ($field_parms['type']) {
-                    case 'input':
-                        $form_field = zen_draw_input_field ($field_name, dbioGetFieldValue ($field_name));
-                        break;
-                    case 'dropdown_multiple':
-                        $dropdown_options = 'multiple';  
-                        $dropdown_field_suffix = '[]';      //-Fall-through to dropdown handling
-                    case 'dropdown':
-                        if (!isset ($field_parms['dropdown_options']) || !is_array ($field_parms['dropdown_options'])) {
-                            $form_field = false;
-                            trigger_error ("DbIo: Missing dropdown_options for $handler_name::$field_name export filter:\n" . print_r ($field_parms, true), E_USER_WARNING);
-                        } else {
-                            $form_field = zen_draw_pull_down_menu ($field_name . $dropdown_field_suffix, $field_parms['dropdown_options'], dbioGetFieldValue ($field_name), $dropdown_options);
-                        }
-                        break;
-                    case 'select_orders_status':
-                        $form_field = dbioDrawOrdersStatusDropdown ($field_name);
-                        break;
-                    case 'array':
-                        $extra_field_class = ' multi';
-                        if (!isset ($field_parms['fields'])) {
-                            $form_field = false;
-                            trigger_error ("DbIo: Missing additional filter variable values for $handler_name::$field_name.", E_USER_WARNING);
-                        } else {
-                            $form_field = '<span class="filter-subfield-wrap">';
-                            foreach ($field_parms['fields'] as $subfield_name => $subfield_parms) {
-                                $dropdown_options = '';
-                                $dropdown_field_suffix = '';
-                                $form_field .= '<span class="filter-subfield-label">' . $subfield_parms['label'] . '</span>';
-                                switch ($subfield_parms['type']) {
-                                    case 'input':
-                                        $form_field .= '<span class="filter-subfield">' . zen_draw_input_field ($subfield_name, dbioGetFieldValue ($subfield_name)) . '</span>';
-                                        break;
-                                    case 'dropdown_multiple':
-                                        $dropdown_options = 'multiple';
-                                        $dropdown_field_suffix = '[]';      //-Fall-through to dropdown handling
-                                    case 'dropdown':
-                                        if (!isset ($subfield_parms['dropdown_options']) || !is_array ($subfield_parms['dropdown_options'])) {
-                                            $form_field = false;
-                                            trigger_error ("DbIo: Missing dropdown_options for $handler_name::$field_name export filter:\n" . print_r ($subfield_parms, true), E_USER_WARNING);
-                                        } else {
-                                            $form_field .= zen_draw_pull_down_menu ($subfield_name . $dropdown_field_suffix, $subfield_parms['dropdown_options'], dbioGetFieldValue ($subfield_name), $dropdown_options);
-                                        }
-                                        break;
-                                    case 'select_orders_status':
-                                        $form_field .= dbioDrawOrdersStatusDropdown ($subfield_name);
-                                        break;
-                                     default:
-                                        $form_field = false;
-                                        trigger_error ("DbIo: Unknown filter subfield type (" . $subfield_parms['type'] . ") specified for $handler_name::$field_name::$subfield_name.", E_USER_WARNING);
-                                        break;
+                foreach ($handler_filters as $field_name => $field_parms) {
+                    if (!isset ($field_parms['type']) || !isset ($field_parms['label'])) {
+                        trigger_error ("DbIo: Missing type and/or label for $handler_name::$field_name export filters:\n" . print_r ($field_parms, true), E_USER_WARNING);
+                        
+                    } else {
+                        $extra_field_class = '';
+                        $dropdown_options = '';
+                        $dropdown_field_suffix = '';
+                        switch ($field_parms['type']) {
+                            case 'input':
+                                $form_field = zen_draw_input_field ($field_name, dbioGetFieldValue ($field_name));
+                                break;
+                            case 'dropdown_multiple':
+                                $dropdown_options = 'multiple';  
+                                $dropdown_field_suffix = '[]';      //-Fall-through to dropdown handling
+                            case 'dropdown':
+                                if (!isset ($field_parms['dropdown_options']) || !is_array ($field_parms['dropdown_options'])) {
+                                    $form_field = false;
+                                    trigger_error ("DbIo: Missing dropdown_options for $handler_name::$field_name export filter:\n" . print_r ($field_parms, true), E_USER_WARNING);
+                                } else {
+                                    $form_field = zen_draw_pull_down_menu ($field_name . $dropdown_field_suffix, $field_parms['dropdown_options'], dbioGetFieldValue ($field_name), $dropdown_options);
                                 }
-                            }
-                            if ($form_field !== false) {
-                                $form_field .= '</span>';
-                            }
+                                break;
+                            case 'select_orders_status':
+                                $form_field = dbioDrawOrdersStatusDropdown ($field_name);
+                                break;
+                            case 'array':
+                                $extra_field_class = ' multi';
+                                if (!isset ($field_parms['fields'])) {
+                                    $form_field = false;
+                                    trigger_error ("DbIo: Missing additional filter variable values for $handler_name::$field_name.", E_USER_WARNING);
+                                } else {
+                                    $form_field = '<span class="filter-subfield-wrap">';
+                                    foreach ($field_parms['fields'] as $subfield_name => $subfield_parms) {
+                                        $dropdown_options = '';
+                                        $dropdown_field_suffix = '';
+                                        $form_field .= '<span class="filter-subfield-label">' . $subfield_parms['label'] . '</span>';
+                                        switch ($subfield_parms['type']) {
+                                            case 'input':
+                                                $form_field .= '<span class="filter-subfield">' . zen_draw_input_field ($subfield_name, dbioGetFieldValue ($subfield_name)) . '</span>';
+                                                break;
+                                            case 'dropdown_multiple':
+                                                $dropdown_options = 'multiple';
+                                                $dropdown_field_suffix = '[]';      //-Fall-through to dropdown handling
+                                            case 'dropdown':
+                                                if (!isset ($subfield_parms['dropdown_options']) || !is_array ($subfield_parms['dropdown_options'])) {
+                                                    $form_field = false;
+                                                    trigger_error ("DbIo: Missing dropdown_options for $handler_name::$field_name export filter:\n" . print_r ($subfield_parms, true), E_USER_WARNING);
+                                                } else {
+                                                    $form_field .= zen_draw_pull_down_menu ($subfield_name . $dropdown_field_suffix, $subfield_parms['dropdown_options'], dbioGetFieldValue ($subfield_name), $dropdown_options);
+                                                }
+                                                break;
+                                            case 'select_orders_status':
+                                                $form_field .= dbioDrawOrdersStatusDropdown ($subfield_name);
+                                                break;
+                                             default:
+                                                $form_field = false;
+                                                trigger_error ("DbIo: Unknown filter subfield type (" . $subfield_parms['type'] . ") specified for $handler_name::$field_name::$subfield_name.", E_USER_WARNING);
+                                                break;
+                                        }
+                                    }
+                                    if ($form_field !== false) {
+                                        $form_field .= '</span>';
+                                    }
+                                }
+                                break;
+                            default:
+                                $form_field = false;
+                                trigger_error ("DbIo: Unknown export filter type (" . $field_parms['type'] . ") specified for $handler_name::$field_name.", E_USER_WARNING);
+                                break;
                         }
-                        break;
-                    default:
-                        $form_field = false;
-                        trigger_error ("DbIo: Unknown export filter type (" . $field_parms['type'] . ") specified for $handler_name::$field_name.", E_USER_WARNING);
-                        break;
-                }
-                if ($form_field !== false) {
+                        if ($form_field !== false) {
 ?>
                             <div class="reports-filter-row">
                                 <div class="reports-filter-label<?php echo $extra_field_class; ?>"><?php echo $field_parms['label']; ?></div>
                                 <div class="reports-filter-field<?php echo $extra_field_class; ?>"><?php echo $form_field; ?></div>
                             </div>
 <?php
+                        }
+                    }
                 }
-            }
-        }
 ?>
                         </div>
 <?php
-   }
+            }
 ?>
                     </div>
+<?php
+        }
+    }
+?>
                 </fieldset>
                 <div id="submit-report"><?php echo zen_draw_input_field ('export_button', BUTTON_EXPORT, 'title="' . BUTTON_EXPORT_TITLE . '"', false, 'submit'); ?></div>
             </form></td>
@@ -715,7 +734,7 @@ if (!$ok_to_proceed || $error_message !== '') {
 $zen_cart_version = PROJECT_VERSION_MAJOR . '.' . PROJECT_VERSION_MINOR;
 if (version_compare ($zen_cart_version, '1.5.5', '<')) {
 ?>
-<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
 <?php
 }
 ?>

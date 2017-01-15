@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka dbIO) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2017, Vinos de Frutas Tropicales.
 //
 if (!defined ('IS_ADMIN_FLAG')) {
   exit ('Illegal access');
@@ -11,14 +11,14 @@ if (!defined ('IS_ADMIN_FLAG')) {
 // This dbIO class handles the customizations required for a basic Zen Cart "Orders Products" export-only.  The class
 // provides its own header to limit the processing output.
 //
-class DbIoOrdersProductsHandler extends DbIoHandler 
+class DbIoOrdersProductsHandler extends DbIoOrdersBase 
 {
     public static function getHandlerInformation ()
     {
         DbIoHandler::loadHandlerMessageFile ('OrdersProducts'); 
         return array (
-            'version' => '1.0.0',
-            'handler_version' => '1.0.0',
+            'version' => '1.1.0',
+            'handler_version' => '1.1.0',
             'include_header' => true,
             'export_only' => true,
             'description' => DBIO_ORDERSPRODUCTS_DESCRIPTION,
@@ -43,45 +43,6 @@ class DbIoOrdersProductsHandler extends DbIoHandler
             }
         }
         return parent::exportPrepareFields ($fields);
-    }
-    
-    
-    // -----
-    // This function gives the current handler the last opportunity to modify the SQL query clauses used for the current export.  It's
-    // usually provided by handlers that use an "export_filter", allowing the handler to inspect any filter-variables provided by
-    // the caller.
-    //
-    // Returns a boolean (true/false) indication of whether the export's initialization was successful.  If unsuccessful, the handler
-    // is **assumed** to have set its reason into the class message variable.
-    //
-    public function exportFinalizeInitialization ()
-    {
-        // -----
-        // Check to see if any of this handler's filter variables have been set.  If set, check the values and then
-        // update the where_clause for the to-be-issued SQL query for the export.
-        //
-        if ($_POST['orders_status'] != '0') {
-            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'o.orders_status = ' . (int)$_POST['orders_status'];
-        }
-        if (zen_not_null ($_POST['orders_id_min']) && ctype_digit ($_POST['orders_id_min'])) {
-            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'o.orders_id >= ' . (int)$_POST['orders_id_min'];
-        }
-        if (zen_not_null ($_POST['orders_id_max']) && ctype_digit ($_POST['orders_id_max'])) {
-            $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'o.orders_id <= ' . (int)$_POST['orders_id_max'];
-        }
-        if (zen_not_null ($_POST['orders_date_start'])) {
-           $validated_date = $this->formatValidateDate ($_POST['orders_date_start']);
-            if ($validated_date !== false) {
-                $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "o.date_purchased >= '$validated_date 00:00:00'";
-            }
-        }
-        if (zen_not_null ($_POST['orders_date_end'])) {
-            $validated_date = $this->formatValidateDate ($_POST['orders_date_end']);
-            if ($validated_date !== false) {
-                $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "o.date_purchased <= '$validated_date 23:59:59'";
-            }
-        }
-        return true;
     }
     
 // ----------------------------------------------------------------------------------

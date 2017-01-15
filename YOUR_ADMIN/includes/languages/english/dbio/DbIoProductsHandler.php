@@ -1,13 +1,13 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2016, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2017, Vinos de Frutas Tropicales.
 //
 
 // -----
 // Defines the handler's descriptive text.
 //
-define ('DBIO_PRODUCTS_DESCRIPTION', 'This report-format supports import/export of <b>all</b> fields within the &quot;products&quot; and &quot;products_description&quot; tables, the basic product information. Use the filters below to limit your export\'s output.');
+define ('DBIO_PRODUCTS_DESCRIPTION', 'This report-format supports import/export of <b>all</b> fields within the &quot;products&quot; and &quot;products_description&quot; tables, the basic product information. You can use the filters provided to limit this report\'s output  based on a product\'s status, manufacturer or category-tree.');
 
 // -----
 // Definitions that are used for the export-filters, displayed on Tools->Database I/O Manager

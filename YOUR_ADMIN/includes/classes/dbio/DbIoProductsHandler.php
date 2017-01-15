@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka dbIO) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2016, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2017, Vinos de Frutas Tropicales.
 //
 if (!defined ('IS_ADMIN_FLAG')) {
     exit ('Illegal access');
@@ -17,7 +17,7 @@ class DbIoProductsHandler extends DbIoHandler
         global $db;
         DbIoHandler::loadHandlerMessageFile ('Products'); 
         return array (
-            'version' => '1.1.0',
+            'version' => '1.1.1',
             'handler_version' => '1.1.0',
             'include_header' => true,
             'export_only' => false,
@@ -111,7 +111,7 @@ class DbIoProductsHandler extends DbIoHandler
         // Check to see if any of this handler's filter variables have been set.  If set, check the values and then
         // update the where_clause for the to-be-issued SQL query for the export.
         //
-        if ($_POST['products_status'] != 'all') {
+        if (isset ($_POST['products_status']) && $_POST['products_status'] != 'all') {
             $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'p.products_status = ' . (int)$_POST['products_status'];
         }
         if (isset ($_POST['products_manufacturers']) && is_array ($_POST['products_manufacturers'])) {
