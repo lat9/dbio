@@ -60,33 +60,40 @@ if (!$ok_to_proceed) {
             $_SESSION['dbio_vars']['handler'] = $handler_name;
         }
         if ($_SESSION['dbio_vars']['handler'] != $handler_name) {
-            unset ($_SESSION['dbio_active_filename']);
+            unset ($_SESSION['dbio_active_filename'], $_SESSION['dbio_import_result']);
         }
         $_SESSION['dbio_vars']['handler'] = $handler_name;
         
+        // -----
+        // Build up the array of potential input files for the current handler when processing a file-related
+        // action or a simple page-display.  No sense in gathering the information for the other actions,
+        // since the information isn't used.
+        //
         $dbio_files = array ();
-        $files_check = glob (DIR_FS_DBIO . "dbio.$handler_name.*.csv");
-        if (is_array ($files_check)) {
-            foreach ($files_check as $current_csv_file) {
-                $file_stats = stat ($current_csv_file);
-                $current_csv_filename = str_replace (DIR_FS_DBIO, '', $current_csv_file);
-                if (!isset ($_SESSION['dbio_active_filename'])) {
-                    $_SESSION['dbio_active_filename'] = $current_csv_filename;
+        if ($action == 'file' || $action == '') {
+            $files_check = glob (DIR_FS_DBIO . "dbio.$handler_name.*.csv");
+            if (is_array ($files_check)) {
+                foreach ($files_check as $current_csv_file) {
+                    $file_stats = stat ($current_csv_file);
+                    $current_csv_filename = str_replace (DIR_FS_DBIO, '', $current_csv_file);
+                    if (!isset ($_SESSION['dbio_active_filename'])) {
+                        $_SESSION['dbio_active_filename'] = $current_csv_filename;
+                    }
+                    $filename_hash = md5 ($current_csv_file);
+                    $dbio_files[$filename_hash] = array (
+                        'full_filepath' => $current_csv_file,
+                        'filename_only' => $current_csv_filename,
+                        'selected' => ($_SESSION['dbio_active_filename'] == $current_csv_filename),
+                        'last_modified' => $file_stats[9],
+                        'bytes' => $file_stats[7],
+                        'handler_name' => $handler_name,
+                        'is_export_only' => (isset ($dbio_handlers[$handler_name]) && isset ($dbio_handlers[$handler_name]['export_only'])) ? $dbio_handlers[$handler_name]['export_only'] : false,
+                        'is_header_included' => (isset ($dbio_handlers[$handler_name]) && isset ($dbio_handlers[$handler_name]['include_header'])) ? $dbio_handlers[$handler_name]['include_header'] : false,
+                    );
                 }
-                $filename_hash = md5 ($current_csv_file);
-                $dbio_files[$filename_hash] = array (
-                    'full_filepath' => $current_csv_file,
-                    'filename_only' => $current_csv_filename,
-                    'selected' => ($_SESSION['dbio_active_filename'] == $current_csv_filename),
-                    'last_modified' => $file_stats[9],
-                    'bytes' => $file_stats[7],
-                    'handler_name' => $handler_name,
-                    'is_export_only' => (isset ($dbio_handlers[$handler_name]) && isset ($dbio_handlers[$handler_name]['export_only'])) ? $dbio_handlers[$handler_name]['export_only'] : false,
-                    'is_header_included' => (isset ($dbio_handlers[$handler_name]) && isset ($dbio_handlers[$handler_name]['include_header'])) ? $dbio_handlers[$handler_name]['include_header'] : false,
-                );
             }
+            unset ($files_check, $current_csv_file, $file_stats, $dbio_handlers, $filename_hash);
         }
-        unset ($files_check, $current_csv_file, $file_stats, $dbio_handlers, $filename_hash);
         
         switch ($action) {
             case 'choose':
@@ -330,11 +337,11 @@ legend { background-color: #fff8dc; padding: 0.3em; border: 1px solid #e5e5e5; }
 #export-form form, #upload-form form { display: block; }
 #configuration { width: 25%; }
 #submit-report { text-align: right; margin: 0.5em 0; }
-#file-delete-action { float: right; padding: 0.5em 0 0 0.5em; display: inline-block; }
+#file-delete-action { text-align: center; }
 #configuration-info { padding-bottom: 0.5em; }
 #file-list, #export-form { border-right: 1px solid #e5e5e5; }
 #file-row-header { background-color: #fbf6d9; }
-#show-filters { border-bottom: 1px solid #ebebeb; margin-bottom: 0.5em; padding-bottom: 0.5em; }
+.reports-details-row, #submit-report { border-top: 1px solid #ebebeb; margin-top: 0.5em; padding-top: 0.5em; }
 
 .centered { text-align: center; }
 .right { text-align: right; }
@@ -342,11 +349,10 @@ legend { background-color: #fff8dc; padding: 0.3em; border: 1px solid #e5e5e5; }
 .float-left { float: left; }
 .smaller { font-size: smaller; }
 .error { color: red; }
-.even { }
-.odd, .file-row-header { background-color: #ebebeb; }
+.file-row-header { background-color: #ebebeb; }
 .instructions { font-size: 12px; padding-bottom: 10px; padding-top: 10px; }
 
-.config-header { padding: 0.5em; background-color: #fbf6d9; }
+.config-header { padding: 0.5em; background-color: #ebebeb; }
 .config-list {  }
 .config-group { list-style-type: none; padding: 0; }
 .config-title { }
@@ -516,7 +522,124 @@ if (!$ok_to_proceed || $error_message !== '') {
     }
 ?>
                 </fieldset>
-                <div id="submit-report"><?php echo zen_draw_input_field ('export_button', BUTTON_EXPORT, 'title="' . BUTTON_EXPORT_TITLE . '"', false, 'submit'); ?></div>
+                <div id="submit-report">
+                    <div id="export-button"><?php echo zen_draw_input_field ('export_button', BUTTON_EXPORT, 'title="' . BUTTON_EXPORT_TITLE . '"', false, 'submit'); ?></div>
+                </div>
+            </form></td>
+            
+            <td id="upload-form"><?php echo zen_draw_form ('dbio', FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action')) . 'action=upload', 'post', 'enctype="multipart/form-data"'); ?>
+                <fieldset>
+                    <legend><?php echo LEGEND_FILE_UPLOADS; ?></legend>
+<?php
+    if (isset ($handler_info['export_only']) && $handler_info['export_only'] === true) {
+?>
+                    <p><?php echo sprintf (TEXT_UPLOAD_FOR_IMPORT_ONLY, $handler_name); ?></p>
+<?php
+    } else {
+?>
+                    <div id="upload-file">
+                        <p id="upload-instructions"><?php echo sprintf (TEXT_FILE_UPLOAD_INSTRUCTIONS, $handler_name, DBIO_SUPPORTED_FILE_EXTENSIONS); ?></p>
+                        <p id="upload-file-field"><?php echo TEXT_CHOOSE_FILE . ' ' . zen_draw_file_field ('upload_filename'); ?></p>
+                        <p id="upload-button" class="right"><?php echo zen_draw_input_field ('upload_button', BUTTON_UPLOAD, 'title="' . BUTTON_UPLOAD_TITLE . '"', false, 'submit'); ?></p>
+                    </div>
+<?php
+    }
+?>
+                </fieldset>
+            </form></td>
+           
+        </tr>
+        
+        <tr>        
+            <td id="file-list"><?php echo zen_draw_form ('file_form', FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action')) . 'action=file'); ?>
+                <fieldset>
+                    <legend><?php echo LEGEND_FILE_ACTIONS; ?></legend>
+<?php
+    if (!is_array ($dbio_files) || count ($dbio_files) == 0) {
+?>
+                    <p class="no-files"><?php echo sprintf (TEXT_NO_DBIO_FILES_AVAILABLE, $handler_name); ?></p>
+<?php
+    } else {
+        $file_actions_array = array (
+            array ( 'id' => 'none', 'text' => DBIO_ACTION_PLEASE_SELECT ),
+            array ( 'id' => 'split', 'text' => DBIO_ACTION_SPLIT ),
+            array ( 'id' => 'download', 'text' => DBIO_ACTION_DOWNLOAD ),
+        );
+        if (isset ($handler_info['export_only']) && $handler_info['export_only'] !== true) {
+            $file_actions_array[] = array ( 'id' => 'import-run', 'text' => DBIO_ACTION_FULL_IMPORT );
+            $file_actions_array[] = array ( 'id' => 'import-check', 'text' => DBIO_ACTION_CHECK_IMPORT );
+        }
+        $file_action = (isset ($_POST['file_action'])) ? $_POST['file_action'] : 'none';
+        
+        $sort_1a = $sort_1d = $sort_2a = $sort_2d = $sort_3a = $sort_3d = '';
+        $sort_type = 'sort_' . ((isset ($_GET['sort']) && in_array ($_GET['sort'], explode (',', '1a,1d,2a,2d,3a,3d'))) ? $_GET['sort'] : DBIO_FILE_SORT_DEFAULT);
+        $$sort_type = ' selected-sort';
+        $last_update_button = '';
+        if (isset ($_SESSION['dbio_import_result'])) {
+            $last_update_button = '<a class="import-info" href="#file-last-import">' . zen_image (DIR_WS_IMAGES . 'icons/dbio_information.png', TEXT_IMPORT_LAST_STATS) . '</a>';
+        }
+?>
+                    <table id="file-actions">
+                        <tr>
+                            <td colspan="5" class="file-row-caption"><?php echo TEXT_CHOOSE_ACTION . ' ' . zen_draw_pull_down_menu ('file_action', $file_actions_array, $file_action, 'id="file-action"'); ?>&nbsp;&nbsp;<?php echo zen_draw_input_field ('go_button', DBIO_BUTTON_GO, 'title="' . DBIO_BUTTON_GO_TITLE . '" onclick="return checkSubmit ();"', false, 'submit') . "&nbsp;&nbsp;$last_update_button"; ?></td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><?php echo TEXT_FILE_ACTION_DELETE_INSTRUCTIONS; ?></td>
+                            <td id="file-delete-action"> <?php echo zen_draw_input_field ('delete_button', DBIO_BUTTON_DELETE, 'title="' . DBIO_BUTTON_DELETE_TITLE . '" onclick="return checkDelete ();"', false, 'submit'); ?></td>
+                        </tr>
+                        <tr id="file-row-header">
+                            <td class="file-item"><?php echo HEADING_CHOOSE_FILE; ?></td>
+                            <td class="file-item left"><span class="file-sorter<?php echo $sort_1a; ?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=1a'); ?>" title="<?php echo TEXT_SORT_NAME_ASC; ?>">&utrif;</a></span><?php echo HEADING_FILENAME; ?><span class="file-sorter<?php echo $sort_1d;?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=1d'); ?>" title="<?php echo TEXT_SORT_NAME_DESC; ?>">&dtrif;</a></span></td>
+                            <td class="file-item center"><span class="file-sorter<?php echo $sort_2a; ?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=2a'); ?>" title="<?php echo TEXT_SORT_SIZE_ASC; ?>">&utrif;</a></span><?php echo HEADING_BYTES; ?><span class="file-sorter<?php echo $sort_2d; ?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=2d'); ?>" title="<?php echo TEXT_SORT_SIZE_DESC; ?>">&dtrif;</a></span></td>
+                            <td class="file-item center"><span class="file-sorter<?php echo $sort_3a; ?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=3a'); ?>" title="<?php echo TEXT_SORT_DATE_ASC; ?>">&utrif;</a></span><?php echo HEADING_LAST_MODIFIED; ?><span class="file-sorter<?php echo $sort_3d; ?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=3d'); ?>" title="<?php echo TEXT_SORT_DATE_DESC; ?>">&dtrif;</a></span></td>
+                            <td class="file-item center"><?php echo HEADING_DELETE; ?></td>
+                        </tr>
+<?php
+        uasort ($dbio_files, function ($a, $b)
+        {
+            $sort_type = (isset ($_GET['sort'])) ? $_GET['sort'] : DBIO_FILE_SORT_DEFAULT;
+            switch ($sort_type) {
+                case '1d':          //-File-name, descending
+                    $compare_value = strcmp ($b['filename_only'], $a['filename_only']);
+                    break;
+                case '2a':          //-File-size, ascending
+                    $compare_value = ($a['bytes'] == $b['bytes']) ? 0 : (($a['bytes'] < $b['bytes']) ? -1 : 1);
+                    break;
+                case '2d':          //-File-size, descending
+                    $compare_value = ($a['bytes'] == $b['bytes']) ? 0 : (($a['bytes'] > $b['bytes']) ? -1 : 1);
+                    break;
+                case '3a':          //-File-date, ascending
+                    $compare_value = ($a['last_modified'] == $b['last_modified']) ? 0 : (($a['last_modified'] < $b['last_modified']) ? -1 : 1);
+                    break;
+                case '3d':          //-File-date, descending
+                    $compare_value = ($a['last_modified'] == $b['last_modified']) ? 0 : (($a['last_modified'] > $b['last_modified']) ? -1 : 1);
+                    break;
+                default:            //-File-name, ascending (default)
+                    $compare_value = strcmp ($a['filename_only'], $b['filename_only']);
+                    break;
+            }
+            return $compare_value;
+        });
+
+        $first_file = true;
+        foreach ($dbio_files as $name_hash => $file_info) {
+?>
+                        <tr class="file-row">
+                            <td class="file-item"><?php echo zen_draw_radio_field ('filename_hash', $name_hash, $file_info['selected'], '', 'onclick="checkFileOptions ();"'); ?></td>
+                            <td class="file-item left"><?php echo $file_info['filename_only']; ?></td>
+                            <td class="file-item center"><?php echo $file_info['bytes']; ?></td>
+                            <td class="file-item center"><?php echo date (DBIO_DEBUG_DATE_FORMAT, $file_info['last_modified']); ?></td>
+                            <td class="file-item center"><?php echo zen_draw_checkbox_field ('delete_hash[' . $name_hash . ']', '', false, '', 'class="delete-hash"'); ?></td>
+                        </tr>
+<?php
+            $first_file = false;
+        }
+?>
+                    </table>
+<?php
+    }
+?>
+                </fieldset>
             </form></td>
 <?php
     $config_check = $db->Execute ("SELECT configuration_group_id FROM " . TABLE_CONFIGURATION_GROUP . " WHERE configuration_group_title = 'Database I/O Manager Settings' LIMIT 1");
@@ -569,120 +692,6 @@ if (!$ok_to_proceed || $error_message !== '') {
                     </table>
                 </fieldset>
             </td>
-        </tr>
-        
-        <tr>        
-            <td id="file-list"><?php echo zen_draw_form ('file_form', FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action')) . 'action=file'); ?>
-                <fieldset>
-                    <legend><?php echo LEGEND_FILE_ACTIONS; ?></legend>
-<?php
-    if (!is_array ($dbio_files) || count ($dbio_files) == 0) {
-?>
-                    <p class="no-files"><?php echo sprintf (TEXT_NO_DBIO_FILES_AVAILABLE, $handler_name); ?></p>
-<?php
-    } else {
-        $file_actions_array = array (
-            array ( 'id' => 'none', 'text' => DBIO_ACTION_PLEASE_SELECT ),
-            array ( 'id' => 'split', 'text' => DBIO_ACTION_SPLIT ),
-            array ( 'id' => 'download', 'text' => DBIO_ACTION_DOWNLOAD ),
-        );
-        if (isset ($handler_info['export_only']) && $handler_info['export_only'] !== true) {
-            $file_actions_array[] = array ( 'id' => 'import-run', 'text' => DBIO_ACTION_FULL_IMPORT );
-            $file_actions_array[] = array ( 'id' => 'import-check', 'text' => DBIO_ACTION_CHECK_IMPORT );
-        }
-        $file_action = (isset ($_POST['file_action'])) ? $_POST['file_action'] : 'none';
-        
-        $sort_1a = $sort_1d = $sort_2a = $sort_2d = $sort_3a = $sort_3d = '';
-        $sort_type = 'sort_' . ((isset ($_GET['sort']) && in_array ($_GET['sort'], explode (',', '1a,1d,2a,2d,3a,3d'))) ? $_GET['sort'] : DBIO_FILE_SORT_DEFAULT);
-        $$sort_type = ' selected-sort';
-        $last_update_button = '';
-        if (isset ($_SESSION['dbio_import_result'])) {
-            $last_update_button = '<a class="import-info" href="#file-last-import">' . zen_image (DIR_WS_IMAGES . 'icons/dbio_information.png', TEXT_IMPORT_LAST_STATS) . '</a>';
-        }
-?>
-                    <table id="file-actions">
-                        <tr>
-                            <td colspan="5" class="file-row-caption"><?php echo TEXT_CHOOSE_ACTION . ' ' . zen_draw_pull_down_menu ('file_action', $file_actions_array, $file_action, 'id="file-action"'); ?>&nbsp;&nbsp;<?php echo zen_draw_input_field ('go_button', DBIO_BUTTON_GO, 'title="' . DBIO_BUTTON_GO_TITLE . '" onclick="return checkSubmit ();"', false, 'submit') . "&nbsp;&nbsp;$last_update_button"; ?></td>
-                        </tr>
-                        <tr>
-                            <td colspan="4"><?php echo TEXT_FILE_ACTION_DELETE_INSTRUCTIONS; ?></td>
-                            <td id="file-delete-action"> <?php echo zen_draw_input_field ('delete_button', DBIO_BUTTON_DELETE, 'title="' . DBIO_BUTTON_DELETE_TITLE . '" onclick="return checkDelete ();"', false, 'submit'); ?></td>
-                        </tr>
-                        <tr id="file-row-header">
-                            <td class="file-item"><?php echo HEADING_CHOOSE_FILE; ?></td>
-                            <td class="file-item left"><span class="file-sorter<?php echo $sort_1a; ?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=1a'); ?>" title="<?php echo TEXT_SORT_NAME_ASC; ?>">&utrif;</a></span><?php echo HEADING_FILENAME; ?><span class="file-sorter<?php echo $sort_1d;?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=1d'); ?>" title="<?php echo TEXT_SORT_NAME_DESC; ?>">&dtrif;</a></span></td>
-                            <td class="file-item"><span class="file-sorter<?php echo $sort_2a; ?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=2a'); ?>" title="<?php echo TEXT_SORT_SIZE_ASC; ?>">&utrif;</a></span><?php echo HEADING_BYTES; ?><span class="file-sorter<?php echo $sort_2d; ?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=2d'); ?>" title="<?php echo TEXT_SORT_SIZE_DESC; ?>">&dtrif;</a></span></td>
-                            <td class="file-item"><span class="file-sorter<?php echo $sort_3a; ?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=3a'); ?>" title="<?php echo TEXT_SORT_DATE_ASC; ?>">&utrif;</a></span><?php echo HEADING_LAST_MODIFIED; ?><span class="file-sorter<?php echo $sort_3d; ?>"><a href="<?php echo zen_href_link (FILENAME_DBIO_MANAGER, 'sort=3d'); ?>" title="<?php echo TEXT_SORT_DATE_DESC; ?>">&dtrif;</a></span></td>
-                            <td class="file-item"><?php echo HEADING_DELETE; ?></td>
-                        </tr>
-<?php
-        uasort ($dbio_files, function ($a, $b)
-        {
-            $sort_type = (isset ($_GET['sort'])) ? $_GET['sort'] : DBIO_FILE_SORT_DEFAULT;
-            switch ($sort_type) {
-                case '1d':          //-File-name, descending
-                    $compare_value = strcmp ($b['filename_only'], $a['filename_only']);
-                    break;
-                case '2a':          //-File-size, ascending
-                    $compare_value = ($a['bytes'] == $b['bytes']) ? 0 : (($a['bytes'] < $b['bytes']) ? -1 : 1);
-                    break;
-                case '2d':          //-File-size, descending
-                    $compare_value = ($a['bytes'] == $b['bytes']) ? 0 : (($a['bytes'] > $b['bytes']) ? -1 : 1);
-                    break;
-                case '3a':          //-File-date, ascending
-                    $compare_value = ($a['last_modified'] == $b['last_modified']) ? 0 : (($a['last_modified'] < $b['last_modified']) ? -1 : 1);
-                    break;
-                case '3d':          //-File-date, descending
-                    $compare_value = ($a['last_modified'] == $b['last_modified']) ? 0 : (($a['last_modified'] > $b['last_modified']) ? -1 : 1);
-                    break;
-                default:            //-File-name, ascending (default)
-                    $compare_value = strcmp ($a['filename_only'], $b['filename_only']);
-                    break;
-            }
-            return $compare_value;
-        });
-
-        $first_file = true;
-        foreach ($dbio_files as $name_hash => $file_info) {
-?>
-                        <tr class="file-row">
-                            <td class="file-item"><?php echo zen_draw_radio_field ('filename_hash', $name_hash, $file_info['selected'], '', 'onclick="checkFileOptions ();"'); ?></td>
-                            <td class="file-item left"><?php echo $file_info['filename_only']; ?></td>
-                            <td class="file-item"><?php echo $file_info['bytes']; ?></td>
-                            <td class="file-item"><?php echo date (DBIO_DEBUG_DATE_FORMAT, $file_info['last_modified']); ?></td>
-                            <td class="file-item"><?php echo zen_draw_checkbox_field ('delete_hash[' . $name_hash . ']', '', false, '', 'class="delete-hash"'); ?></td>
-                        </tr>
-<?php
-            $first_file = false;
-        }
-?>
-                    </table>
-<?php
-    }
-?>
-                </fieldset>
-            </form></td>
-            
-            <td id="upload-form"><?php echo zen_draw_form ('dbio', FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action')) . 'action=upload', 'post', 'enctype="multipart/form-data"'); ?>
-                <fieldset>
-                    <legend><?php echo LEGEND_FILE_UPLOADS; ?></legend>
-<?php
-    if (isset ($handler_info['export_only']) && $handler_info['export_only'] === true) {
-?>
-                    <p><?php echo sprintf (TEXT_UPLOAD_FOR_IMPORT_ONLY, $handler_name); ?></p>
-<?php
-    } else {
-?>
-                    <div id="upload-file">
-                        <p id="upload-instructions"><?php echo sprintf (TEXT_FILE_UPLOAD_INSTRUCTIONS, $handler_name, DBIO_SUPPORTED_FILE_EXTENSIONS); ?></p>
-                        <p id="upload-file-field"><?php echo TEXT_CHOOSE_FILE . ' ' . zen_draw_file_field ('upload_filename'); ?></p>
-                        <p id="upload-button" class="right"><?php echo zen_draw_input_field ('upload_button', BUTTON_UPLOAD, 'title="' . BUTTON_UPLOAD_TITLE . '"', false, 'submit'); ?></p>
-                    </div>
-<?php
-    }
-?>
-                </fieldset>
-            </form></td>
             
         </tr>
 
