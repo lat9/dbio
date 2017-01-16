@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2017, Vinos de Frutas Tropicales.
 //
 define ('DIR_FS_DBIO', DIR_FS_ADMIN . 'dbio/');
 define ('DIR_FS_DBIO_LOGS', DIR_FS_DBIO . 'logs');
@@ -18,6 +18,8 @@ define ('FILENAME_DBIO_MESSAGES', 'dbio_messages.php');
 // Database tables.
 //
 define ('TABLE_DBIO_STATS', DB_PREFIX . 'dbio_stats');
+define ('TABLE_DBIO_REPORTS', DB_PREFIX . 'dbio_reports');
+define ('TABLE_DBIO_REPORTS_DESCRIPTION', DB_PREFIX . 'dbio_reports_description');
 
 // -----
 // Admin-only values ...

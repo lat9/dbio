@@ -7,7 +7,7 @@ if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
 }
 
-define('DBIO_CURRENT_VERSION', '1.2.0-beta1');
+define('DBIO_CURRENT_VERSION', '1.2.0-beta2');
 define('DBIO_CURRENT_UPDATE_DATE', '2017-01-xx');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
@@ -72,6 +72,31 @@ if (!defined ('DBIO_MODULE_VERSION')) {
 //
 if (version_compare (DBIO_MODULE_VERSION, '1.1.0', '<')) {
     $db->Execute ("INSERT IGNORE INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( '<em>Products</em> Import:  Allow Duplicate Models?', 'DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS', 'No', 'When performing a <em>Products</em> import, should an imported record be allowed if it would create a product with a duplicated model number?  (Default: <b>No</b>)', $cgi, 100, now(), NULL, 'zen_cfg_select_option(array(\'Yes\', \'No\'),')");
+}
+
+if (version_compare (DBIO_MODULE_VERSION, '1.2.0', '<')) {
+    if (!$sniffer->table_exists (TABLE_DBIO_REPORTS)) {
+        $db->Execute (
+            "CREATE TABLE " . TABLE_DBIO_REPORTS . " (
+                dbio_reports_id int(11) NOT NULL auto_increment,
+                handler_name varchar(255) NOT NULL,
+                admin_id int(11) NOT NULL default '0',
+                field_info mediumblob,
+                PRIMARY KEY (dbio_reports_id),
+                KEY idx_dbio_handler_name (handler_name),
+                KEY idx_dbio_admin_id (admin_id)
+             ) ENGINE=MyISAM"
+        );
+        $db->Execute (
+            "CREATE TABLE " . TABLE_DBIO_REPORTS_DESCRIPTION . " (
+                dbio_reports_id int(11) NOT NULL,
+                language_id int(11) NOT NULL default '1',
+                report_name varchar(255) NOT NULL,
+                report_description text,
+                PRIMARY KEY (dbio_reports_id,language_id)
+             ) ENGINE=MyISAM"
+        );
+    }
 }
 
 // ----
