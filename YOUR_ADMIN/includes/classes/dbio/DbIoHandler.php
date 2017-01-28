@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2017, Vinos de Frutas Tropicales.
 //
 if (!defined ('IS_ADMIN_FLAG')) {
     exit ('Illegal access');
@@ -13,7 +13,7 @@ abstract class DbIoHandler extends base
 //                                    C O N S T A N T S 
 // ----------------------------------------------------------------------------------
     // ----- Interface Constants -----
-    const DBIO_HANDLER_VERSION   = '1.1.0';
+    const DBIO_HANDLER_VERSION   = '1.2.0';
     // ----- Field-Import Status Values -----
     const DBIO_IMPORT_OK         = '--ok--';
     const DBIO_NO_IMPORT         = '--none--';
@@ -31,6 +31,7 @@ abstract class DbIoHandler extends base
     const DBIO_FLAG_NONE         = 0;       //- No special handling
     const DBIO_FLAG_PER_LANGUAGE = 1;       //- Field is handled once per language
     const DBIO_FLAG_NO_EXPORT    = 2;       //- Possibly set during export-customization to indicate that the field should not be exported
+    const DBIO_FLAG_FIELD_SELECT = 4;       //- Indicates that an additional-header field has a companion select-field
     // ----- Handler key-configuration bit-switches -----
     const DBIO_KEY_IS_VARIABLE   = 1;       //- The associated key is mapped to an imported variable
     const DBIO_KEY_IS_FIXED      = 2;       //- The key is mapped to a fixed database field.
@@ -277,18 +278,28 @@ abstract class DbIoHandler extends base
     }
     
     // -----
-    // This function returns an associative array (indexed first by table-name) of the "customizable" fields associated with
-    // each table supported by the current handler.
+    // This function returns an associative array containing the 'keys' (i.e. required) and 'fields' (i.e. optional) available
+    // for export using the current handler.
     //
     final public function getCustomizableFields ()
     {
-        $customizable_tables = array ();
+        $customizable_fields = array ();
         if (isset ($this->config['allow_export_customizations']) && $this->config['allow_export_customizations'] === true) {
+            $customizable_fields['keys'] = array ();
+            foreach ($this->config['keys'] as $table_name => $table_config) {
+                foreach ($table_config as $field_name => $field_config) {
+                    if ($field_name == 'alias' || $field_name == 'capture_key_value') {
+                        continue;
+                    }
+                    $customizable_fields['keys'][] = $field_name;
+                }
+            }
+            
+            $customizable_fields['fields'] = array ();
             foreach ($this->tables as $table_name => $table_config) {
-                $customizable_tables[$table_name] = array ();
                 foreach ($table_config['fields'] as $field_name => $field_config) {
-                    if ($field_config['include_in_export'] === true) {
-                        $customizable_tables[$table_name][] = $field_name;
+                    if ($field_config['include_in_export'] === true && !in_array ($field_name, $customizable_fields['keys'])) {
+                        $customizable_fields['fields'][] = $field_name;
                     }
                 }
             }
@@ -297,73 +308,34 @@ abstract class DbIoHandler extends base
             // If the handler has set "additional_headers", i.e. fields that require special handling, add them at the end.
             //
             if (isset ($this->config['additional_headers'])) {
-                $customizable_tables['additional_headers'] = array ();
                 foreach ($this->config['additional_headers'] as $field_name => $field_config) {
-                    $customizable_tables['additional_headers'][] = str_replace ('v_', '', $field_name);
+                    $customizable_fields['fields'][] = str_replace ('v_', '', $field_name);
                 }
             }
         }
-        return $customizable_tables;
+        return $customizable_fields;
     }
     
     // -----
     // This function, used by the export-customization within the admin's Tools->Database I/O Manager, allows customization of
     // the fields exported by any DbIo handler.
     //
-    // $customized_tables:  An associative array, indexed by the database table name (as output by getCustomizableFields), that
-    // contains a "simple" array of those fields TO KEEP in the export.
+    // $customized_fields:  A regular array containing the fields that should be included in the subsequent export.
     //
     // Notes:
     // 1) This function CANNOT be overridden!
     // 2) Calling this function with an empty array essentially disables the table's export!
     // 3) For proper operation, this function needs to be called prior to any call to the class' exportInitialize function!
     //
-    final public function exportCustomizeFields ($customized_tables)
+    final public function exportCustomizeFields ($customized_fields)
     {
         $customized = false;
-        if (is_array ($customized_tables) && isset ($this->config['allow_export_customizations']) && $this->config['allow_export_customizations'] === true) {
-            $this->debugMessage ("exportCustomizeFields:\n" . print_r ($customized_tables, true));
-            foreach ($customized_tables as $config_table_name => $fields_array) {
-                if (is_array ($fields_array) && ($config_table_name == 'additional_headers' || isset ($this->config['tables'][$config_table_name]))) {
-                    if ($config_table_name == 'additional_headers' && isset ($this->config['additional_headers'])) {
-                        foreach ($this->config['additional_headers'] as $field_name => &$field_flags) {
-                            if (!in_array (substr ($field_name, 2), $fields_array)) {
-                                $field_flags |= self::DBIO_FLAG_NO_EXPORT;
-                            }
-                        }
-                    } else {    
-                        // -----
-                        // Ensure that any "keys" required by the handler are part of the export, unconditionally!
-                        //
-                        if (isset ($this->config['keys']) && isset ($this->config['keys'][$config_table_name])) {
-                            foreach ($this->config['keys'][$config_table_name] as $current_key => $key_configuration) {
-                                if ($current_key == 'alias' || $current_key == 'capture_key_value') {
-                                    continue;
-                                }
-                                if (!isset ($fields_array[$current_key])) {
-                                    array_unshift ($fields_array, $current_key);
-                                }
-                            }
-                        }
-                        
-                        // -----
-                        // Cycle through the table's fields, marking a field as "exportable" only if it's currently exportable and its name appears within the customizations' array.
-                        //
-                        foreach ($this->tables[$config_table_name]['fields'] as $field_name => &$field_values) {
-                            if ($field_values['include_in_export'] === true) {
-                                $field_values['include_in_export'] = in_array ($field_name, $fields_array);
-                            }
-                        }
-                        unset ($field_values);
-                    }
-                }
-            }
-            // -----
-            // Indicate that the customization was successfully applied.
-            //
+        if (is_array ($customized_fields) && isset ($this->config['allow_export_customizations']) && $this->config['allow_export_customizations'] === true) {
+            $this->customized_fields = $customized_fields;
             $customized = true;
-        }  
-        $this->debugMessage ("exportCustomizeFields, on return:\n" . var_export ($this->tables, true) . ((isset ($this->config['additional_headers'])) ? var_export ($this->config['additional_headers'], true) : ''));
+        }
+        $this->debugMessage ("exportCustomizeFields, returning ($customized):\n" . print_r ($customized_fields, true));
+        
         return $customized;
     }
     
@@ -400,95 +372,19 @@ abstract class DbIoHandler extends base
             // requires the breaking-down of the current DbIo handler's configuration into data elements
             // that can be easily parsed during each record's output.
             //
-            $initialized = true;
             $this->export_language = $language;
             $this->select_clause = $this->from_clause = $this->where_clause = $this->order_by_clause = '';
             $this->headers = array ();
             $this->saved_data = array ();
             
-            foreach ($this->config['tables'] as $config_table_name => $config_table_info) {
-                if (!isset ($config_table_info['no_from_clause'])) {
-                    $this->from_clause .= $config_table_name;
-                    $table_prefix = (isset ($config_table_info['alias']) && $config_table_info['alias'] != '') ? ($config_table_info['alias'] . '.') : '';
-                    if ($table_prefix != '') {
-                        $this->from_clause .= ' AS ' . $config_table_info['alias'];
-                    }
-                    if (isset ($config_table_info['join_clause'])) {
-                        $this->from_clause .= ' ' . $config_table_info['join_clause'];
-                    }
-                    $this->from_clause .= ', ';
-                }
-                
-                if (!isset ($this->config['fixed_headers'])) {
-                    if ($this->tables[$config_table_name]['uses_language']) {
-                        $first_language = true;
-                        $this->config['tables'][$config_table_name]['select'] = '';
-                        foreach ($this->languages as $language_code => $language_id) {
-                            if ($language !== 'all' && $language != $language_code) {
-                                continue;
-                            }
-                            foreach ($this->tables[$config_table_name]['fields'] as $current_field => $field_info) {
-                                if ($field_info['include_in_export'] !== false) {
-                                    if ($first_language) {
-                                        $this->select_clause .= "$table_prefix$current_field, ";
-                                        $this->config['tables'][$config_table_name]['select'] .= "$current_field, ";
-                                    }
-                                    if ($field_info['include_in_export'] === true) {
-                                        $this->headers[] = 'v_' . $current_field . '_' . $language_code;
-                                    }
-                                }
-                            }
-                            $first_language = false;
-                      
-                        }
-                        $this->config['tables'][$config_table_name]['select'] = mb_substr ($this->config['tables'][$config_table_name]['select'], 0, -2);
-                    
-                    } else {
-                        foreach ($this->tables[$config_table_name]['fields'] as $current_field => $field_info) {
-                            if ($field_info['include_in_export'] !== false) {
-                                $this->select_clause .= "$table_prefix$current_field, ";
-                                if ($field_info['include_in_export'] === true) {
-                                    $this->headers[] = 'v_' . $current_field;
-                                }
-                            }
-                        }
-                    }
-                }
+            if (isset ($this->customized_fields) && is_array ($this->customized_fields)) {
+                $initialized = $this->exportInitializeCustomized ();
+            } else {
+                $initialized = $this->exportInitializeAll ();
             }
             
-            if (isset ($this->config['fixed_headers'])) {
-                $no_header_array = (isset ($this->config['fixed_fields_no_header']) && is_array ($this->config['fixed_fields_no_header'])) ? $this->config['fixed_fields_no_header'] : array ();
-                $current_language_code = ($this->export_language == 'all') ? $this->first_language_code : $this->export_language;
-                foreach ($this->config['fixed_headers'] as $field_name => $table_name) {
-                    $field_alias = (isset ($this->config['tables'][$table_name]['alias'])) ? ($this->config['tables'][$table_name]['alias'] . '.') : '';
-                    $this->select_clause .= "$field_alias$field_name, ";
-                    if (!in_array ($field_name, $no_header_array)) {
-                        $language_suffix = '';
-                        if (isset ($this->config['tables'][$table_name]['language_field'])) {
-                            $language_suffix = "_$current_language_code";
-                        }
-                        $this->headers[] = "v_$field_name$language_suffix";
-                    }
-                }
-                $this->where_clause = $this->config['export_where_clause'];
-                $this->order_by_clause = $this->config['export_order_by_clause'];
-            }
-            
-            $this->from_clause = ($this->from_clause == '') ? '' : mb_substr ($this->from_clause, 0, -2);
-            $this->select_clause = ($this->select_clause == '') ? '' : mb_substr ($this->select_clause, 0, -2);
-            
-            if (isset ($this->config['additional_headers']) && is_array ($this->config['additional_headers'])) {
-                foreach ($this->config['additional_headers'] as $header_value => $flags) {
-                    if (!($flags & self::DBIO_FLAG_NO_EXPORT)) {
-                        if ($flags & self::DBIO_FLAG_PER_LANGUAGE) {
-                            foreach ($this->languages as $language_code => $language_id) {
-                                $this->headers[] = $header_value . '_' . $language_code;
-                            }
-                        } else {
-                            $this->headers[] = $header_value;
-                        }
-                    }
-                }
+            if (isset ($this->config['supports_dbio_commands']) && $this->config['supports_dbio_commands'] === true) {
+                $this->headers[] = 'v_dbio_command';
             }
         }
         if ($initialized) {
@@ -496,6 +392,7 @@ abstract class DbIoHandler extends base
         }
         $this->debugMessage ("exportInitialize ($language), " . (($initialized) ? 'Successful' : ('Unsuccessful (' . $this->message . ')')) . 
                              "\nTables:\n" . print_r ($this->tables, true) . 
+                             "\nAdditional Headers\n" . print_r ($this->additional_headers, true) .
                              "\nHeaders:\n" . print_r ($this->headers, true));
         return $initialized;
     }
@@ -1039,6 +936,183 @@ abstract class DbIoHandler extends base
     // construction to have the handler set its database-related configuration.
     //
     abstract protected function setHandlerConfiguration ();
+    
+    protected function exportInitializeAll ()
+    {  
+        foreach ($this->config['tables'] as $config_table_name => $config_table_info) {
+            $table_prefix = $this->exportInitializeFromClause ($config_table_name, $config_table_info);
+            
+            if (!isset ($this->config['fixed_headers'])) {
+                if ($this->tables[$config_table_name]['uses_language']) {
+                    $first_language = true;
+                    foreach ($this->languages as $language_code => $language_id) {
+                        if ($this->export_language !== 'all' && $this->export_language != $language_code) {
+                            continue;
+                        }
+                        foreach ($this->tables[$config_table_name]['fields'] as $current_field => $field_info) {
+                            if ($field_info['include_in_export'] !== false) {
+                                if ($first_language) {
+                                    $this->select_clause .= "$table_prefix$current_field, ";
+                                }
+                                if ($field_info['include_in_export'] === true) {
+                                    $this->headers[] = 'v_' . $current_field . '_' . $language_code;
+                                }
+                            }
+                        }
+                        $first_language = false;
+                    }
+                } else {
+                    foreach ($this->tables[$config_table_name]['fields'] as $current_field => $field_info) {
+                        if ($field_info['include_in_export'] !== false) {
+                            $this->select_clause .= "$table_prefix$current_field, ";
+                            if ($field_info['include_in_export'] === true) {
+                                $this->headers[] = 'v_' . $current_field;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (isset ($this->config['fixed_headers'])) {
+            $no_header_array = (isset ($this->config['fixed_fields_no_header']) && is_array ($this->config['fixed_fields_no_header'])) ? $this->config['fixed_fields_no_header'] : array ();
+            $current_language_code = ($this->export_language == 'all') ? $this->first_language_code : $this->export_language;
+            foreach ($this->config['fixed_headers'] as $field_name => $table_name) {
+                $field_alias = (isset ($this->config['tables'][$table_name]['alias'])) ? ($this->config['tables'][$table_name]['alias'] . '.') : '';
+                $this->select_clause .= "$field_alias$field_name, ";
+                if (!in_array ($field_name, $no_header_array)) {
+                    $language_suffix = '';
+                    if (isset ($this->config['tables'][$table_name]['language_field'])) {
+                        $language_suffix = "_$current_language_code";
+                    }
+                    $this->headers[] = "v_$field_name$language_suffix";
+                }
+            }
+            $this->where_clause = $this->config['export_where_clause'];
+            $this->order_by_clause = $this->config['export_order_by_clause'];
+        }
+        
+        $this->from_clause = ($this->from_clause == '') ? '' : mb_substr ($this->from_clause, 0, -2);
+        $this->select_clause = ($this->select_clause == '') ? '' : mb_substr ($this->select_clause, 0, -2);
+        
+        if (isset ($this->config['additional_headers']) && is_array ($this->config['additional_headers'])) {
+            foreach ($this->config['additional_headers'] as $header_value => $flags) {
+                if (!($flags & self::DBIO_FLAG_NO_EXPORT)) {
+                    if ($flags & self::DBIO_FLAG_PER_LANGUAGE) {
+                        foreach ($this->languages as $language_code => $language_id) {
+                            $this->headers[] = $header_value . '_' . $language_code;
+                        }
+                    } else {
+                        $this->headers[] = $header_value;
+                    }
+                }
+            }
+        }
+        return true;  //-Indicate that the export has been successfully initialized
+    }
+    
+    protected function exportInitializeCustomized ()
+    {
+        if (isset ($this->config['fixed_headers'])) {
+            $initialized = false;
+            trigger_error ("Handler configuration error; fixed_headers is incompatible with customized exports.", E_USER_WARNING);
+        } else {
+            $initialized = true;
+            $available_fields = array ();
+            foreach ($this->config['tables'] as $config_table_name => $config_table_info) {
+                $table_prefix = $this->exportInitializeFromClause ($config_table_name, $config_table_info);
+                
+                $uses_language = $this->tables[$config_table_name]['uses_language'];
+                
+                foreach ($this->tables[$config_table_name]['fields'] as $current_field => $field_info) {
+                    if ($field_info['include_in_export'] !== false) {
+                        $available_fields[$current_field] = array (
+                            'uses_language' => $uses_language,
+                            'select' => $table_prefix . $current_field,
+                            'include_header' => ($field_info['include_in_export'] === true),
+                            'is_additional_header' => false,
+                        );
+                    }
+                }
+            }
+ 
+            if (isset ($this->config['additional_headers']) && is_array ($this->config['additional_headers'])) {
+                foreach ($this->config['additional_headers'] as $header_value => $flags) {
+                    if (!($flags & self::DBIO_FLAG_NO_EXPORT)) {
+                        $field_name = str_replace ('v_', '', $header_value);
+                        $this->config['additional_headers'][$header_value] |= self::DBIO_FLAG_NO_EXPORT;
+                        $available_fields[$field_name] = array (
+                            'uses_language' => (boolean)($flags & self::DBIO_FLAG_PER_LANGUAGE),
+                            'select' => ($flags & self::DBIO_FLAG_FIELD_SELECT) ? $this->config['additional_header_select'][$header_value] : false,
+                            'include_header' => true,
+                            'is_additional_header' => true,
+                        );
+                    }
+                }
+            }
+            
+            foreach ($this->customized_fields as $current_field) {
+                if (isset ($available_fields[$current_field])) {
+                    $field_info = $available_fields[$current_field];
+                    if ($field_info['uses_language']) {
+                        $first_language = true;
+                        foreach ($this->languages as $language_code => $language_id) {
+                            if ($this->export_language !== 'all' && $this->export_language != $language_code) {
+                                continue;
+                            }
+                            if ($first_language) {
+                                if ($field_info['select'] !== false) {
+                                    $this->select_clause .= ($field_info['select'] . ', ');
+                                }
+                                if ($field_info['is_additional_header']) {
+                                    $this->config['additional_headers']['v_' . $current_field] &= ~self::DBIO_FLAG_NO_EXPORT;
+                                }
+                            }
+                            if ($field_info['include_header']) {
+                                $this->headers[] = 'v_' . $current_field . '_' . $language_code;
+                            }
+                            $first_language = false;
+                        }
+                    } else {
+                        if ($field_info['select'] !== false) {
+                            $this->select_clause .= ($field_info['select'] . ', ');
+                        }
+                        if ($field_info['include_header']) {
+                            $this->headers[] = 'v_' . $current_field;
+                        }
+                        if ($field_info['is_additional_header']) {
+                            $this->config['additional_headers']['v_' . $current_field] &= ~self::DBIO_FLAG_NO_EXPORT;
+                        }
+                    }
+                }
+            }
+            $this->from_clause = ($this->from_clause == '') ? '' : mb_substr ($this->from_clause, 0, -2);
+            $this->select_clause = ($this->select_clause == '') ? '' : mb_substr ($this->select_clause, 0, -2);
+        }
+        $this->debugMessage (
+            "exportInitializeCustomized" .
+            "\nCustomized Fields:\n" . print_r ($this->customized_fields, true) . 
+            "\nAvailable Fields\n" . print_r ($available_fields, true)
+        );
+        return $initialized;
+    }
+    
+    protected function exportInitializeFromClause ($config_table_name, $config_table_info)
+    {
+        $table_prefix = '';
+        if (!isset ($config_table_info['no_from_clause'])) {
+            $this->from_clause .= $config_table_name;
+            $table_prefix = (isset ($config_table_info['alias']) && $config_table_info['alias'] != '') ? ($config_table_info['alias'] . '.') : '';
+            if ($table_prefix != '') {
+                $this->from_clause .= ' AS ' . $config_table_info['alias'];
+            }
+            if (isset ($config_table_info['join_clause'])) {
+                $this->from_clause .= ' ' . $config_table_info['join_clause'];
+            }
+            $this->from_clause .= ', ';
+        }
+        return $table_prefix;
+    }
     
     // -----
     // This function, provided by the detailed handler when it's set 'supports_dbio_commands', enables a handler to support

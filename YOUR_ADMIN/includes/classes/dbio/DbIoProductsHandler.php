@@ -18,7 +18,7 @@ class DbIoProductsHandler extends DbIoHandler
         DbIoHandler::loadHandlerMessageFile ('Products'); 
         return array (
             'version' => '1.1.1',
-            'handler_version' => '1.1.0',
+            'handler_version' => '1.2.0',
             'include_header' => true,
             'export_only' => false,
             'allow_export_customizations' => true,
@@ -235,8 +235,11 @@ class DbIoProductsHandler extends DbIoHandler
         );
         $this->config['additional_headers'] = array (
             'v_manufacturers_name' => self::DBIO_FLAG_NONE,
-            'v_tax_class_title' => self::DBIO_FLAG_NONE,
+            'v_tax_class_title' => self::DBIO_FLAG_FIELD_SELECT,
             'v_categories_name' => self::DBIO_FLAG_NONE,
+        );
+        $this->config['additional_header_select'] = array (
+            'v_tax_class_title' => 'p.products_tax_class_id'
         );
     }  
     
