@@ -25,3 +25,4 @@ define ('TABLE_DBIO_REPORTS_DESCRIPTION', DB_PREFIX . 'dbio_reports_description'
 // Admin-only values ...
 //
 define ('FILENAME_DBIO_MANAGER', 'dbio_manager');
+define ('FILENAME_DBIO_CUSTOMIZE', 'dbio_customize');

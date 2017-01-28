@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2016, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2017, Vinos de Frutas Tropicales.
 //
 if (!defined ('IS_ADMIN_FLAG')) { 
   exit ('Illegal access');
@@ -10,10 +10,10 @@ if (!defined ('IS_ADMIN_FLAG')) {
 
 class DbIo extends base 
 {
-    public function __construct ($dbio_type = '') 
+    public function __construct ($dbio_type = '', $file_suffix = '') 
     {
         $this->message = '';
-        $this->file_suffix = date ('Ymd-His-') . mt_rand (1000,999999);
+        $this->file_suffix = (($file_suffix == '') ? '' : ($file_suffix . '.')) . date ('Ymd-His-') . mt_rand (1000,999999);
         
         $message_file_name = DIR_FS_DBIO_LANGUAGES . $_SESSION['language'] . '/dbio/' . FILENAME_DBIO_MESSAGES;
         if (!file_exists ($message_file_name)) {
@@ -174,6 +174,8 @@ class DbIo extends base
                     }
                     rewind ($this->export_fp);
                     fpassthru ($this->export_fp);
+                    fclose ($this->export_fp);
+                    exit ();
                 }
                 if ($this->export_fp !== false) {
                     fclose ($this->export_fp);

@@ -7,7 +7,7 @@ if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
 }
 
-define('DBIO_CURRENT_VERSION', '1.2.0-beta2');
+define('DBIO_CURRENT_VERSION', '1.2.0-beta3');
 define('DBIO_CURRENT_UPDATE_DATE', '2017-01-xx');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
@@ -80,7 +80,10 @@ if (version_compare (DBIO_MODULE_VERSION, '1.2.0', '<')) {
             "CREATE TABLE " . TABLE_DBIO_REPORTS . " (
                 dbio_reports_id int(11) NOT NULL auto_increment,
                 handler_name varchar(255) NOT NULL,
+                report_name varchar(32) NOT NULL,
                 admin_id int(11) NOT NULL default '0',
+                last_updated_by int(11) NOT NULL default '0',
+                last_updated datetime default '0001-01-01 00:00:00',
                 field_info mediumblob,
                 PRIMARY KEY (dbio_reports_id),
                 KEY idx_dbio_handler_name (handler_name),
@@ -91,7 +94,6 @@ if (version_compare (DBIO_MODULE_VERSION, '1.2.0', '<')) {
             "CREATE TABLE " . TABLE_DBIO_REPORTS_DESCRIPTION . " (
                 dbio_reports_id int(11) NOT NULL,
                 language_id int(11) NOT NULL default '1',
-                report_name varchar(255) NOT NULL,
                 report_description text,
                 PRIMARY KEY (dbio_reports_id,language_id)
              ) ENGINE=MyISAM"
@@ -128,10 +130,11 @@ if (!$sniffer->field_exists (TABLE_DBIO_STATS, 'report_name')) {
 if (function_exists ('zen_page_key_exists')) {
     if (!zen_page_key_exists ('toolsDbIo')) {
         zen_register_admin_page ('toolsDbIo', 'BOX_TOOLS_DBIO', 'FILENAME_DBIO_MANAGER', '', 'tools', 'Y', init_dbio_next_sort ('tools'));
-      
     }
     if (!zen_page_key_exists ('configDbIo')) {
         zen_register_admin_page('configDbIo', 'BOX_CONFIGURATION_DBIO', 'FILENAME_CONFIGURATION', "gID=$cgi", 'configuration', 'Y', init_dbio_next_sort ('configuration'));
-      
+    }
+    if (!zen_page_key_exists ('toolsDbIoCustomize')) {
+        zen_register_admin_page('toolsDbIoCustomize', 'BOX_TOOLS_DBIO_CUSTOMIZE', 'FILENAME_DBIO_CUSTOMIZE', '', 'tools', 'N', init_dbio_next_sort ('tools'));
     }
 }
