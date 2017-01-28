@@ -52,8 +52,11 @@ define ('BUTTON_UPLOAD_TITLE', 'Click here to upload the selected file.');
 define ('TEXT_FILE_ACTION_DELETE_INSTRUCTIONS', 'You can also remove one or more of the reports below from the server. Select the file(s) to be deleted, then click the &quot;Delete&quot; button.');
 
 define ('TEXT_SHOW_HIDE_FILTERS', 'Click to show (or hide) the filters for <strong>all</strong> handlers.  When the filters are <em>hidden</em>, then they do not apply to the current export.');
+define ('TEXT_BUTTON_MANAGE_CUSTOMIZATION', 'Manage Templates');
+define ('LABEL_CHOOSE_CUSTOMIZATION', 'Choose Template:');
+define ('TEXT_ALL_FIELDS', 'All Fields');
+define ('TEXT_ALL_FIELDS_DESCRIPTION', 'The current export will include all fields supported by the current handler.');
 
-define ('DBIO_FORMAT_CONFIGURATION_ERROR', 'The <em>DbIo Manager</em> does not support your installation, due to a mismatch between your DB_CHARSET (%1$s) and CHARSET (%2$s) values.');
 define ('DBIO_FORM_SUBMISSION_ERROR', 'There were some missing values for your form\'s submission, please try again.');
 
 define ('TEXT_NO_DBIO_FILES_AVAILABLE', 'No import/export files are available for the <em>%s</em> handler.');
@@ -101,6 +104,7 @@ define ('WARNING_FILE_TOO_SMALL_TO_SPLIT', 'The file (%1$s) contains too few rec
 define ('FILE_SUCCESSFULLY_SPLIT', 'The file (%1$s) was successfully split into %2$u chunks.'); 
 
 define ('ERROR_FILE_IS_EXPORT_ONLY', 'The file (%s) was not imported.  It is associated with an <em>export-only</em> report.');
+define ('ERROR_UNKNOWN_TEMPLATE', 'The DbIo template you requested could not be found; please try again.');
 define ('DBIO_MGR_EXPORT_SUCCESSFUL', 'Your <em>%1$s</em> export was successfully completed into %2$s, creating %3$u records.');
 
 define ('ERROR_NO_FILE_TO_UPLOAD', 'No file was selected for the upload.  Please try again.');
