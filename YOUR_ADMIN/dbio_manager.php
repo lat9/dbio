@@ -102,16 +102,30 @@ if (!$ok_to_proceed) {
             case 'export':
                 $_SESSION['dbio_show_filters'] = isset ($_POST['show_filters']);
                 if (isset ($_POST['export_button'])) {
-                    unset ($dbio);
-                    $dbio = new DbIo ($handler_name);
+                    $report_suffix = '';
+                    $customized_fields = false;
+                    if (isset ($_POST['custom']) && $_POST['custom'] != 0) {
+                        $custom_info = $db->Execute (
+                            "SELECT report_name, field_info
+                              FROM " . TABLE_DBIO_REPORTS . "
+                             WHERE dbio_reports_id = " . (int)$_POST['custom'] . "
+                             LIMIT 1"
+                        );
+                        if ($custom_info->EOF) {
+                            $messageStack->add_session (ERROR_UNKNOWN_TEMPLATE, 'error');
+                            zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
+                        }
+                        $report_suffix = $custom_info->fields['report_name'];
+                        $customized_fields = $custom_info->fields['field_info'];
+                        unset ($custom_info);
+                    }
                     
-                    // -----
-                    // Export-field customization will happen here, once integrated.
-                    //
-                    /*
-                    $handler_tables = $dbio->handler->getCustomizableFields ();
-                    $dbio->handler->exportCustomizeFields ($handler_tables);
-                    */
+                    unset ($dbio);
+                    $dbio = new DbIo ($handler_name, $report_suffix);
+                    
+                    if ($customized_fields !== false) {
+                        $dbio->handler->exportCustomizeFields (json_decode ($customized_fields));
+                    }
                     
                     $export_info = $dbio->dbioExport ('file');
                     if ($export_info['status'] === false) {
@@ -333,7 +347,7 @@ legend { background-color: #fff8dc; padding: 0.3em; border: 1px solid #e5e5e5; }
 #message.error { border-color: red; }
 #message.info { border-color: green; }
 #reports-instr { padding-bottom: 0.5em; }
-#export-form, #upload-form, #file-list { vertical-align: top; }
+#export-form, #upload-form, #file-list, #configuration { vertical-align: top; }
 #export-form form, #upload-form form { display: block; }
 #configuration { width: 25%; }
 #submit-report { text-align: right; margin: 0.5em 0; }
@@ -342,6 +356,8 @@ legend { background-color: #fff8dc; padding: 0.3em; border: 1px solid #e5e5e5; }
 #file-list, #export-form { border-right: 1px solid #e5e5e5; }
 #file-row-header { background-color: #fbf6d9; }
 .reports-details-row, #submit-report { border-top: 1px solid #ebebeb; margin-top: 0.5em; padding-top: 0.5em; }
+#export-customize { float: left; text-align: left;}
+#export-button { float: right; text-align: right; }
 
 .centered { text-align: center; }
 .right { text-align: right; }
@@ -370,7 +386,7 @@ legend { background-color: #fff8dc; padding: 0.3em; border: 1px solid #e5e5e5; }
 .filter-subfield { }
 
 .file-row:nth-child(odd) { background-color: #fbf6d9; }
-.file-row:hover { background-color: #ccccff; }
+.file-row:hover { background-color: #ebebeb; }
 .file-sorter a { font-size: 20px; text-decoration: none; line-height: 11px; color: #599659; }
 .file-sorter.selected-sort a, .flii-error .flii-item { color: red; }
 div.export-only span { color: red; font-weight: bold; }
@@ -523,7 +539,49 @@ if (!$ok_to_proceed || $error_message !== '') {
 ?>
                 </fieldset>
                 <div id="submit-report">
+                    <div id="export-customize">
+<?php
+    // -----
+    // Check to see if the current handler supports export customizations and, if so, present a dropdown list to the admin to choose from and
+    // a button to create a new customization.
+    //
+    unset ($dbio);
+    $dbio = new DbIo ($handler_name);
+    $customization_choices = array ();
+    $customizable_fields = $dbio->handler->getCustomizableFields ();
+    if (count ($customizable_fields) != 0) {
+        $customizations = $db->Execute (
+            "SELECT dr.dbio_reports_id, dr.report_name, drd.report_description
+               FROM " . TABLE_DBIO_REPORTS . " dr, " . TABLE_DBIO_REPORTS_DESCRIPTION . " drd
+              WHERE dr.handler_name = '$handler_name'
+                AND dr.admin_id IN (0, " . $_SESSION['admin_id'] . ")
+                AND dr.dbio_reports_id = drd.dbio_reports_id
+                AND drd.language_id = " . $_SESSION['languages_id'] . "
+           ORDER BY dr.report_name"
+        );
+        $customization_choices[] = array (
+            'id' => 0,
+            'text' => TEXT_ALL_FIELDS,
+            'desc' => TEXT_ALL_FIELDS_DESCRIPTION,
+        );
+        while (!$customizations->EOF) {
+            $customization_choices[] = array (
+                'id' => $customizations->fields['dbio_reports_id'],
+                'text' => $customizations->fields['report_name'],
+                'desc' => $customizations->fields['report_description'],
+            );
+            $customizations->MoveNext ();
+        }
+        unset ($customizations);
+?>
+                        <strong><?php echo LABEL_CHOOSE_CUSTOMIZATION; ?></strong> <?php echo zen_draw_pull_down_menu ('custom', $customization_choices, 0, 'id="custom-change" onchange="changeDesc();"') . '&nbsp;&nbsp;' . zen_draw_input_field ('customize', TEXT_BUTTON_MANAGE_CUSTOMIZATION, 'onclick="window.location.href=\'' . zen_href_link (FILENAME_DBIO_CUSTOMIZE) . '\'"', false, 'button'); ?>
+                        <p id="custom-desc"><?php echo htmlentities ($customization_choices[0]['desc'], ENT_COMPAT, CHARSET); ?></p>
+<?php
+    }
+?>
+                    </div>
                     <div id="export-button"><?php echo zen_draw_input_field ('export_button', BUTTON_EXPORT, 'title="' . BUTTON_EXPORT_TITLE . '"', false, 'submit'); ?></div>
+                    <div class="clearBoth"></div>
                 </div>
             </form></td>
             
@@ -625,7 +683,7 @@ if (!$ok_to_proceed || $error_message !== '') {
         foreach ($dbio_files as $name_hash => $file_info) {
 ?>
                         <tr class="file-row">
-                            <td class="file-item"><?php echo zen_draw_radio_field ('filename_hash', $name_hash, $file_info['selected'], '', 'onclick="checkFileOptions ();"'); ?></td>
+                            <td class="file-item"><?php echo zen_draw_radio_field ('filename_hash', $name_hash, $file_info['selected']); ?></td>
                             <td class="file-item left"><?php echo $file_info['filename_only']; ?></td>
                             <td class="file-item center"><?php echo $file_info['bytes']; ?></td>
                             <td class="file-item center"><?php echo date (DBIO_DEBUG_DATE_FORMAT, $file_info['last_modified']); ?></td>
@@ -793,7 +851,16 @@ if (version_compare ($zen_cart_version, '1.5.5', '<')) {
         return submitOK;
     }
     
-    function checkFileOptions ()
+    var dbioDescriptions = [];
+<?php
+foreach ($customization_choices as $index => $info) {
+?>
+    dbioDescriptions[<?php echo $info['id']; ?>] = '<?php echo addslashes ($info['desc']); ?>';
+<?php
+}
+?>
+    
+    function changeDescription ()
     {
     }
   // -->
