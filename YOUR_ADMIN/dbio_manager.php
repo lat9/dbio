@@ -71,7 +71,22 @@ if (!$ok_to_proceed) {
         //
         $dbio_files = array ();
         if ($action == 'file' || $action == '') {
-            $files_check = glob (DIR_FS_DBIO . "dbio.$handler_name.*.csv");
+            $files_check = false;
+            $csv_check = glob (DIR_FS_DBIO . "dbio.$handler_name.*.csv");
+            if (is_array ($csv_check)) {
+                $files_check = $csv_check;
+                unset ($csv_check);
+            }
+            $log_check = glob (DIR_FS_DBIO . "logs/dbio-$handler_name-*.log");
+            if (is_array ($log_check)) {
+                if (is_array ($files_check)) {
+                    $files_check = array_merge ($files_check, $log_check);
+                } else {
+                    $files_check = $log_check;
+                }
+                unset ($log_check);
+            }
+            
             if (is_array ($files_check)) {
                 foreach ($files_check as $current_csv_file) {
                     $file_stats = stat ($current_csv_file);
@@ -448,8 +463,7 @@ if (!$ok_to_proceed || $error_message !== '') {
 <?php
                 foreach ($handler_filters as $field_name => $field_parms) {
                     if (!isset ($field_parms['type']) || !isset ($field_parms['label'])) {
-                        trigger_error ("DbIo: Missing type and/or label for $handler_name::$field_name export filters:\n" . print_r ($field_parms, true), E_USER_WARNING);
-                        
+                        trigger_error ("DbIo: Missing type and/or label for $handler_name::$field_name export filters:\n" . print_r ($field_parms, true), E_USER_WARNING); 
                     } else {
                         $extra_field_class = '';
                         $dropdown_options = '';
@@ -551,7 +565,7 @@ if (!$ok_to_proceed || $error_message !== '') {
     $customizable_fields = $dbio->handler->getCustomizableFields ();
     if (count ($customizable_fields) != 0) {
         $customizations = $db->Execute (
-            "SELECT dr.dbio_reports_id, dr.report_name, drd.report_description
+            "SELECT dr.dbio_reports_id, dr.admin_id, dr.report_name, drd.report_description
                FROM " . TABLE_DBIO_REPORTS . " dr, " . TABLE_DBIO_REPORTS_DESCRIPTION . " drd
               WHERE dr.handler_name = '$handler_name'
                 AND dr.admin_id IN (0, " . $_SESSION['admin_id'] . ")
@@ -568,13 +582,13 @@ if (!$ok_to_proceed || $error_message !== '') {
             $customization_choices[] = array (
                 'id' => $customizations->fields['dbio_reports_id'],
                 'text' => $customizations->fields['report_name'],
-                'desc' => $customizations->fields['report_description'],
+                'desc' => (($customizations->fields['admin_id'] == 0) ? TEXT_SCOPE_PUBLIC : TEXT_SCOPE_PRIVATE) . ': ' . $customizations->fields['report_description'],
             );
             $customizations->MoveNext ();
         }
         unset ($customizations);
 ?>
-                        <strong><?php echo LABEL_CHOOSE_CUSTOMIZATION; ?></strong> <?php echo zen_draw_pull_down_menu ('custom', $customization_choices, 0, 'id="custom-change" onchange="changeDesc();"') . '&nbsp;&nbsp;' . zen_draw_input_field ('customize', TEXT_BUTTON_MANAGE_CUSTOMIZATION, 'onclick="window.location.href=\'' . zen_href_link (FILENAME_DBIO_CUSTOMIZE) . '\'"', false, 'button'); ?>
+                        <strong><?php echo LABEL_CHOOSE_CUSTOMIZATION; ?></strong> <?php echo zen_draw_pull_down_menu ('custom', $customization_choices, 0, 'id="custom-change"') . '&nbsp;&nbsp;' . zen_draw_input_field ('customize', TEXT_BUTTON_MANAGE_CUSTOMIZATION, 'onclick="window.location.href=\'' . zen_href_link (FILENAME_DBIO_CUSTOMIZE, "handler=$handler_name") . '\'"', false, 'button'); ?>
                         <p id="custom-desc"><?php echo htmlentities ($customization_choices[0]['desc'], ENT_COMPAT, CHARSET); ?></p>
 <?php
     }
@@ -681,9 +695,10 @@ if (!$ok_to_proceed || $error_message !== '') {
 
         $first_file = true;
         foreach ($dbio_files as $name_hash => $file_info) {
+            $select_parms = (strpos ($file_info['filename_only'], 'logs') === 0) ? 'class="dbio-log"' : '';
 ?>
                         <tr class="file-row">
-                            <td class="file-item"><?php echo zen_draw_radio_field ('filename_hash', $name_hash, $file_info['selected']); ?></td>
+                            <td class="file-item"><?php echo zen_draw_radio_field ('filename_hash', $name_hash, $file_info['selected'], '', $select_parms); ?></td>
                             <td class="file-item left"><?php echo $file_info['filename_only']; ?></td>
                             <td class="file-item center"><?php echo $file_info['bytes']; ?></td>
                             <td class="file-item center"><?php echo date (DBIO_DEBUG_DATE_FORMAT, $file_info['last_modified']); ?></td>
@@ -799,9 +814,9 @@ if (!$ok_to_proceed || $error_message !== '') {
 
 <?php
 $zen_cart_version = PROJECT_VERSION_MAJOR . '.' . PROJECT_VERSION_MINOR;
-if (version_compare ($zen_cart_version, '1.5.5', '<')) {
+if ($zen_cart_version < '1.5.5') {
 ?>
-<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="//code.jquery.com/jquery-1.11.3.min.js"></script>
 <?php
 }
 ?>
@@ -859,10 +874,20 @@ foreach ($customization_choices as $index => $info) {
 <?php
 }
 ?>
+    $( '#custom-change' ).on('change', function() {
+        $( '#custom-desc' ).text( dbioDescriptions[this.value] );
+    });
     
-    function changeDescription ()
-    {
-    }
+    $( 'input[type=radio][name="filename_hash"]' ).on('change', function() {
+        $( '#file-action option[value!="none"]' ).prop( 'selected', false );
+        $( '#file-action option[value="none"]' ).prop( 'selected', true );
+        if ( $(this).attr( 'class' ) == 'dbio-log') {
+            $( '#file-action option[value!="none"]' ).prop( 'disabled', true );
+            $( '#file-action option[value="download"]' ).prop( 'disabled', false );
+        } else {
+            $( '#file-action option' ).prop( 'disabled', false );
+        }
+    });
   // -->
 </script>
 </body>
