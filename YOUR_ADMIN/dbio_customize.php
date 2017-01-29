@@ -37,55 +37,46 @@ if (!$ok_to_proceed) {
     if (count ($dbio_handlers) == 0) {
         $ok_to_proceed = false;
         $error_message = DBIO_MESSAGE_NO_HANDLERS_FOUND;
+    } elseif (!isset ($_GET['handler'])) {
+        zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER));
     } else {
-        $available_handlers = array ();
-        $handler_name = (isset ($_GET['handler'])) ? $_GET['handler'] : false;
-        $first_handler = false;
+        $handler_name = $_GET['handler'];
         $handler_valid = false;
+        $error = false;
         foreach ($dbio_handlers as $current_handler => $handler_info) {
             if (!isset ($handler_info['allow_export_customizations']) || $handler_info['allow_export_customizations'] !== true) {
                 continue;
             }
-            if ($handler_name !== false && $handler_name == $current_handler) {
+            if ($handler_name == $current_handler) {
                 $handler_valid = true;
+                break;
             }
-            if ($first_handler === false) {
-                $first_handler = $current_handler;
-            }
-            $available_handlers[] = array (
-                'id' => $current_handler,
-                'text' => $current_handler
-            );
         }
-        if ($handler_name !== false) {
-            if (!$handler_valid) {
-                $messageStack->add_session (ERROR_UNKNOWN_HANDLER, 'error');
-                zen_redirect (zen_href_link (FILENAME_DBIO_CUSTOMIZE));
-            }
-        } else {
-            $handler_name = $first_handler;
+        if (!$handler_valid) {
+            $messageStack->add_session (ERROR_UNKNOWN_HANDLER, 'error');
+            zen_redirect (zen_href_link (FILENAME_DBIO_CUSTOMIZE));
         }
         $handler_info = $dbio_handlers[$handler_name];
         
+        $tID = (int)(isset ($_GET['tID'])) ? $_GET['tID'] : 0;
         $template_scope = (int)(isset ($_POST['template_scope'])) ? $_POST['template_scope'] : 0;
         $report_name = (isset ($_POST['report_name'])) ? zen_db_prepare_input ($_POST['report_name']) : '';
         $report_description = (isset ($_POST['report_description'])) ? zen_db_prepare_input ($_POST['report_description']) : array ();
         $customized = (isset ($_POST['customized'])) ? zen_db_prepare_input ($_POST['customized']) : array ();
-        $active_template = (int)(isset ($_POST['active_template'])) ? $_POST['active_template'] : 0;
-        
+
         switch ($action) {
-            case 'choose':
-                zen_redirect (zen_href_link (FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params (array ('action'))));
-                break;
-            case 'insert':
             case 'update':
+            case 'insert_copy':
+                if ($tID == 0) {
+                    zen_redirect (zen_href_link (FILENAME_DBIO_CUSTOMIZE));
+                }                                                            //-Falls thru if tID is set
+            case 'insert':
                 $dbio_languages = zen_get_languages ();
-                $error = false;
                 $name_check = $db->Execute (
                     "SELECT dr.dbio_reports_id, dr.report_name
                        FROM " . TABLE_DBIO_REPORTS . " dr
                       WHERE dr.report_name = '$report_name'
-                        AND dr.dbio_reports_id != $active_template
+                        AND dr.dbio_reports_id != " . (($action != 'update') ? 0 : $tID) . "
                         AND dr.handler_name = '$handler_name'
                         AND dr.admin_id = $template_scope
                       LIMIT 1"
@@ -108,11 +99,38 @@ if (!$ok_to_proceed) {
                 }
                 
                 if ($error) {
-                    $action = ($action == 'insert') ? 'new' : 'edit';
+                    $action = ($action == 'insert') ? 'new' : (($action == 'update') ? 'edit' : 'copy');
                 } else {
                     $report_name = zen_db_input ($report_name);
                     $field_info = zen_db_input (json_encode ($customized));
-                    if ($action == 'insert') {
+                    
+                    if ($action == 'insert_copy') {
+                        $copy_info = $db->Execute (
+                            "SELECT field_info
+                               FROM " . TABLE_DBIO_REPORTS . "
+                              WHERE dbio_reports_id = $tID
+                              LIMIT 1"
+                        );
+                        if ($copy_info->EOF) {
+                            zen_redirect (zen_href_link (FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params (array ('action', 'tID'))));
+                        }
+                        $field_info = $copy_info->fields['field_info'];
+                        
+                        unset ($copy_info);
+                        $copy_info = $db->Execute (
+                            "SELECT language_id, report_description
+                               FROM " . TABLE_DBIO_REPORTS_DESCRIPTION . "
+                              WHERE dbio_reports_id = $tID"
+                        );
+                        $report_description = array ();
+                        while (!$copy_info->EOF) {
+                            $report_description[$copy_info->fields['language_id']] = $copy_info->fields['report_description'];
+                            $copy_info->MoveNext ();
+                        } 
+                        unset ($copy_info);
+                    }
+                    
+                    if ($action == 'insert' || $action == 'insert_copy') {
                         $db->Execute (
                             "INSERT INTO " . TABLE_DBIO_REPORTS . " (handler_name, report_name, admin_id, last_updated_by, last_updated, field_info)
                                 VALUES ('$handler_name', '$report_name', $template_scope, " . $_SESSION['admin_id'] . ", now(), '$field_info')"
@@ -127,11 +145,40 @@ if (!$ok_to_proceed) {
                         }
                         $messageStack->add_session (sprintf (SUCCESS_TEMPLATE_ADDED, $report_name), 'success');
                     } else {
+                        $db->Execute (
+                            "UPDATE " . TABLE_DBIO_REPORTS . "
+                                SET report_name = '$report_name',
+                                    admin_id = $template_scope,
+                                    last_updated_by = " . $_SESSION['admin_id'] . ",
+                                    last_updated = now(),
+                                    field_info = '$field_info'
+                              WHERE dbio_reports_id = $tID
+                              LIMIT 1"
+                        );
+                        foreach ($dbio_languages as $current_language) {
+                            $db->Execute (
+                                "UPDATE " . TABLE_DBIO_REPORTS_DESCRIPTION . "
+                                    SET report_description = '" . zen_db_input ($report_description[$current_language['id']]) . "'
+                                  WHERE dbio_reports_id = $tID
+                                    AND language_id = " . $current_language['id'] . "
+                                  LIMIT 1"
+                            );
+                        }
+                        $messageStack->add_session (sprintf (SUCCESS_TEMPLATE_UPDATED, $report_name), 'success');
                     }
                     zen_redirect (zen_href_link (FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params (array ('action'))));
                 }
                 break;
             case 'remove':
+                $db->Execute (
+                    "DELETE FROM " . TABLE_DBIO_REPORTS . "
+                      WHERE dbio_reports_id = $tID"
+                );
+                $db->Execute (
+                    "DELETE FROM " . TABLE_DBIO_REPORTS_DESCRIPTION . "
+                      WHERE dbio_reports_id = $tID"
+                );
+                $messageStack->add_session (sprintf (SUCCESS_TEMPLATE_REMOVED, $report_name), 'success');
                 zen_redirect (zen_href_link (FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params (array ('action'))));
                 break;
             case 'copy':
@@ -166,20 +213,23 @@ if (version_compare ($zen_cart_version, '1.5.5', '<')) {
 <!--
 input[type="submit"] { cursor: pointer; }
 select { padding: 0.1em; margin: 0.5em; }
-td, th { padding: 0.5em; }
+table { border-collapse: collapse; }
+td, th { padding: 0.7em; }
 legend { background-color: #fff8dc; padding: 0.3em; border: 1px solid #e5e5e5; }
 #main-wrapper { text-align: center; padding: 1em; }
 #main-contents, #the-list, #template { width: 100%; }
 #move-fields > div { float: left; }
-#move-left, #move-right, #move-up, #move-down { cursor: pointer; }
-
+.move-buttons { padding: 1em 0.5em; }
+#move-left, #move-up { padding-bottom: 0.5em; }
+#move-left, #move-right, #move-up, #move-down { cursor: pointer; color: #e8a317; }
+.file-row td, #file-row-header th { border-bottom: 1px solid #e5e5e5; }
+.file-row:nth-child(odd), #file-row-header { background-color: #fbf6d9; }
+.file-row:hover { background-color: #ebebeb; }
 .centered { text-align: center; }
 .right { text-align: right; }
 .left { text-align: left; }
 .smaller { font-size: smaller; }
 .instructions { font-size: 12px; padding-bottom: 10px; padding-top: 10px; }
-
-.file-row:nth-child(odd) { background-color: #fbf6d9; }
 -->
 </style>
 <script type="text/javascript" src="includes/menu.js"></script>
@@ -187,7 +237,7 @@ legend { background-color: #fff8dc; padding: 0.3em; border: 1px solid #e5e5e5; }
 <body onload="init();">
 <?php require(DIR_WS_INCLUDES . 'header.php'); ?>
 <div id="main-wrapper">
-    <h1><?php echo HEADING_TITLE; ?> <span class="smaller">v<?php echo DBIO_MODULE_VERSION; ?></span></h1>
+    <h1><?php echo sprintf (HEADING_TITLE, $handler_name); ?> <span class="smaller">v<?php echo DBIO_MODULE_VERSION; ?></span></h1>
 <?php
 if (!$ok_to_proceed) {
 ?>
@@ -201,45 +251,26 @@ if (!$ok_to_proceed) {
     // If we're not editing (or creating) a template's details, just list the basic information for the templates
     // currently existing for the currently-selected handler.
     //
-    if ($action != 'new' && $action != 'edit') {
+    if ($action != 'new' && $action != 'edit' && $action != 'copy') {
 ?>
         <tr>
-            <td id="dbio-choose"><?php echo TEXT_CHOOSE_HANDLER . ' ' . zen_draw_form ('dbio-select', FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params (array ('action', 'handler')) . 'action=choose', 'get') . zen_draw_pull_down_menu ('handler', $available_handlers, $handler_name, 'onchange="this.form.submit();"'); ?></form></td>
+            <td class="right"><?php echo zen_draw_input_field ('return', BUTTON_RETURN, ' title="' . BUTTON_RETURN_TITLE . '" onclick="window.location.href=\'' . zen_href_link (FILENAME_DBIO_MANAGER) . '\'"', false, 'button'); ?></td>
         </tr>
         
         <tr>
             <td id="main-area"><table id="the-list">
 <?php
-        $action_options = array (
-            array (
-                'id' => 'choose',
-                'text' => DBIO_ACTION_PLEASE_CHOOSE
-            ),
-            array (
-                'id' => 'edit',
-                'text' => DBIO_ACTION_EDIT
-            ),
-            array (
-                'id' => 'copy',
-                'text' => DBIO_ACTION_COPY
-            ),
-            array (
-                'id' => 'remove',
-                'text' => DBIO_ACTION_REMOVE
-            ),
-        );
-?>
-                <tr>
-                    <td colspan="6" class="right"><?php echo zen_draw_pull_down_menu ('choose_action', $action_options, 'choose'); ?></td>
-                </tr>
-                
-                <tr>
+        $edit_action = zen_draw_input_field ('return', BUTTON_EDIT, ' title="' . BUTTON_EDIT_TITLE . '" onclick="window.location.href=\'' . zen_href_link (FILENAME_DBIO_CUSTOMIZE, "action=edit&amp;tID=%u&amp;handler=$handler_name") . '\'"', false, 'button');
+        $copy_action = zen_draw_input_field ('return', BUTTON_COPY, ' title="' . BUTTON_COPY_TITLE . '" onclick="window.location.href=\'' . zen_href_link (FILENAME_DBIO_CUSTOMIZE, "action=copy&amp;tID=%u&amp;handler=$handler_name") . '\'"', false, 'button');
+        $remove_action = zen_draw_input_field ('return', BUTTON_REMOVE, ' title="' . BUTTON_REMOVE_TITLE . '" onclick="confirmRemove(%u);"', false, 'button');
+?>               
+                <tr id="file-row-header">
                     <th><?php echo HEADING_SCOPE; ?></th>
                     <th><?php echo HEADING_TEMPLATE_NAME; ?></th>
                     <th><?php echo HEADING_DESCRIPTION; ?></th>
                     <th><?php echo HEADING_UPDATED_BY; ?></th>
                     <th><?php echo HEADING_LAST_UPDATE; ?></th>
-                    <th><?php echo HEADING_ACTION; ?></th>
+                    <th class="right"><?php echo HEADING_ACTION; ?></th>
                 </tr>
 
 <?php
@@ -265,31 +296,68 @@ if (!$ok_to_proceed) {
                 } else {
                     $last_updated_by = zen_get_admin_name ($active_templates->fields['last_updated_by']) . ' [' . $active_templates->fields['last_updated_by'] . ']';
                 }
+                $reports_id = $active_templates->fields['dbio_reports_id'];
 ?>
-                <tr>
+                <tr class="file-row">
                     <td><?php echo ($active_templates->fields['admin_id'] == 0) ? TEXT_SCOPE_PUBLIC : TEXT_SCOPE_PRIVATE; ?></td>
                     <td><?php echo $active_templates->fields['report_name']; ?></td>
                     <td><?php echo $active_templates->fields['report_description']; ?></td>
                     <td><?php echo $last_updated_by; ?></td>
                     <td><?php echo zen_date_long ($active_templates->fields['last_updated']); ?></td>
+                    <td class="right"><?php echo sprintf ($edit_action, $reports_id) . '&nbsp;' . sprintf ($copy_action, $reports_id) . '&nbsp;' . sprintf ($remove_action, $reports_id); ?></td>
                 </tr>
 <?php
                 $active_templates->MoveNext ();
             }
         }
 ?>
-                <tr>
+                <tr class="file-row">
                     <td colspan="6" class="right"><button type="button" onclick="window.location.href='<?php echo zen_href_link (FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params (array ('action', 'handler')) . "action=new&amp;handler=$handler_name"); ?>'"><?php echo BUTTON_NEW; ?></button></td>
                 </tr>
 <?php
     // -----
-    // This section renders the page when we're either editing or creating a template.
+    // This section renders the page when we're either editing, copying or creating a template.
     //
     } else {
-        $next_action = ($action == 'new') ? 'insert' : 'update';
+        $next_action = ($action == 'edit') ? 'update' : (($action == 'copy') ? 'insert_copy' : 'insert');
+        
+        // -----
+        // Initialize template values when editing or copying, if no previous error.  On an error, the previously entered
+        // fields have been captures by the "header" processing.
+        //
+        if ($action != 'new' && !$error) {
+            $report_info = $db->Execute (
+               "SELECT admin_id, report_name, field_info
+                  FROM " . TABLE_DBIO_REPORTS . "
+                 WHERE handler_name = '$handler_name'
+                   AND admin_id IN (0, " . $_SESSION['admin_id'] . ")
+                   AND dbio_reports_id = $tID
+                 LIMIT 1"
+            );
+            if ($report_info->EOF) {
+                zen_redirect (zen_href_link (FILENAME_DBIO_CUSTOMIZE));
+            }
+            $template_scope = $report_info->fields['admin_id'];
+            $report_name = $report_info->fields['report_name'];
+            $customized = json_decode ($report_info->fields['field_info']);
+            
+            unset ($report_info);
+            $report_info = $db->Execute (
+                "SELECT language_id, report_description
+                   FROM " . TABLE_DBIO_REPORTS_DESCRIPTION . "
+                  WHERE dbio_reports_id = $tID"
+            );
+            $report_description = array ();
+            while (!$report_info->EOF) {
+                $report_description[$report_info->fields['language_id']] = $report_info->fields['report_description'];
+                $report_info->MoveNext ();
+            }
+        }
+        
+        $heading_format_string = ($action == 'copy') ? HEADING_TITLE_COPY : (($action == 'edit') ? HEADING_TITLE_EDIT : HEADING_TITLE_NEW);
 ?>
                 <tr>
-                    <td><?php echo sprintf (HEADING_CUSTOMIZING_FOR_HANDLER, $handler_name); ?></td>
+                    <td><?php echo sprintf ($heading_format_string, $handler_name); ?></td>
                 </tr>
                 
                 <tr>
@@ -321,6 +389,8 @@ if (!$ok_to_proceed) {
 <?php
         unset ($scope_choices);
         
+        $disabled = ($action == 'copy') ? ' disabled' : '';
+        
         $dbio_languages = zen_get_languages ();
         $language_instructions = INSTRUCTIONS_DESCRIPTION;
         foreach ($dbio_languages as $current_language) {
@@ -329,7 +399,7 @@ if (!$ok_to_proceed) {
 
                         <tr>
                             <td class="dbio-label"><?php echo $language_image . '&nbsp;' . COLUMN_HEADING_DESCRIPTION; ?></td>
-                            <td class="dbio-field"><?php echo zen_draw_textarea_field ('report_description[' . $current_language['id'] . ']', 'soft', '100%', '5', htmlspecialchars (stripslashes ($report_description[$current_language['id']]), ENT_COMPAT, CHARSET, TRUE)); ?></td>
+                            <td class="dbio-field"><?php echo zen_draw_textarea_field ('report_description[' . $current_language['id'] . ']', 'soft', '100%', '5', htmlspecialchars (stripslashes ($report_description[$current_language['id']]), ENT_COMPAT, CHARSET, TRUE), $disabled); ?></td>
                             <td class="dbio-desc"><?php echo $language_instructions; ?></td>
                         </tr>
 <?php
@@ -341,7 +411,7 @@ if (!$ok_to_proceed) {
         $dbio = new DbIo ($handler_name);
         $handler_fields = $dbio->handler->getCustomizableFields ();
 
-        if (count ($customized) == 0) {
+        if (count ($customized) == 0 && isset ($handler_fields['keys'])) {
             $customized = $handler_fields['keys'];
         }
         $current_fields = array ();      
@@ -364,32 +434,45 @@ if (!$ok_to_proceed) {
         }
 ?>
                         <tr>
-                            <td class="dbio-label"><?php echo COLUMN_HEADING_CHOOSE_FIELDS; ?></td>
+                            <td class="dbio-label"><?php echo ($action == 'copy') ? COLUMN_HEADING_COPY_FIELDS : COLUMN_HEADING_CHOOSE_FIELDS; ?></td>
                             <td class="dbio-field" id="move-fields">
+<?php
+        if ($action != 'copy') {
+?>
                                 <div><?php echo zen_draw_pull_down_menu ('available_fields', $available_fields, '', 'id="available" multiple="multiple"') . PHP_EOL; ?></div>
-                                <div id="move-left-right">
+                                <div id="move-left-right" class="move-buttons">
                                     <div id="move-left"><i class="fa fa-arrow-circle-o-left fa-2x"></i></div>
                                     <div id="move-right"><i class="fa fa-arrow-circle-o-right fa-2x"></i></div>
                                 </div>
+<?php
+        }
+?>
                                 <div><?php echo zen_draw_pull_down_menu ('customized[]', $current_fields, '', 'id="customized" multiple="multiple"'). PHP_EOL; ?></div>
-                                <div id="move-up-down">
+<?php
+        if ($action != 'copy') {
+?>
+                                <div id="move-up-down" class="move-buttons">
                                     <div id="move-up"><i class="fa fa-arrow-circle-o-up fa-2x"></i></div>
                                     <div id="move-down"><i class="fa fa-arrow-circle-o-down fa-2x"></i></div>
                                 </div>
+<?php
+        }
+?>
                             </td>
-                            <td class="dbio-desc"><?php echo INSTRUCTIONS_CHOOSE; ?></td>
+                            <td class="dbio-desc"><?php echo ($action == 'copy') ? INSTRUCTIONS_CHOOSE_COPY : INSTRUCTIONS_CHOOSE; ?></td>
                         </tr>
 <?php
-        if ($next_action == 'insert') {
-            $button_name = BUTTON_INSERT;
-            $button_title = BUTTON_INSERT_TITLE;
-        } else {
+        if ($next_action == 'update') {
             $button_name = BUTTON_UPDATE;
             $button_title = BUTTON_UPDATE_TITLE;
+        } else {
+            $button_name = BUTTON_INSERT;
+            $button_title = BUTTON_INSERT_TITLE;
         }
 ?>      
                         <tr>
-                            <td colspan="3" class="right"><?php echo zen_draw_input_field ('go_button', $button_name, 'title="' . $button_title . '" id="go-button"', false, 'submit'); ?></td>
+                            <td class="left"><?php echo zen_draw_input_field ('cancel', BUTTON_CANCEL, ' title="' . BUTTON_CANCEL_TITLE . '" onclick="window.location.href=\'' . zen_href_link (FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params (array ('action', 'tID'))) . '\'"', false, 'button'); ?></td>
+                            <td colspan="2" class="right"><?php echo zen_draw_input_field ('go_button', $button_name, 'title="' . $button_title . '" id="go-button"', false, 'submit'); ?></td>
                         </tr>
 
                     </table></form></td>
@@ -409,20 +492,32 @@ if (!$ok_to_proceed) {
 
 <?php
 $zen_cart_version = PROJECT_VERSION_MAJOR . '.' . PROJECT_VERSION_MINOR;
-if (version_compare ($zen_cart_version, '1.5.5', '<')) {
+if ($zen_cart_version < '1.5.5') {
 ?>
-<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="//code.jquery.com/jquery-1.11.3.min.js"></script>
 <?php
 }
 
 $keys_list = '';
-foreach ($handler_fields['keys'] as $db_field) {
-    $keys_list .= '"' . $db_field . '", ';
+if (isset ($handler_fields['keys'])) {
+    foreach ($handler_fields['keys'] as $db_field) {
+        $keys_list .= '"' . $db_field . '", ';
+    }
 }
 $keys_list = ($keys_list == '') ? '' : substr ($keys_list, 0, -2);
 ?>
 <script type="text/javascript">
 <!--
+function confirmRemove(tID)
+{
+    var removeIt = confirm( '<?php echo JS_MESSAGE_CONFIRM_REMOVE; ?>' );
+    if (removeIt) {
+        var theLocation = '<?php echo zen_href_link (FILENAME_DBIO_CUSTOMIZE, "action=remove&handler=$handler_name&tID=%u"); ?>';
+        theLocation = theLocation.replace( '%u', tID);
+        window.location.href = theLocation;
+    }
+}
+
 $(document).ready(function(){
     var dbioKeys = [<?php echo $keys_list; ?>];
     for (var i = 0, n = dbioKeys.length; i < n; i++) {
@@ -430,7 +525,7 @@ $(document).ready(function(){
     }
 });
 
-$(function () {  
+$(function () {     
     function moveLeftRight(origin, dest) {
         $(origin).find( ':selected' ).appendTo(dest);
     }
@@ -484,9 +579,13 @@ $(function () {
 
 });
 <?php
-if ($action == 'new' || $action == 'edit') {
+if ($action == 'new' || $action == 'edit' || $action == 'copy') {
+    if ($action != 'copy') {
 ?>
 document.getElementById( 'available' ).style.resize = 'vertical';
+<?php
+    }
+?>
 document.getElementById( 'customized' ).style.resize = 'vertical';
 <?php
 }

@@ -17,10 +17,11 @@ class DbIoOrdersHandler extends DbIoOrdersBase
     {
         DbIoHandler::loadHandlerMessageFile ('Orders'); 
         return array (
-            'version' => '1.1.1',
-            'handler_version' => '1.1.0',
+            'version' => '1.2.0',
+            'handler_version' => '1.2.0',
             'include_header' => true,
             'export_only' => true,
+            'allow_export_customizations' => true,
             'description' => DBIO_ORDERS_DESCRIPTION,
         );
     }
@@ -28,13 +29,13 @@ class DbIoOrdersHandler extends DbIoOrdersBase
     public function exportPrepareFields (array $fields) 
     {
         $fields = parent::exportPrepareFields ($fields);
-        $orders_status_id = $fields['orders_status'];
-        unset ($fields['orders_status']);
-       
-        $fields['orders_status_name'] = $this->getOrdersStatusName ($orders_status_id);
-
+        
+        if (!($this->config['additional_headers']['v_orders_status_name'] & self::DBIO_FLAG_NO_EXPORT)) {
+            $orders_status_id = $fields['orders_status'];
+            unset ($fields['orders_status']);
+            $fields['orders_status_name'] = $this->getOrdersStatusName ($orders_status_id);
+        }
         return $fields;
-      
     }
 
 // ----------------------------------------------------------------------------------
@@ -58,7 +59,10 @@ class DbIoOrdersHandler extends DbIoOrdersBase
             ),
         );
         $this->config['additional_headers'] = array (
-                'v_orders_status_name' => self::DBIO_FLAG_NONE,
+            'v_orders_status_name' => self::DBIO_FLAG_FIELD_SELECT,
+        );
+        $this->config['additional_header_select'] = array (
+            'v_orders_status_name' => 'o.orders_status'
         );
     }
     

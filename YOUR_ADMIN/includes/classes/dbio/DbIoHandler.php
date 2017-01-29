@@ -286,12 +286,14 @@ abstract class DbIoHandler extends base
         $customizable_fields = array ();
         if (isset ($this->config['allow_export_customizations']) && $this->config['allow_export_customizations'] === true) {
             $customizable_fields['keys'] = array ();
-            foreach ($this->config['keys'] as $table_name => $table_config) {
-                foreach ($table_config as $field_name => $field_config) {
-                    if ($field_name == 'alias' || $field_name == 'capture_key_value') {
-                        continue;
+            if (isset ($this->config['keys'])) {
+                foreach ($this->config['keys'] as $table_name => $table_config) {
+                    foreach ($table_config as $field_name => $field_config) {
+                        if ($field_name == 'alias' || $field_name == 'capture_key_value') {
+                            continue;
+                        }
+                        $customizable_fields['keys'][] = $field_name;
                     }
-                    $customizable_fields['keys'][] = $field_name;
                 }
             }
             
