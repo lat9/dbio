@@ -97,7 +97,6 @@ abstract class DbIoHandler extends base
         if ($this->stats['report_name'] != self::DBIO_UNKNOWN_VALUE) {
             $this->debug_log_file = DIR_FS_DBIO_LOGS . "/dbio-" . $this->stats['report_name'] . "-$log_file_suffix.log";
         }
-        $this->debugMessage ('Configured CHARSET (' . CHARSET . '), DB_CHARSET (' . DB_CHARSET . '), DBIO_CHARSET (' . DBIO_CHARSET . '), DEFAULT_LANGUAGE (' . DEFAULT_LANGUAGE . '), PHP multi-byte settings: ' . print_r (mb_get_info (), true));
         
         $this->initializeDbIo ();
     }
@@ -347,6 +346,8 @@ abstract class DbIoHandler extends base
     // 
     public function exportInitialize ($language = 'all') 
     {
+        $this->logCharacterSetConfig ();
+        
         $initialized = false;
         if ($language == 'all' && count ($this->languages) == 1) {
             reset ($this->languages);
@@ -467,6 +468,8 @@ abstract class DbIoHandler extends base
 
     public function importInitialize ($language = 'all', $operation = 'check') 
     {
+        $this->logCharacterSetConfig ();
+        
         if (!isset ($this->config)) {
             trigger_error ('Import aborted: DbIo helper not configured.', E_USER_ERROR);
             exit ();
@@ -932,6 +935,11 @@ abstract class DbIoHandler extends base
     protected final static function loadHandlerMessageFile ($handler_name)
     {
         include_once (DIR_FS_DBIO_LANGUAGES . $_SESSION['language'] . '/dbio/DbIo' . $handler_name . 'Handler.php');
+    }
+    
+    protected final function logCharacterSetConfig ()
+    {
+        $this->debugMessage ('Configured CHARSET (' . CHARSET . '), DB_CHARSET (' . DB_CHARSET . '), DBIO_CHARSET (' . DBIO_CHARSET . '), DEFAULT_LANGUAGE (' . DEFAULT_LANGUAGE . '), PHP multi-byte settings: ' . print_r (mb_get_info (), true));
     }
     
     // -----
@@ -1453,7 +1461,6 @@ abstract class DbIoHandler extends base
     private function initializeTableFields ($table_name, $table_config)
     {
         global $db;
-        $this->debugMessage ("initializeTableFields for $table_name, table configuration\n" . print_r ($table_config, true));
         $field_overrides = (isset ($table_config['io_field_overrides']) && is_array ($table_config['io_field_overrides'])) ? $table_config['io_field_overrides'] : false;
         $key_fields_only = (isset ($table_config['key_fields_only'])) ? $table_config['key_fields_only'] : false;
         $table_keys = (isset ($this->config['keys'][$table_name])) ? $this->config['keys'][$table_name] : array ();
