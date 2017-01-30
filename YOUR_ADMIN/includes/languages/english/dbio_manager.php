@@ -37,16 +37,10 @@ define ('LEGEND_FILE_UPLOADS', 'File Uploads');
 
 define ('TEXT_INSTRUCTIONS', 'The <b><i>DbIo Manager</i></b> provides <em>handlers</em> that enable exports and, conditionally, imports of database information, using a comma-separated-value (CSV) file.  Choose the handler to use from the drop-down list below and that handler\'s features, e.g. filters and/or template-customization options, will be displayed.');
 
-define ('BUTTON_SPLIT', 'Split');
-define ('BUTTON_SPLIT_TITLE', 'Click here to split the currently-chosen file into multiples of %u records.');
 define ('DBIO_BUTTON_DELETE', 'Delete');
 define ('DBIO_BUTTON_DELETE_TITLE', 'Click here to delete the currently-selected file(s) from the server.');
 define ('DBIO_BUTTON_GO', 'Go');
 define ('DBIO_BUTTON_GO_TITLE', 'Click here to perform the chosen action for the file chosen below.');
-define ('BUTTON_IMPORT', 'Import');
-define ('BUTTON_IMPORT_TITLE', 'Click here to import the currently-chosen file, based on the criteria specified above.');
-define ('DBIO_BUTTON_DOWNLOAD', 'Download');
-define ('DBIO_BUTTON_DOWNLOAD_TITLE', 'Click here to download the contents of the currently-chosen file.');
 define ('BUTTON_EXPORT', 'Export');
 define ('BUTTON_EXPORT_TITLE', 'Click here to export the information associated with the selected DbIo report.');
 define ('BUTTON_UPLOAD', 'Upload');
