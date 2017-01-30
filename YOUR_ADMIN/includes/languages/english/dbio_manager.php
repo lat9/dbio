@@ -35,7 +35,7 @@ define ('LEGEND_CONFIGURATION', 'Configuration');
 define ('LEGEND_FILE_ACTIONS', 'File Actions');
 define ('LEGEND_FILE_UPLOADS', 'File Uploads');
 
-define ('TEXT_REPORTS_INSTRUCTIONS', 'The following <em>DbIo</em> reports are available for export:');
+define ('TEXT_INSTRUCTIONS', 'The <b><i>DbIo Manager</i></b> provides <em>handlers</em> that enable exports and, conditionally, imports of database information, using a comma-separated-value (CSV) file.  Choose the handler to use from the drop-down list below and that handler\'s features, e.g. filters and/or template-customization options, will be displayed.');
 
 define ('BUTTON_SPLIT', 'Split');
 define ('BUTTON_SPLIT_TITLE', 'Click here to split the currently-chosen file into multiples of %u records.');
@@ -52,7 +52,7 @@ define ('BUTTON_EXPORT_TITLE', 'Click here to export the information associated 
 define ('BUTTON_UPLOAD', 'Upload');
 define ('BUTTON_UPLOAD_TITLE', 'Click here to upload the selected file.');
 
-define ('TEXT_FILE_ACTION_DELETE_INSTRUCTIONS', 'You can also remove one or more of the reports below from the server. Select the file(s) to be deleted, then click the &quot;Delete&quot; button.');
+define ('TEXT_FILE_ACTION_DELETE_INSTRUCTIONS', 'You can remove one or more of the files below from the server. Select the file(s) to be deleted, then click the &quot;Delete&quot; button.');
 
 define ('TEXT_SHOW_HIDE_FILTERS', 'Click to show (or hide) the filters for <strong>all</strong> handlers.  When the filters are <em>hidden</em>, then they do not apply to the current export.');
 define ('TEXT_BUTTON_MANAGE_CUSTOMIZATION', 'Manage Templates');
@@ -75,6 +75,17 @@ define ('DBIO_ACTION_DELETE', 'Delete');
 define ('DBIO_ACTION_FULL_IMPORT', 'Import (Full)');
 define ('DBIO_ACTION_CHECK_IMPORT', 'Import (Check-only)');
 define ('DBIO_ACTION_DOWNLOAD', 'Download');
+
+define ('TEXT_FILE_ACTION_INSTRUCTIONS', 
+    'The following file-related actions are supported, but might be limited by the current <em>handler</em>:' . PHP_EOL .
+    '<ol>' . PHP_EOL .
+    '   <li><strong>' . DBIO_ACTION_SPLIT . '</strong>: Splits a .CSV file into multiple files, using your store\'s current setting for the <b>Split Record Count</b>, enabling you to download large exports in sections.</li>' . PHP_EOL .
+    '   <li><strong>' . DBIO_ACTION_DOWNLOAD . '</strong>: Downloads the selected file (either .csv or .log) to your computer for your review.</li>' . PHP_EOL .
+    '   <li><strong>' . DBIO_ACTION_FULL_IMPORT . '</strong>: This action, enabled only if the selected handler supports imports, uses the selected .csv file to make changes to your database.</li>' . PHP_EOL .
+    '   <li><strong>' . DBIO_ACTION_CHECK_IMPORT . '</strong>: This action, enabled only if the selected handler supports imports, gives you the opportunity to verify the database actions that will occur when you perform a &quot;full&quot; import; no database changes occur.  Upon completion, a log-file is generated that contains the <em>DbIo</em>\'s analysis.</li>' . PHP_EOL .
+    '</ol>' . PHP_EOL .
+    'Choose an <em>action</em> and an associated file and then click the &quot;Go&quot; button.' . PHP_EOL
+);
 
 define ('HEADING_CHOOSE_FILE', 'Choose File');
 define ('HEADING_FILENAME', 'File Name');

@@ -373,6 +373,8 @@ legend { background-color: #fff8dc; padding: 0.3em; border: 1px solid #e5e5e5; }
 .reports-details-row, #submit-report { border-top: 1px solid #ebebeb; margin-top: 0.5em; padding-top: 0.5em; }
 #export-customize { float: left; text-align: left;}
 #export-button { float: right; text-align: right; }
+#top-instructions { text-align: left; padding: 0.5em 0.7em; border-bottom: 1px solid #e5e5e5; }
+#file-instrs { padding: 0 0.5em 0.7em; border-bottom: 1px solid #e5e5e5; }
 
 .centered { text-align: center; }
 .right { text-align: right; }
@@ -420,6 +422,7 @@ div.export-only span { color: red; font-weight: bold; }
 <?php require(DIR_WS_INCLUDES . 'header.php'); ?>
   <div id="main-wrapper">
     <h1><?php echo HEADING_TITLE; ?> <span class="smaller">v<?php echo DBIO_MODULE_VERSION; ?></span></h1>
+    <p id="top-instructions"><?php echo TEXT_INSTRUCTIONS; ?></p>
 <?php
 if (!$ok_to_proceed || $error_message !== '') {
 ?>
@@ -653,10 +656,13 @@ if (!$ok_to_proceed || $error_message !== '') {
 ?>
                     <table id="file-actions">
                         <tr>
+                            <td colspan="5" id="file-instrs"><?php echo TEXT_FILE_ACTION_INSTRUCTIONS; ?></td>
+                        </tr>
+                        <tr>
                             <td colspan="5" class="file-row-caption"><?php echo TEXT_CHOOSE_ACTION . ' ' . zen_draw_pull_down_menu ('file_action', $file_actions_array, $file_action, 'id="file-action"'); ?>&nbsp;&nbsp;<?php echo zen_draw_input_field ('go_button', DBIO_BUTTON_GO, 'title="' . DBIO_BUTTON_GO_TITLE . '" onclick="return checkSubmit ();"', false, 'submit') . "&nbsp;&nbsp;$last_update_button"; ?></td>
                         </tr>
                         <tr>
-                            <td colspan="4"><?php echo TEXT_FILE_ACTION_DELETE_INSTRUCTIONS; ?></td>
+                            <td colspan="4" class="right"><?php echo TEXT_FILE_ACTION_DELETE_INSTRUCTIONS; ?></td>
                             <td id="file-delete-action"> <?php echo zen_draw_input_field ('delete_button', DBIO_BUTTON_DELETE, 'title="' . DBIO_BUTTON_DELETE_TITLE . '" onclick="return checkDelete ();"', false, 'submit'); ?></td>
                         </tr>
                         <tr id="file-row-header">
