@@ -648,7 +648,7 @@ if (!$ok_to_proceed || $error_message !== '') {
         $$sort_type = ' selected-sort';
         $last_update_button = '';
         if (isset ($_SESSION['dbio_import_result'])) {
-            $last_update_button = '<a class="import-info" href="#file-last-import">' . zen_image (DIR_WS_IMAGES . 'icons/dbio_information.png', TEXT_IMPORT_LAST_STATS) . '</a>';
+            $last_update_button = '<a class="import-info" href="#file-last-import" title="' . TEXT_IMPORT_LAST_STATS . '">' . TEXT_VIEW_STATS . '</a>';
         }
 ?>
                     <table id="file-actions">
