@@ -229,7 +229,7 @@ legend { background-color: #fff8dc; padding: 0.3em; border: 1px solid #e5e5e5; }
 .right { text-align: right; }
 .left { text-align: left; }
 .smaller { font-size: smaller; }
-.instructions { font-size: 12px; padding-bottom: 10px; padding-top: 10px; }
+.instructions { font-size: 12px; padding: 0.5em 1em; }
 -->
 </style>
 <script type="text/javascript" src="includes/menu.js"></script>
@@ -255,6 +255,10 @@ if (!$ok_to_proceed) {
 ?>
         <tr>
             <td class="right"><?php echo zen_draw_input_field ('return', BUTTON_RETURN, ' title="' . BUTTON_RETURN_TITLE . '" onclick="window.location.href=\'' . zen_href_link (FILENAME_DBIO_MANAGER) . '\'"', false, 'button'); ?></td>
+        </tr>
+        
+        <tr>
+            <td class="instructions"><?php echo sprintf (INSTRUCTIONS_MAIN, $handler_name); ?></td>
         </tr>
         
         <tr>
