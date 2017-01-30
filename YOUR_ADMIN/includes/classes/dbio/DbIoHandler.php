@@ -245,6 +245,7 @@ abstract class DbIoHandler extends base
     {
         if (empty ($date_value_in)) {
             $return_date = ($is_nullable) ? 'null' : false;
+            $parsed_date = '';
         } else {
             $date_value = $date_value_in;
             if (DBIO_IMPORT_DATE_FORMAT != 'm-d-y') {
@@ -1357,6 +1358,11 @@ abstract class DbIoHandler extends base
                     $field_value = $formatted_field_value;
                     break;
                 case 'string':
+                    $max_field_length = $this->tables[$table_name]['fields'][$field_name]['max_length'];
+                    if (mb_strlen ($field_value) > $max_field_length) {
+                        $this->debugMessage ("[*] $import_table_name.$field_name, line#" . $this->stats['record_count'] . ": The value ($field_value) exceeds the field's maximum length ($max_field_length); the value will be truncated.", self::DBIO_WARNING);
+                        $field_value = mb_substr ($field_value, 0, $max_field_length);
+                    }
                     break;
                 default:
                     $field_error = true;
