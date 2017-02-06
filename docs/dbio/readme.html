@@ -20,7 +20,7 @@ h5 { border-bottom: 1px dashed #666; padding-bottom: 5px; }
 code.no-pad, pre.no-pad { padding: 0; margin: 0; }
 .tableHead { background-color: #eee; }
 ol li, ol li p { margin-left: 0; }
-img { margin: 0 20px; float: left; border: 1px solid #666; }
+img { margin: 0 20px 10px; float: left; border: 1px solid #666; }
 img.wide { width: 95%; float: none; margin: 0 2.5%; }
 table, td, th { border: 1px solid black; border-collapse: collapse; }
 td, th { padding: 5px; }
@@ -93,6 +93,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
       <li class="tab"><a href="#installation">Installation</a></li>
       <li class="tab"><a href="#customization">Customization</a></li>
       <li class="tab"><a href="#dbio_manager">Using the DbIo Manager</a></li>
+      <li class="tab"><a href="#dbio_templates">Manage DbIo Templates</a></li>
       <li class="tab"><a href="#history">Change History</a></li>
     </ul>
     
@@ -141,8 +142,9 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                 <li>Sign into your Zen Cart's admin panel.</li>
                 <li>Copy the plugin's files to your store's folder structure:<ol>
                   <li>/YOUR_ADMIN/dbio_manager.php</li>
+                  <li>/YOUR_ADMIN/dbio_customize.php <span class="smaller">(Added in v1.2.0)</span></li>
                   <li>/YOUR_ADMIN/dbio/*.*</li>
-                  <li>/YOUR_ADMIN/images/icons/dbio_information.png</li>
+                  <li><span class="removed">/YOUR_ADMIN/images/icons/dbio_information.png</span> <span class="smaller">(Removed in v1.2.0)</span></li>
                   <li>/YOUR_ADMIN/includes/auto_loaders/config.dbio_admin.php</li>
                   <li>/YOUR_ADMIN/includes/boxes/extra_boxes/dbio_tools_dhtml.php</li>
                   <li>/YOUR_ADMIN/includes/classes/dbio/*.*</li>
@@ -152,6 +154,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
                   <li>/YOUR_ADMIN/includes/javascript/dbio/*.*</li>
                   <li>/YOUR_ADMIN/includes/languages/english/dbio_manager.php</li>
+                  <li>/YOUR_ADMIN/includes/languages/english/dbio_customize.php <span class="smaller">(Added in v1.2.0)</span></li>
                   <li>/YOUR_ADMIN/includes/languages/english/dbio/*.*</li>
                   <li>/YOUR_ADMIN/includes/languages/english/extra_definitions/dbio_admin_extra_definitions.php</li>
                 </ol></li>
@@ -272,6 +275,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <th>Handler Name</th>
                   <th>Actions</th>
                   <th>Export Filters</th>
+                  <th>Customizable?</th>
                   <th>Descripton</th>
                   <th>EP-4 Name</th>
                 </tr>
@@ -280,6 +284,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td class="h-name">Customers</td>
                   <td>Export</td>
                   <td>None</td>
+                  <td>No</td>
                   <td>This handler provides the <em>export-only</em> of all fields in the database's <code>customers</code> table.</td>
                   <td>&mdash;</td>
                 </tr> 
@@ -288,14 +293,25 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td class="h-name">Featured</td>
                   <td>Import, Export</td>
                   <td>None</td>
+                  <td>No</td>
                   <td>This handler provides the import and export of all fields in the database's <code>featured</code> table.</td>
                   <td>Featured Products</td>
                 </tr> 
                 
                 <tr>
+                  <td class="h-name">Manufacturers</td>
+                  <td>Import, Export</td>
+                  <td>None</td>
+                  <td>No</td>
+                  <td>This handler provides the import and export of all fields in the database's <code>manufacturers</code> and <code>manufacturers_info</code> tables, added in v1.2.0.</td>
+                  <td>&mdash;</td>
+                </tr>
+                
+                <tr>
                   <td class="h-name">Orders</td>
                   <td>Export</td>
                   <td>Orders Status, ID Range, Date Range</td>
+                  <td>Yes</td>
                   <td>This handler supports <em>export-only</em> of all fields within the <code>orders</code> table.  The information <em>does not</em> include the associated products or their attributes.</td>
                   <td>&mdash;</td>
                 </tr> 
@@ -304,6 +320,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td class="h-name">OrdersProducts</td>
                   <td>Export</td>
                   <td>Orders Status, ID Range, Date Range</td>
+                  <td>No</td>
                   <td>This handler supports the <em>export-only</em> of an order's customer information and associated products' model-numbers and names. </td>
                   <td>&mdash;</td>
                 </tr>
@@ -312,6 +329,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td class="h-name">OrdersProductsAttributes</td>
                   <td>Export</td>
                   <td>Orders Status, ID Range, Date Range</td>
+                  <td>No</td>
                   <td>This handler supports an <em>export-only</em> of an order's customer information and associated products' model-numbers, names and attributes (option name/value pairs).</td>
                   <td>Filterable Order Exports: Orders Full</td>
                 </tr>
@@ -320,6 +338,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td class="h-name">Products</td>
                   <td>Import, Export</td>
                   <td>Product Status, Manufacturer, Category</td>
+                  <td>Yes</td>
                   <td>This handler supports import/export of <b>all</b> fields within the <code>products</code> and <code>products_description</code> tables, the basic product information. Starting with <em>DbIo</em> v1.1.0, a product's record can be located via either its <code>products_id</code> or <code>products_model</code> (both columns are required in the import file) and an existing product can be <em>removed</em> by creating a <code>v_dbio_command</code> column with a product's entry set to <code>REMOVE</code>.</td>
                   <td>Complete Products</td>
                 </tr> 
@@ -328,6 +347,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td class="h-name">ProductsOptions</td>
                   <td>Import, Export</td>
                   <td>None</td>
+                  <td>No</td>
                   <td>This handler supports import/export of <b>all</b> fields within the <code>products_options</code> table, the products' options' information.  When importing <b>new</b> records for a multi-language store, the import should be run once per language value.  Otherwise, the products_options_id will get "out-of-sync" between the multiple languages.</td>
                   <td>&mdash;</td>
                 </tr> 
@@ -336,6 +356,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td class="h-name">ProductsOptionsValues</td>
                   <td>Import, Export</td>
                   <td>None</td>
+                  <td>No</td>
                   <td>This handler supports import/export of <b>all</b> fields within the <code>products_options_values</code> table, the products' options' values' information.  When importing <b>new</b> records for a multi-language store, the import should be run once per language value.  Otherwise, the products_options_id will get "out-of-sync" between the multiple languages.</td>
                   <td>&mdash;</td>
                 </tr>  
@@ -344,6 +365,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td class="h-name">ProductsAttribsBasic</td>
                   <td>Import, Export</td>
                   <td>None</td>
+                  <td>No</td>
                   <td>This handler supports import/export of the basic fields associated with the <code>products_attributes</code> table, using a <code>products_model</code> value to associate a product to the attribute-values (<code>products_options_type, products_options_name, and products_options_values name</code>).</td>
                   <td>Basic Products Attributes</td>
                 </tr>  
@@ -352,6 +374,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td class="h-name">ProductsAttribsRaw</td>
                   <td>Import, Export</td>
                   <td>None</td>
+                  <td>No</td>
                   <td>This handler supports import/export of <b>all</b> fields associated with the <code>products_attributes</code> table, using the <code>products_id</code>, <code>options_id</code>, and <code>options_values_id</code> values to identify a record in the table and, thus, whether the record is an insert or an update.</td>
                   <td>Detailed Products Attributes</td>
                 </tr>  
@@ -360,6 +383,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td class="h-name">Stats</td>
                   <td>Export</td>
                   <td>None</td>
+                  <td>No</td>
                   <td>This handler supports export of <b>all</b> fields present in the <code>dbio_stats</code> table, where <em>DbIo</em> records its statistics.</td>
                   <td>&mdash;</td>
                 </tr>  
@@ -404,23 +428,25 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
               <noscript><h3>Display Organization</h3></noscript>
               <table id="dbio_layout">
                 <tr>
-                  <td>Export Area</td>
-                  <td id="dbio_layout2"><table>
-                    <tr><td>Configuration Area</td></tr>
-                    <tr><td>File-Upload Area</td></tr>
-                  </table></td>
+                  <td colspan="2">Selection Area</td>
                 </tr>
                 <tr>
-                  <td colspan="2">Import/File-Action Area</td>
+                  <td>Export Area</td>
+                  <td>File-Upload Area</td>
+                </tr>
+                <tr>
+                  <td>Import/File-Action Area</td>
+                  <td>Configuration Area</td>
                 </tr>
               </table>
               <div id="dbio_layout_desc">
-                <p>The <em>Database I/O Manager</em> organizes its display into three (3) sections:</p>
+                <p>The <em>Database I/O Manager</em> organizes its display into five (5) sections:</p>
                 <ol>
-                  <li><b>Export Area</b>:  The upper-left portion of the display identifies the <em>Handlers</em> that are available for export.  Some of these handlers (like <em>Orders</em>) provide additional filters to limit their output selections.</li>
-                  <li><b>Configuration Area</b>: The upper-right portion of the display shows you the <em>DbIo Manager Settings</em> that you've currently got configured as well as some pertinent system-related settings.</li>
-                  <li><b>File-Upload Area</b>: Just below the <em>Configuration Area</em> is the area that you'll use when you want to upload a <code class="no-pad">.csv</code> file from your computer for the <em>DbIo</em> to handle.  That file, once successfully uploaded, is stored in the <code class="no-pad">/YOUR_ADMIN/dbio</code> folder.</li>
-                  <li><b>Import/File-Action Area</b>: The bottom portion of the display displays the list of <code class="no-pad">.csv</code> files available.  Within this section, you can choose a file to import, split, download or delete; see the <b><em>Other File Actions</em></b> tab for additional details.</li>
+                  <li><b>Selection Area</b>: The topmost portion of the display contains a drop-down selection where you choose the <em>handler</em> to be used for the current set of actions.  That handler, once selected, is saved in the current admin's session, so that the <b><i>DbIo Manager</i></b> remembers your most recent selection for the duration of the admin-login.</li>
+                  <li><b>Export Area</b>:  The upper-left portion of the display identifies the features available for the current handler's export.  Some of the handlers (like <em>Orders</em>) provide additional filters to limit their output selections and support customization of the fields exported.</li>
+                  <li><b>File-Upload Area</b>: The upper-right portion of the display provides a form that you'll use when you want to upload a <code class="no-pad">.csv</code> file from your computer for the <em>DbIo</em> to handle.  That file, once successfully uploaded, is stored in the <code class="no-pad">/YOUR_ADMIN/dbio</code> folder.</li>
+                  <li><b>Import/File-Action Area</b>: The bottom-left portion of the display displays the list of <code class="no-pad">.csv</code> and <code class="no-pad">.log</code> files available for the selected handler.  Within this section, you can choose a file to import, split, download or delete; see the <b><em>Other File Actions</em></b> tab for additional details.</li>
+                 <li><b>Configuration Area</b>: The bottom-right portion of the display shows you the <em>DbIo Manager Settings</em> that you've currently got configured as well as some pertinent system-related settings.</li>
                 </ol>
               </div>
               <div class="clearBoth"></div>
@@ -428,8 +454,10 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
             
             <div id="export-area">
               <noscript><h3>Export Area</h3></noscript>
-              <p>This section can get a bit &quot;busy&quot;, listing each of the <em>Handlers</em> currently available to provide database exports and a short description of each.  Some of the <em>Handlers</em> make use of additional filters that enable you to limit the export's output.</p>
-              <p>Simply select the <em>Handler</em> you're interested in and click the <b><em>Export</em></b> button; the file will be created in the <code class="no-pad">/YOUR_ADMIN/dbio</code> folder.</p>
+              <p>This section displays the export options available for the currently-selected handler. Some of the handlers, like <em>Orders</em> shown below, make use of additional filters that enable you to limit the export's output and/or enable export-template customizations.</p>
+              <p>Filters, if supported by the selected handler, aren't displayed initially, since the generation of those filters can have a negative impact on the tools's performance for stores with large databases.  When you tick the &quot;show/hide filters&quot; box, that enables/disables the automatic rendering of the filters for <strong>all</strong> handlers (the selection is stored in the currently-logged-in admin's session variables).</p>
+              <p>Templates, if supported by the selected handler, enable you to export a subset of the handler's fields.  Refer to the <strong>Manage DbIo Templates</strong> tab for additional information.  When a handler supports templates, like <em>Orders</em>, you can use a previously-customized template or click the &quot;Manage Templates&quot; button to create a new one.</p>
+              <p>Make your choices from the options provided by the current handler and click the <b><em>Export</em></b> button; the exported <code class="no-pad">.csv</code> file will be created in the <code class="no-pad">/YOUR_ADMIN/dbio</code> folder.</p>
               <p><strong>Note:</strong> Additional processing time will be required for the <em>DbIo Manager</em> export if you have the plugin's debug-mode enabled.</p>
               <img class="wide" src="export_area.jpg" alt="DbIo Export Area" title="DbIo Export Area" />
             </div>
@@ -444,21 +472,22 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
             <div id="upload-area">
               <noscript><h3>File-Upload Area</h3></noscript>
               <img src="upload_area.jpg" alt="DbIo Upload Area" title="DbIo Upload Area" />
-              <p>You'll use this section to upload any <code class="no-pad">.csv</code> files that you plan on importing into your site's database.  Use the &quot;Browse&quot; button to select your file, making sure that the file is not larger than the <b>Maximum File Upload Size</b> shown in the <em>DbIo</em> configuration area, and then click the &quot;Upload&quot; button.  The file will be saved in the <code class="no-pad">/YOUR_ADMIN/dbio</code> folder.</p>
+              <p>If the currently-selected handler supports imports, you can use this section to upload any <code class="no-pad">.csv</code> files that you plan on importing into your site's database.  Use the &quot;Browse&quot; button to select your file, making sure that the file is not larger than the <b>Maximum File Upload Size</b> shown in the <em>DbIo</em> configuration area, and then click the &quot;Upload&quot; button.  The file will be saved in the <code class="no-pad">/YOUR_ADMIN/dbio</code> folder.</p>
+              <p><strong>Note:</strong>  The imported file's name must be associated with the currently-selected handler, e.g. if the <em>Products</em> handler is selected, the uploaded file's name must be of the form <code class="no-pad">dbio.Products.*.csv</code>.</p>
               <div class="clearBoth"></div>
             </div>
             
             <div id="import-area">
               <noscript><h3>Import/File-Action Area</h3></noscript>
               <img src="import_area.jpg" alt="DbIo Import/Action Area" title="DbIo Import/Action Area" />
-              <p>This section of the <em>DbIo Manager</em> enables you to manage the .csv files present in your site's <code class="no-pad">/YOUR_ADMIN/dbio</code> folder.</p>
+              <p>This section of the <em>DbIo Manager</em> enables you to manage the .csv files present in your site's <code class="no-pad">/YOUR_ADMIN/dbio</code> folder and the <em>DbIo</em>-generated .log files present in your site's <code class="no-pad">/YOUR_ADMIN/dbio/logs</code> folder.</p>
               <p>You can delete selected files by ticking the associated checkbox(es) in the <b>Delete?</b> column and then clicking the &quot;Delete&quot; button &mdash; you'll receive a confirmation pop-up just to make sure.</p>
-              <p>You can also use the dropdown selection at the top of the display to perform additional actions on the selected via associated radio-button in the <b>Choose File</b> column:</p>
+              <p class="clearBoth">You can also use the dropdown selection at the top of the display to perform additional actions on the selected via associated radio-button in the <b>Choose File</b> column:</p>
               <ol>
-                <li><b>Split</b>.  Causes the associated .csv file to be <em>split</em> into multiple (and, thus, smaller) files to enable their download.  Refer to the <em>Split Record Count</em> displayed in the configuration area and change that if needed; the value identifies the number of records (i.e. lines in the .csv) that will be associated with each &quot;split&quot;.</li>
+                <li><b>Split</b>. Causes the associated .csv file to be <em>split</em> into multiple (and, thus, smaller) files to enable their download.  Refer to the <em>Split Record Count</em> displayed in the configuration area and change that if needed; the value identifies the number of records (i.e. lines in the .csv) that will be associated with each &quot;split&quot;.</li>
                 <li><b>Import (Full)</b>. Results in the associated .csv file to be <em>imported</em> into your site's database.  Make sure that you've created a database backup, just in case something goes awry!  Note also that a full import should <b>never, ever</b> be run with the <em>DbIo's</em> debug enabled; that will severely reduce the amount of processing that can be performed!</li>
                 <li><b>Import (Check-Only)</b>.  Results in the associated .csv file to be processed like it's going to be imported, <em>but no database changes are performed</em>.  You'll use this action, for example, to check your import file for any errors (like invalid dates) before actually updating the database.  This action, too, is severely hindered by the <em>DbIo's</em> debug-mode.</li>
-                <li><b>Download</b>.  Results in the associated .csv file being downloaded from your site to your computer.</li>
+                <li><b>Download</b>.  Results in the associated .csv or .log file being downloaded from your site to your computer.</li>
               </ol>
               <p>You can sort the files discovered by the <em>DbIo Manager</em> by the file-name, file-size or the last-modified date using the arrow-links in the file-list header.</p>
               <div class="clearBoth"></div>
@@ -475,28 +504,93 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
       </div>
       <!-- end dbio_manager section -->
       
+      <!-- start dbio_template section -->
+      <div id="dbio_templates">
+        <noscript><h2>Managing DbIo Templates</h2></noscript>
+        <p>This section describes how to use the <em>Configure DbIo Templates</em> tool, available via click of the &quot;Manage Templates&quot; button from <b><i>Tools-&gt;Database I/O Manager</i></b> when the currently-selected handler supports export <em>templating</em>.</p>
+        <p>The <em>DbIo</em>'s templating support allows you to choose a subset of the fields provided by the currently-selected handler for a customized export and subsequent import.  There are a couple of pre-defined templates for the <em>Products</em> handler that will give you an idea of what you can do with this feature.</p>
+        <div class="tab-container" id="inner-container4">
+          <ul class="etabs">
+            <li class="tab"><a href="#template_listing">Listing Display</a></li>
+            <li class="tab"><a href="#template_edit">Create or Edit a Template</a></li>
+            <li class="tab"><a href="#template_copy">Copy a Template</a></li>
+          </ul>
+          <div class="panel-container">
+            
+            <div id="template_listing">
+              <noscript><h3>Listing Display</h3></noscript>
+              <p>On initial entry to the <em>DbIo</em> template-manager, the templates for the currently-selected handler are displayed. The following information is displayed for each:</p>
+              <ul>
+                <li><strong>Scope</strong>. Indicates whether the template is <em>Public</em> &mdash; available for all authorized admins &mdash; or <em>Private</em> &mdash; available only for the currently-logged-in admin's use.</li>
+                <li><strong>Template Name</strong>. Contains the &quot;name&quot; of the template; the value must contain only alphanumeric and underscore (_) characters, since the value is used to form a portion of an exported CSV file's name when the export is performed with the template.</li>
+                <li><strong>Description</strong>.  Contains a text-blob (no HTML allowed) that you can use to remind yourself of the purpose of this template.  When you select the template in the <em>Database I/O Manager</em>'s export section, this description is displayed.</li>
+                <li><strong>Last Updated By</strong>.  Identifies the name and ID of the admin who last updated the template; the value displays as <em>System</em> for any pre-defined templates.</li>
+                <li><strong>Last Update Date</strong>. Identifies the date and time of the templates last update.</li>
+              </ul>
+              <img class="wide" src="template_listing.jpg" alt="DbIo Template Listing" title="DbIo Template Listing" />
+              <div class="clearBoth"></div>
+            </div>
+            
+            <div id="template_edit">
+              <noscript><h3>Create or Edit a Template</h3></noscript>
+              <p>When you create or edit a DbIo template, a page similar to the following is displayed.  Within this page, you identify the scope, name and description of the template and then use the <strong>Choose Template Fields</strong> block to select the fields to be included in a template-based export as well as the order that those fields will appear in the output .CSV file.  Some features of that section are:</p>
+              <ol>
+                <li>Each of the <em>multi-select</em> dropdown lists can be stretched vertically to allow you to view all associated fields.</li>
+                <li>If the handler supports an import action on the generated CSV, there might be some &quot;key&quot; fields that are required; these are pre-filled into the right-side block and are required fields.</li>
+                <li>Use the left- and right-arrows to move fields between the left-side (all available fields) and right-side (your customized fields) blocks.</li>
+                <li>Use the up- and down-arrows to order the fields within the customized-fields' block.</li>
+              </ol>
+              <img class="wide" src="new_template.jpg" alt="DbIo Create or Edit a Template" title="DbIo Create or Edit a Template" />
+            </div>
+             
+            <div id="template_copy">
+              <noscript><h3>Copy a Template</h3></noscript>
+              <p>When you <em>copy</em> an existing template, you can change the template's scope and/or name but the name you choose must be unique within its scope.  This feature allows you to make a private copy of a public template and further customize it for your use.  You can also make a public copy of a private template that all authorized admins can use.</p>
+              <img class="wide" src="copy_template.jpg" alt="DbIo Copy a Template" title="DbIo Copy a Template" />
+              <div class="clearBoth"></div>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+      <!-- end dbio_templates section -->
+      
       <!-- start history section -->
       <div id="history">
         <noscript><h3>Version History</h3></noscript>
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
         <ul>
-          <li>v1.2.0, 2017-01-xx:<ul>
+          <li>v1.2.0, 2017-02-06:<ul>
+            <li>BUGFIX: Truncate character fields to their database-defined maximum length prior to import.</li>
+            <li>CHANGE: Add an handler to support import/export of the manufacturers' information.</li>
+            <li>CHANGE: Enable download and removal of <em>DbIo</em> log files.</li>
+            <li>CHANGE: Reduce creation of &quot;nuisance&quot; DbIo log files.</li>
+            <li>CHANGE: Use a text-link instead of icon to indicate that import statistics are available.</li>
+            <li>CHANGE: Enable exported report customizations.</li>
             <li>CHANGE: Restructure admin tool's user interface.</li>
             <li>CHANGE: Conditionally present a handler's filters for use in the database-export processing.</li>
             <li>BUGFIX: Maintain current file selection.</li>
-            <li>The following files were changed or <span class="added">added</span>:<ol>
+            <li>The following files were changed, <span class="added">added</span> or <span class="removed">removed</span>:<ol>
+              <li>/docs/dbio/uninstall/uninstall_dbio.sql</li>
+              <li><span class="added">/YOUR_ADMIN/dbio_customize.php</span></li>
               <li>/YOUR_ADMIN/dbio_manager.php</li>
+              <li><span class="removed">/YOUR_ADMIN/images/icons/dbio_information.png</span></li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+              <li><span class="added">/YOUR_ADMIN/classes/dbio/DbIoManufacturersHandler.php</span></li>
               <li><span class="added">/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersBase.php</span></li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersHandler.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersProductsHandler.php</li>
-              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersProductsAttribsHandler.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/extra_datafiles/dbio_file_database_names_admin.php</li>
               <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio_customize.php</span></li>
               <li>/YOUR_ADMIN/includes/languages/english/dbio_manager.php</li>
+              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/DbIoManufacturersHandler.php</span></li>
               <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoOrdersHandler.php</li>
               <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoOrdersProductsHandler.php</li>
-              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoOrdersProductsAttribsHandler.php</li>
               <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/languages/english/extra_definitions/dbio_admin_extra_definitions.php</li>
             </ol></li>
           </ul></li>
           <li>v1.1.1, 2017-01-04:<ul>

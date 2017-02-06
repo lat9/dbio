@@ -7,8 +7,8 @@ if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
 }
 
-define('DBIO_CURRENT_VERSION', '1.2.0-beta3');
-define('DBIO_CURRENT_UPDATE_DATE', '2017-01-xx');
+define('DBIO_CURRENT_VERSION', '1.2.0');
+define('DBIO_CURRENT_UPDATE_DATE', '2017-02-06');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
 
@@ -98,6 +98,48 @@ if (version_compare (DBIO_MODULE_VERSION, '1.2.0', '<')) {
                 PRIMARY KEY (dbio_reports_id,language_id)
              ) ENGINE=MyISAM"
         );
+    }
+    
+    // -----
+    // If not already present, insert a couple of system-generated examples into the reports tables.
+    //
+    $install_check = $db->Execute ("SELECT * FROM " . TABLE_DBIO_REPORTS . " WHERE report_name IN ('quantity_only', 'meta_tags')");
+    if ($install_check->EOF) {
+        $languages = zen_get_languages ();
+        
+        $db->Execute (
+            "INSERT INTO " . TABLE_DBIO_REPORTS . "
+                (handler_name, report_name, admin_id, last_updated_by, last_updated, field_info) 
+            VALUES
+                ('Products', 'quantity_only', 0, 0, now(), 0x5b2270726f64756374735f6964222c2270726f64756374735f6d6f64656c222c2270726f64756374735f7175616e74697479225d)"
+        );
+        $dbio_reports_id = $db->Insert_ID ();
+        foreach ($languages as $current_language) {
+            $current_language_id = $current_language['id'];
+            $db->Execute (
+                "INSERT INTO " . TABLE_DBIO_REPORTS_DESCRIPTION . "
+                    (dbio_reports_id, language_id, report_description) 
+                VALUES
+                    ($dbio_reports_id, $current_language_id, 'This template supports products'' quantity updates, creating an exported file that contains a product''s ID, model-number and current quantity.')"
+            );
+        }
+        
+        $db->Execute (
+            "INSERT INTO " . TABLE_DBIO_REPORTS . "
+                (handler_name, report_name, admin_id, last_updated_by, last_updated, field_info) 
+            VALUES
+                ('Products', 'meta_tags', 0, 0, now(), 0x5b2270726f64756374735f6964222c2270726f64756374735f6d6f64656c222c226d657461746167735f7469746c655f737461747573222c226d657461746167735f70726f64756374735f6e616d655f737461747573222c226d657461746167735f6d6f64656c5f737461747573222c226d657461746167735f70726963655f737461747573222c226d657461746167735f7469746c655f7461676c696e655f737461747573225d)"
+        );
+        $dbio_reports_id = $db->Insert_ID ();
+        foreach ($languages as $current_language) {
+            $current_language_id = $current_language['id'];
+            $db->Execute (
+                "INSERT INTO " . TABLE_DBIO_REPORTS_DESCRIPTION . "
+                    (dbio_reports_id, language_id, report_description) 
+                VALUES
+                    ($dbio_reports_id, $current_language_id, 'This template supports the export of a product''s meta-tags, including each product''s ID, model-number and meta-tag-related fields.')"
+            );
+        }
     }
 }
 
