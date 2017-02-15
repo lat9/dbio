@@ -84,7 +84,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
 
 <body>
   <h1 id="title">Database I/O Manager (DbIo) for Zen Cart&reg;</h1>
-  <p>Version 1.2.0.  Copyright &copy; 2015-2017, <a href="http://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
+  <p>Version 1.2.1.  Copyright &copy; 2015-2017, <a href="http://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
   <p>Current Support Thread on the Zen Cart forums: <a href="https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread</a></p>
   
   <div class="tab-container" id="outer-container">
@@ -560,6 +560,14 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <noscript><h3>Version History</h3></noscript>
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
         <ul>
+          <li>v1.2.1, 2017-02-xx:<ul>
+            <li>BUGFIX: Add backticks around database field names.</li>
+            <li>CHANGE: Enable fixed-field handlers to include special-handling fields.</li>
+            <li>The following files were changed:<ol>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+            </ol></li>
+          </ul></li>
           <li>v1.2.0, 2017-02-06:<ul>
             <li>BUGFIX: Truncate character fields to their database-defined maximum length prior to import.</li>
             <li>CHANGE: Add an handler to support import/export of the manufacturers' information.</li>
