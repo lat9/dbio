@@ -24,6 +24,7 @@ define ('DBIO_FORMAT_MESSAGE_IMPORT_FILE_MISSING', 'Import aborted:  Missing inp
 define ('DBIO_WARNING_ENCODING_ERROR', 'DbIo Import: Could not encode the input for ' . CHARSET . '.');
 define ('DBIO_ERROR_NO_HANDLER', 'DbIo Export. No DbIo handlers are configured.');
 define ('DBIO_ERROR_EXPORT_NO_LANGUAGE', 'DbIo Export.  The language code "%s" is not configured for the store.');
+define ('DBIO_ERROR_NO_PHP_MBSTRING', "The DbIo requires the &quot;php-mbstring&quot; extension to be loaded; contact your webhost and ask them to install that extension.");
 
 // -----
 // Messages used by the DbIoHandler class

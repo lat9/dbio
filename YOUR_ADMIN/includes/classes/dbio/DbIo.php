@@ -22,14 +22,20 @@ class DbIo extends base
             require_once ($message_file_name);
         }
 
-        mb_internal_encoding (CHARSET);
-        ini_set ('mbstring.substitute_character', DBIO_INVALID_CHAR_REPLACEMENT);
-        ini_set ("auto_detect_line_endings", true);
-               
+        $this->initialized = false;
+              
         spl_autoload_register (array ($this, 'autoloadDbIoClasses'));
 
-        $this->initializeConfig ($dbio_type);
-
+        if (!function_exists ('mb_internal_encoding')) {
+            $this->message = DBIO_ERROR_NO_PHP_MBSTRING;
+        } else {
+            mb_internal_encoding (CHARSET);
+            
+            ini_set ('mbstring.substitute_character', DBIO_INVALID_CHAR_REPLACEMENT);
+            ini_set ("auto_detect_line_endings", true);
+            
+            $this->initializeConfig ($dbio_type);
+        }
     }
     
     protected function autoloadDbIoClasses ($class_name)
@@ -82,7 +88,6 @@ class DbIo extends base
     protected function initializeConfig ($dbio_type) 
     {
         unset ($this->handler);
-        $this->initialized = false;
         $this->message = '';
 
         $this->dbio_type = $dbio_type;   

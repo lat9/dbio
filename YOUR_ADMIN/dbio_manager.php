@@ -37,8 +37,16 @@ if (!$ok_to_proceed) {
     
     require (DIR_FS_DBIO_CLASSES . 'DbIo.php');
     $dbio = new DbIo;
-    $dbio_handlers = $dbio->getAvailableHandlers ();
-    if (count ($dbio_handlers) == 0) {
+    if (!$dbio->initialized) {
+        $ok_to_proceed = false;
+        $error_message = $dbio->getMessage ();
+    } else {
+        $dbio_handlers = $dbio->getAvailableHandlers ();
+    }
+
+    if (!$ok_to_proceed) {
+        $error_message = $dbio->getMessage ();
+    } elseif (count ($dbio_handlers) == 0) {
         $ok_to_proceed = false;
         $error_message = DBIO_MESSAGE_NO_HANDLERS_FOUND;
     } else {
