@@ -989,8 +989,10 @@ abstract class DbIoHandler extends base
             $no_header_array = (isset ($this->config['fixed_fields_no_header']) && is_array ($this->config['fixed_fields_no_header'])) ? $this->config['fixed_fields_no_header'] : array ();
             $current_language_code = ($this->export_language == 'all') ? $this->first_language_code : $this->export_language;
             foreach ($this->config['fixed_headers'] as $field_name => $table_name) {
+                if ($table_name != self::DBIO_SPECIAL_IMPORT) {
                 $field_alias = (isset ($this->config['tables'][$table_name]['alias'])) ? ($this->config['tables'][$table_name]['alias'] . '.') : '';
                 $this->select_clause .= "$field_alias$field_name, ";
+                }
                 if (!in_array ($field_name, $no_header_array)) {
                     $language_suffix = '';
                     if (isset ($this->config['tables'][$table_name]['language_field'])) {
@@ -1125,6 +1127,18 @@ abstract class DbIoHandler extends base
         return $table_prefix;
     }
     
+    protected function insertBeforeKey ($array, $key, $data)
+    {
+        $offset = array_search ($key, array_keys ($array));
+        if ($offset === false) {
+            $offset = count ($array);
+        }
+        return array_merge (
+            array_slice ($array, 0, $offset),
+            $data,
+            array_slice ($array, $offset)
+        );
+    }
     // -----
     // This function, provided by the detailed handler when it's set 'supports_dbio_commands', enables a handler to support
     // "special" functions (like "REMOVE") during its import processing.
