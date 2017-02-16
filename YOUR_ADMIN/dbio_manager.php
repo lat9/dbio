@@ -37,7 +37,7 @@ if (!$ok_to_proceed) {
     
     require (DIR_FS_DBIO_CLASSES . 'DbIo.php');
     $dbio = new DbIo;
-    if (!$dbio->initialized) {
+    if (!$dbio->isInitialized ()) {
         $ok_to_proceed = false;
         $error_message = $dbio->getMessage ();
     } else {

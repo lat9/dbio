@@ -28,6 +28,7 @@ class DbIo extends base
 
         if (!function_exists ('mb_internal_encoding')) {
             $this->message = DBIO_ERROR_NO_PHP_MBSTRING;
+            trigger_error (DBIO_ERROR_NO_PHP_MBSTRING, E_USER_WARNING);
         } else {
             mb_internal_encoding (CHARSET);
             
@@ -51,6 +52,11 @@ class DbIo extends base
     public function getMessage () 
     {
         return ($this->message == '') ? $this->handler->getHandlerMessage () : $this->message;
+    }
+    
+    public function isInitialized ()
+    {
+        return $this->initialized;
     }
   
     // -----
@@ -91,7 +97,9 @@ class DbIo extends base
         $this->message = '';
 
         $this->dbio_type = $dbio_type;   
-        if ($this->dbio_type != '') {
+        if ($this->dbio_type == '') {
+            $this->initialized = true;
+        } else {
             $handler_classname = 'DbIo' . $dbio_type . 'Handler';
             $dbio_handler = DIR_FS_DBIO_CLASSES . $handler_classname . '.php';
             if (!file_exists ($dbio_handler)) {
