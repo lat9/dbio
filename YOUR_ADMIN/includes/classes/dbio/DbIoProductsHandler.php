@@ -432,26 +432,38 @@ class DbIoProductsHandler extends DbIoHandler
                         $language_id = $this->languages[DEFAULT_LANGUAGE];
                         $categories = explode ('^', $field_value);
                         foreach ($categories as $current_category_name) {
-                            $category_info_sql = "SELECT c.categories_id FROM " . TABLE_CATEGORIES . " c, " . TABLE_CATEGORIES_DESCRIPTION . " cd
-                                                   WHERE c.parent_id = $parent_category 
-                                                     AND c.categories_id = cd.categories_id
-                                                     AND cd.categories_name = :categories_name: 
-                                                     AND cd.language_id = $language_id LIMIT 1";
+                            $category_info_sql = 
+                                "SELECT c.categories_id FROM " . TABLE_CATEGORIES . " c
+                                        INNER JOIN " . TABLE_CATEGORIES_DESCRIPTION . " cd
+                                            ON cd.categories_id = c.categories_id
+                                           AND cd.language_id = $language_id
+                                  WHERE c.parent_id = $parent_category 
+                                    AND cd.categories_name = :categories_name: 
+                                  LIMIT 1";
                             $category_info = $db->Execute ($db->bindVars ($category_info_sql, ':categories_name:', $current_category_name, 'string'), false, false, 0, true);
                             if (!$category_info->EOF) {
                                 $parent_category = $category_info->fields['categories_id'];
                               
                             } elseif ($this->import_is_insert) {
-                                $categories_name_ok = false;
-                                $this->debugMessage ('[*] Product not inserted at line number ' . $this->stats['record_count'] . ", no match found for categories_name ($current_category_name).", self::DBIO_WARNING);
-                                break;
+                                if (DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES != 'No') {
+                                    $categories_name_ok = false;
+                                    $this->debugMessage ('[*] Product not inserted at line number ' . $this->stats['record_count'] . ", no match found for categories_name ($current_category_name).", self::DBIO_WARNING);
+                                } else {
+                                    $parent_category = $this->createCategory($current_category_name, $parent_category);
+                                    if ($parent_category === false) {
+                                        $categories_name_ok = false;
+                                    }
+                                }
+                                if (!$categories_name_ok) {
+                                    break;
+                                }
                             }
                         }
                         if ($categories_name_ok && $this->import_is_insert) {
                             $category_check = $db->Execute ("SELECT categories_id FROM " . TABLE_CATEGORIES . " WHERE parent_id = $parent_category LIMIT 1", false, false, 0, true);
                             if (!$category_check->EOF) {
                                 $categories_name_ok = false;
-                                $this->debugMessage ("[*] Product not inserted at line number " . $this->stats['record_count'] . "; category ($field_name) has categories.", self::DBIO_WARNING);
+                                $this->debugMessage ("[*] Product not inserted at line number " . $this->stats['record_count'] . "; category id ($parent_category) has categories.", self::DBIO_WARNING);
                             } else {
                                 $this->import_sql_data[TABLE_PRODUCTS]['master_categories_id'] = array ( 'value' => $parent_category, 'type' => 'integer' );
                                 $this->import_sql_data[TABLE_PRODUCTS_TO_CATEGORIES]['categories_id'] = array ( 'value' => $parent_category, 'type' => 'integer' );
@@ -470,6 +482,62 @@ class DbIoProductsHandler extends DbIoHandler
                 break;
         }  //-END switch interrogating $table_name
     }  //-END function importAddField
+    
+    protected function createCategory($categories_name, $parent_category_id)
+    {
+        global $db;
+        $created_category_id = false;
+        $parent_check = $db->Execute(
+            "SELECT products_id
+               FROM " . TABLE_PRODUCTS_TO_CATEGORIES . "
+              WHERE categories_id = $parent_category_id
+              LIMIT 1"
+        );
+        if (!$parent_check->EOF) {
+            $this->debugMessage("[*] Cannot add the category named $categories_name to parent_category_id $parent_category_id; the parent category contains products.", self::DBIO_ERROR);
+        } else {
+            $this->debugMessage("[*] Creating a category named $categories_name, with parent_category_id $parent_category_id.", self::DBIO_WARNING | self::DBIO_ACTIVITY);
+            if ($this->operation != 'check') {
+                $sql_data_array = array(
+                    array( 
+                        'fieldName' => 'parent_id', 
+                        'value' => $parent_category_id, 
+                        'type' => 'integer' 
+                    ),
+                    array(
+                        'fieldName' => 'date_added', 
+                        'value' => 'now()', 
+                        'type' => 'noquotestring' 
+                    )
+                );
+                $db->perform(TABLE_CATEGORIES, $sql_data_array);
+                $created_category_id = zen_db_insert_id();
+                
+                $description_array = array(
+                    array( 
+                        'fieldName' => 'categories_id', 
+                        'value' => $created_category_id, 
+                        'type' => 'integer' 
+                    ),
+                    array(
+                        'fieldName' => 'categories_name', 
+                        'value' => $categories_name, 
+                        'type' => 'string' 
+                    )
+                );
+                foreach ($this->languages as $language_code => $language_id) {
+                    $sql_data_array = $description_array;
+                    $sql_data_array[] = array (
+                        'fieldName' => 'language_id', 
+                        'value' => $language_id, 
+                        'type' => 'integer' 
+                    );
+                    $db->perform(TABLE_CATEGORIES_DESCRIPTION, $sql_data_array);
+                }                
+            }
+        }
+        return $created_category_id;
+    }
 
     // -----
     // This function, issued just prior to the database action, allows the I/O handler to make any "last-minute" changes based
@@ -495,9 +563,12 @@ class DbIoProductsHandler extends DbIoHandler
         }
         if ($table_name == TABLE_PRODUCTS_TO_CATEGORIES) {
             if ($this->operation != 'check') {
-                foreach ($table_fields as $field_name => $field_data) {
-                    $db->Execute ("INSERT IGNORE INTO $table_name (products_id, categories_id) VALUES ( $products_id, " . (int)$field_data['value'] . ")");
-                }
+                $db->Execute(
+                    "INSERT IGNORE INTO $table_name 
+                        (products_id, categories_id) 
+                     VALUES 
+                        ( $products_id, " . (int)$table_fields['categories_id']['value'] . ")"
+                );
             }
             $table_fields = false;
         }
