@@ -498,6 +498,7 @@ abstract class DbIoHandler extends base
             $this->headers = array ();
             
             $this->handler_does_import = (isset ($this->config['handler_does_import']) && $this->config['handler_does_import'] === true);
+            $this->handler_overrides_import = (isset ($this->config['handler_overrides_import']) && $this->config['handler_overrides_import'] === true);
             $import_ok = $this->importInitializeKeys ();
             
             $extra_select_clause = '';
@@ -519,7 +520,7 @@ abstract class DbIoHandler extends base
                         }
                     }
                 }
-            } else {
+            } elseif (!$this->handler_overrides_import) {
                 foreach ($this->config['tables'] as $config_table_name => $config_table_info) {
                     if (isset ($config_table_info['import_extra_keys_only'])) {
                         continue;
@@ -574,6 +575,10 @@ abstract class DbIoHandler extends base
 
         $this->debugMessage ("importGetHeader, using headers:\n" . print_r ($header, true));
         $initialization_complete = true;
+        
+        if ($this->handler_overrides_import) {
+            return $initialization_complete;
+        }
         
         $this->import_sql_data = array ();
         $this->table_names = array ();
@@ -788,7 +793,7 @@ abstract class DbIoHandler extends base
         // header, the record is not imported.
         //
         $key_index = $this->key_index;
-        if (count ($data) < count ($this->headers)) {
+        if (!$this->handler_overrides_import && count ($data) < count ($this->headers)) {
             $this->debugMessage ('Data record at line #' . $this->stats['record_count'] . ' not imported.  Column count (' . count ($data) . ') less than header column count (' . count ($this->headers) . ').', self::DBIO_ERROR);
           
         } else {
@@ -809,30 +814,32 @@ abstract class DbIoHandler extends base
             //    active handler's additional processing via the importCheckKeyValue function.  In this case, the class
             //    variable 'data_key_check' is set to contain the multiple-record SQL query result.
             //
-            unset ($this->data_key_check);
-            $data_key_check = $db->Execute ($this->importBindKeyValues ($data, $this->data_key_sql), false, false, 0, true);
-            switch ($data_key_check->RecordCount ()) {
-                case 0:
-                    $this->import_action = 'insert';
-                    $this->import_is_insert = true;
-                    $this->where_clause = '';
-                    $this->key_fields = array ();
-                    break;
-                case 1:
-                    $this->import_action = 'update';
-                    $this->import_is_insert = false;
-                    $this->where_clause = $this->importBindKeyValues ($data, $this->key_where_clause);
-                    $this->key_fields = $data_key_check->fields;
-                    break;
-                default:
-                    $this->debugMessage ("Multiple records match the keys at line #" . $this->stats['record_count'] . "; update capability to be checked by the specific handler.");
-                    $this->import_action = 'update';
-                    $this->import_is_insert = false;
-                    $this->where_clause = '';
-                    $this->key_fields = array ();
-                    $this->record_status = false;
-                    $this->data_key_check = $data_key_check;
-                    break;
+            if (!$this->handler_overrides_import) {
+                unset ($this->data_key_check);
+                $data_key_check = $db->Execute ($this->importBindKeyValues ($data, $this->data_key_sql), false, false, 0, true);
+                switch ($data_key_check->RecordCount ()) {
+                    case 0:
+                        $this->import_action = 'insert';
+                        $this->import_is_insert = true;
+                        $this->where_clause = '';
+                        $this->key_fields = array ();
+                        break;
+                    case 1:
+                        $this->import_action = 'update';
+                        $this->import_is_insert = false;
+                        $this->where_clause = $this->importBindKeyValues ($data, $this->key_where_clause);
+                        $this->key_fields = $data_key_check->fields;
+                        break;
+                    default:
+                        $this->debugMessage ("Multiple records match the keys at line #" . $this->stats['record_count'] . "; update capability to be checked by the specific handler.");
+                        $this->import_action = 'update';
+                        $this->import_is_insert = false;
+                        $this->where_clause = '';
+                        $this->key_fields = array ();
+                        $this->record_status = false;
+                        $this->data_key_check = $data_key_check;
+                        break;
+                }
             }
              
             // -----
@@ -873,7 +880,7 @@ abstract class DbIoHandler extends base
                             $this->stats['updates']++;
                         }
                         
-                        if ($this->handler_does_import === true) {
+                        if ($this->handler_does_import === true || $this->handler_overrides_import === true) {
                             $this->importFinishProcessing ();
                         } else {
                             $record_key_value = false;
@@ -990,8 +997,8 @@ abstract class DbIoHandler extends base
             $current_language_code = ($this->export_language == 'all') ? $this->first_language_code : $this->export_language;
             foreach ($this->config['fixed_headers'] as $field_name => $table_name) {
                 if ($table_name != self::DBIO_SPECIAL_IMPORT) {
-                $field_alias = (isset ($this->config['tables'][$table_name]['alias'])) ? ($this->config['tables'][$table_name]['alias'] . '.') : '';
-                $this->select_clause .= "$field_alias$field_name, ";
+                    $field_alias = (isset ($this->config['tables'][$table_name]['alias'])) ? ($this->config['tables'][$table_name]['alias'] . '.') : '';
+                    $this->select_clause .= "$field_alias$field_name, ";
                 }
                 if (!in_array ($field_name, $no_header_array)) {
                     $language_suffix = '';
@@ -1183,50 +1190,52 @@ abstract class DbIoHandler extends base
         $this->alternate_key_included = false;
         $this->variable_keys = array ();
         $this->key_field_names = '';
-        foreach ($this->config['keys'] as $table_name => $table_key_fields) {
-            $table_alias = $table_key_fields['alias'];
-            $this->key_from_clause .= "$table_name AS $table_alias, ";
-            foreach ($table_key_fields as $key_field_name => $key_field_attributes) {
-                // -----
-                // Bypass "special" entries within the configuration's keys.
-                //
-                if ($key_field_name == 'alias' || $key_field_name == 'capture_key_value') {
-                    continue;
-                }
-                $this->key_field_names .= "$key_field_name, ";
-                $key_type = $key_field_attributes['type'];
-                $this->alternate_key_included = $this->alternate_key_included || ($key_type & self::DBIO_KEY_IS_ALTERNATE) == self::DBIO_KEY_IS_ALTERNATE;
-                if ($key_type & self::DBIO_KEY_IS_VARIABLE) {
-                    $key_match_variable = ":key_value$key_number:";
-                    $key_number++;
-                    if ($this->key_where_clause != '') {
-                        $this->key_where_clause .= (($key_type & self::DBIO_KEY_IS_ALTERNATE) ? ' OR ' : ' AND ');
+        if (!$this->handler_overrides_import) {
+            foreach ($this->config['keys'] as $table_name => $table_key_fields) {
+                $table_alias = $table_key_fields['alias'];
+                $this->key_from_clause .= "$table_name AS $table_alias, ";
+                foreach ($table_key_fields as $key_field_name => $key_field_attributes) {
+                    // -----
+                    // Bypass "special" entries within the configuration's keys.
+                    //
+                    if ($key_field_name == 'alias' || $key_field_name == 'capture_key_value') {
+                        continue;
                     }
-                    $this->key_where_clause .= "$table_alias.$key_field_name = $key_match_variable";
-                    $this->variable_keys[$key_field_name] = array ( 'table_name' => $table_name, 'match_variable_name' => $key_match_variable, 'key_is_alternate' => (boolean)($key_type & self::DBIO_KEY_IS_ALTERNATE) );
-                } elseif ($key_type & self::DBIO_KEY_IS_FIXED) {
-                    if ($this->key_where_clause != '') {
-                        $this->key_where_clause .= ' AND ';
+                    $this->key_field_names .= "$key_field_name, ";
+                    $key_type = $key_field_attributes['type'];
+                    $this->alternate_key_included = $this->alternate_key_included || ($key_type & self::DBIO_KEY_IS_ALTERNATE) == self::DBIO_KEY_IS_ALTERNATE;
+                    if ($key_type & self::DBIO_KEY_IS_VARIABLE) {
+                        $key_match_variable = ":key_value$key_number:";
+                        $key_number++;
+                        if ($this->key_where_clause != '') {
+                            $this->key_where_clause .= (($key_type & self::DBIO_KEY_IS_ALTERNATE) ? ' OR ' : ' AND ');
+                        }
+                        $this->key_where_clause .= "$table_alias.$key_field_name = $key_match_variable";
+                        $this->variable_keys[$key_field_name] = array ( 'table_name' => $table_name, 'match_variable_name' => $key_match_variable, 'key_is_alternate' => (boolean)($key_type & self::DBIO_KEY_IS_ALTERNATE) );
+                    } elseif ($key_type & self::DBIO_KEY_IS_FIXED) {
+                        if ($this->key_where_clause != '') {
+                            $this->key_where_clause .= ' AND ';
+                        }
+                        $this->key_where_clause .= "$table_alias.$key_field_name = " . $key_field_attributes['match_fixed_key'];
+                    } elseif (!($key_type & self::DBIO_KEY_IS_MASTER)) {
+                        $keys_ok = false;
+                        $this->message = sprintf ('Unknown key field type (%1$u) for %2$s::%3$s.', $field_type, $table_name, $key_field_name);
                     }
-                    $this->key_where_clause .= "$table_alias.$key_field_name = " . $key_field_attributes['match_fixed_key'];
-                } elseif (!($key_type & self::DBIO_KEY_IS_MASTER)) {
-                    $keys_ok = false;
-                    $this->message = sprintf ('Unknown key field type (%1$u) for %2$s::%3$s.', $field_type, $table_name, $key_field_name);
-                }
-                if ($key_type & (self::DBIO_KEY_SELECTED | self::DBIO_KEY_IS_MASTER)) {
-                    $this->key_select_clause .= "$table_alias.$key_field_name, ";
+                    if ($key_type & (self::DBIO_KEY_SELECTED | self::DBIO_KEY_IS_MASTER)) {
+                        $this->key_select_clause .= "$table_alias.$key_field_name, ";
+                    }
                 }
             }
-        }
-        if (!$keys_ok || $this->key_from_clause == '' || $this->key_select_clause == '' || $this->key_where_clause == '') {
-            $keys_ok = false;
-            $this->message = ($this->message == '') ? DBIO_MESSAGE_KEY_CONFIGURATION_ERROR : $this->message;
-        } else {
-            $this->key_from_clause = substr ($this->key_from_clause, 0, -2);  //-Strip trailing ', '
-            $this->key_select_clause = substr ($this->key_select_clause, 0, -2);
-            $this->data_key_sql = "SELECT " . $this->key_select_clause . "
-                                     FROM " . $this->key_from_clause . " 
-                                    WHERE " . $this->key_where_clause . (($this->alternate_key_included) ? '' : ' LIMIT 1');
+            if (!$keys_ok || $this->key_from_clause == '' || $this->key_select_clause == '' || $this->key_where_clause == '') {
+                $keys_ok = false;
+                $this->message = ($this->message == '') ? DBIO_MESSAGE_KEY_CONFIGURATION_ERROR : $this->message;
+            } else {
+                $this->key_from_clause = substr ($this->key_from_clause, 0, -2);  //-Strip trailing ', '
+                $this->key_select_clause = substr ($this->key_select_clause, 0, -2);
+                $this->data_key_sql = "SELECT " . $this->key_select_clause . "
+                                         FROM " . $this->key_from_clause . " 
+                                        WHERE " . $this->key_where_clause . (($this->alternate_key_included) ? '' : ' LIMIT 1');
+            }
         }
         return $keys_ok;
     }
