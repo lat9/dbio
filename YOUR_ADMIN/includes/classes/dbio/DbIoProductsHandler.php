@@ -445,7 +445,7 @@ class DbIoProductsHandler extends DbIoHandler
                                 $parent_category = $category_info->fields['categories_id'];
                               
                             } elseif ($this->import_is_insert) {
-                                if (DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES != 'No') {
+                                if (DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES != 'Yes') {
                                     $categories_name_ok = false;
                                     $this->debugMessage ('[*] Product not inserted at line number ' . $this->stats['record_count'] . ", no match found for categories_name ($current_category_name).", self::DBIO_WARNING);
                                 } else {
