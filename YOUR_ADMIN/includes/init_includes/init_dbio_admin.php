@@ -7,7 +7,7 @@ if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
 }
 
-define('DBIO_CURRENT_VERSION', '1.3.0-beta1');
+define('DBIO_CURRENT_VERSION', '1.3.0-beta2');
 define('DBIO_CURRENT_UPDATE_DATE', '2017-04-xx');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
@@ -146,11 +146,13 @@ if (DBIO_MODULE_VERSION != $version_release_date) {
     }
     
     if (version_compare($dbio_module_version, '1.3.0', '<')) {
-        $db->Execute(
-            "INSERT IGNORE INTO " . TABLE_CONFIGURATION . " 
-                ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) 
-            VALUES 
-                ( '<em>Products</em>: Auto-Create Categories on Import?', 'DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES', 'No', 'How should the <em>DbIo</em> handle missing categories on a <em>Products</em> import?  Choose <b>Yes</b> to have any missing categories automatially generated; choose <b>No</b> (the default) to disallow any product imports when the categories don\'t previously exist.', $cgi, 150, now(), NULL, 'zen_cfg_select_option(array(\'Yes\', \'No\'),')");
+        if (!defined('DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES')) {
+            $db->Execute(
+                "INSERT IGNORE INTO " . TABLE_CONFIGURATION . " 
+                    ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) 
+                VALUES 
+                    ( '<em>Products</em>: Auto-Create Categories on Import?', 'DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES', 'No', 'How should the <em>DbIo</em> handle missing categories on a <em>Products</em> import?  Choose <b>Yes</b> to have any missing categories automatially generated; choose <b>No</b> (the default) to disallow any product imports when the categories don\'t previously exist.', $cgi, 150, now(), NULL, 'zen_cfg_select_option(array(\'Yes\', \'No\'),')");
+        }
     }
 
     // ----
