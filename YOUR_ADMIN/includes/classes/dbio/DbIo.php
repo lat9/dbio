@@ -91,13 +91,18 @@ class DbIo extends base
     // is controlled by a file named class.dbio.$dbio_type.php, present in the DIR_FS_DBIO directory. That class-file 
     // is a dbio_handler-class object.
     //
+    // This function also calls a helper-function to ensure that the directories used by the DbIo for its operation
+    // exist and are writable.
+    //
     protected function initializeConfig ($dbio_type) 
     {
         unset ($this->handler);
         $this->message = '';
 
-        $this->dbio_type = $dbio_type;   
-        if ($this->dbio_type == '') {
+        $this->dbio_type = $dbio_type;
+        if (!$this->directoryCheck()) {
+            $this->initialized = false;
+        } elseif ($this->dbio_type == '') {
             $this->initialized = true;
         } else {
             $handler_classname = 'DbIo' . $dbio_type . 'Handler';
@@ -122,6 +127,27 @@ class DbIo extends base
             }
         }
         return $this->initialized;
+    }
+    
+    // -----
+    // This function checks to ensure that the DbIo's input/output directories are present and writable, returning
+    // a boolean indicator (true == OK, false == not-OK).
+    //
+    protected function directoryCheck()
+    {
+        $ok = false;
+        if (!is_dir(DIR_FS_DBIO)) {
+            $this->message = sprintf(DBIO_ERROR_MISSING_DIRECTORY, DIR_FS_DBIO);
+        } elseif (!is_writable(DIR_FS_DBIO)) {
+            $this->message = sprintf(DBIO_ERROR_DIRECTORY_NOT_WRITABLE, DIR_FS_DBIO);
+        } elseif (!is_dir(DIR_FS_DBIO_LOGS)) {
+            $this->message = sprintf(DBIO_ERROR_MISSING_DIRECTORY, DIR_FS_DBIO_LOGS);
+        } elseif (!is_writable(DIR_FS_DBIO_LOGS)) {
+            $this->message = sprintf(DBIO_ERROR_DIRECTORY_NOT_WRITABLE, DIR_FS_DBIO_LOGS);
+        } else {
+            $ok = true;
+        }
+        return $ok;
     }
   
     // -----

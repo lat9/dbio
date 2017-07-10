@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2016, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2017, Vinos de Frutas Tropicales.
 //
 
 // ----
@@ -25,6 +25,8 @@ define ('DBIO_WARNING_ENCODING_ERROR', 'DbIo Import: Could not encode the input 
 define ('DBIO_ERROR_NO_HANDLER', 'DbIo Export. No DbIo handlers are configured.');
 define ('DBIO_ERROR_EXPORT_NO_LANGUAGE', 'DbIo Export.  The language code "%s" is not configured for the store.');
 define ('DBIO_ERROR_NO_PHP_MBSTRING', "The DbIo requires the &quot;php-mbstring&quot; extension to be loaded; contact your webhost and ask them to install that extension.");
+define ('DBIO_ERROR_MISSING_DIRECTORY', "The directory (%s) was not found; no DbIo operations are possible until this is corrected.");
+define ('DBIO_ERROR_DIRECTORY_NOT_WRITABLE', "The directory (%s) is not writable; no DbIo operations are possible until this is corrected.");
 
 // -----
 // Messages used by the DbIoHandler class
