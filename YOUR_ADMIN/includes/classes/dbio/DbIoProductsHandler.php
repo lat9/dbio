@@ -459,7 +459,7 @@ class DbIoProductsHandler extends DbIoHandler
                                 }
                             }
                         }
-                        if ($categories_name_ok && $this->import_is_insert) {
+                        if ($categories_name_ok) {
                             $category_check = $db->Execute ("SELECT categories_id FROM " . TABLE_CATEGORIES . " WHERE parent_id = $parent_category LIMIT 1", false, false, 0, true);
                             if (!$category_check->EOF) {
                                 $categories_name_ok = false;
