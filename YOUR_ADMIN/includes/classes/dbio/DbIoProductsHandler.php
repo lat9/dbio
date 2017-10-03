@@ -128,7 +128,6 @@ class DbIoProductsHandler extends DbIoHandler
     public function exportPrepareFields (array $fields) 
     {
         $fields = parent::exportPrepareFields ($fields);
-        
         $products_id = $fields['products_id'];
         
         $tax_class_id = 0;
@@ -138,7 +137,6 @@ class DbIoProductsHandler extends DbIoHandler
         }
         
         $default_language_code = $this->first_language_code;
-      
         global $db;
         if ($this->export_language == 'all') {
             $this->debugMessage ('Products::exportPrepareFields, language = ' . $this->export_language . ', default language = ' . $default_language_code . ', sql: ' . $this->saved_data['products_description_sql'] . ', languages: ' . print_r ($this->languages, true));
@@ -161,7 +159,7 @@ class DbIoProductsHandler extends DbIoHandler
         // Add the manufacturer's name to the export, if enabled.
         //
         if (!($this->config['additional_headers']['v_manufacturers_name'] & self::DBIO_FLAG_NO_EXPORT)) {
-            $fields['manufacturers_name'] = zen_get_products_manufacturers_name ($products_id);
+            $fields = $this->insertAtCustomizedPosition($fields, 'manufacturers_name', zen_get_products_manufacturers_name($products_id));
         }
       
         // -----
@@ -169,7 +167,7 @@ class DbIoProductsHandler extends DbIoHandler
         //
         if (!($this->config['additional_headers']['v_tax_class_title'] & self::DBIO_FLAG_NO_EXPORT)) {
             $tax_class_info = $db->Execute ("SELECT tax_class_title FROM " . TABLE_TAX_CLASS . " WHERE tax_class_id = $tax_class_id LIMIT 1");
-            $fields['tax_class_title'] = ($tax_class_info->EOF) ? '' : $tax_class_info->fields['tax_class_title'];
+            $fields = $this->insertAtCustomizedPosition($fields, 'tax_class_title', ($tax_class_info->EOF) ? '' : $tax_class_info->fields['tax_class_title']);            
         }
       
         // -----
@@ -180,11 +178,10 @@ class DbIoProductsHandler extends DbIoHandler
             $default_language_id = $this->languages[DEFAULT_LANGUAGE];
             $categories_name = '';
             foreach ($cPath_array as $next_category_id) {
-                $category_info = $db->Execute ("SELECT categories_name FROM " . TABLE_CATEGORIES_DESCRIPTION . " WHERE categories_id = $next_category_id AND language_id = $default_language_id LIMIT 1");
+                $category_info = $db->Execute("SELECT categories_name FROM " . TABLE_CATEGORIES_DESCRIPTION . " WHERE categories_id = $next_category_id AND language_id = $default_language_id LIMIT 1");
                 $categories_name .= (($category_info->EOF) ? self::DBIO_UNKNOWN_VALUE : $category_info->fields['categories_name']) . '^';
-            
             }
-            $fields['categories_name'] = $this->exportEncodeData (substr ($categories_name, 0, -1));
+            $fields = $this->insertAtCustomizedPosition($fields, 'categories_name', $this->exportEncodeData(substr($categories_name, 0, -1)));
         }
 
         return $fields;

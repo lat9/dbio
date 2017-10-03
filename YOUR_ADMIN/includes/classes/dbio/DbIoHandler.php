@@ -396,7 +396,7 @@ abstract class DbIoHandler extends base
         }
         $this->debugMessage ("exportInitialize ($language), " . (($initialized) ? 'Successful' : ('Unsuccessful (' . $this->message . ')')) . 
                              "\nTables:\n" . print_r ($this->tables, true) . 
-                             "\nAdditional Headers\n" . print_r ($this->additional_headers, true) .
+                             "\nAdditional Headers\n" . print_r ($this->config['additional_headers'], true) .
                              "\nHeaders:\n" . print_r ($this->headers, true));
         return $initialized;
     }
@@ -1568,6 +1568,33 @@ abstract class DbIoHandler extends base
                 $after_key = $current_value;
             }
         }
+    }
+    
+    // -----
+    // Function to insert an associative-array element into the specified array at the location
+    // identified in the current customized field-list.
+    //
+    protected function insertAtCustomizedPosition($fields, $field_name, $field_value)
+    {
+        if (isset($this->customized_fields) && is_array($this->customized_fields)) {
+            $field_position = array_search($field_name, $this->customized_fields);
+            if ($field_position !== false) {
+                $prior_fields = array_slice($this->customized_fields, 0, $field_position);
+                $current_position = 0;
+                foreach ($fields as $key => $value) {
+                    if (!in_array($key, $prior_fields)) {
+                        $before = array_slice($fields, 0, $current_position, true);
+                        $after = array_slice($fields, $current_position, null, true);
+                        $fields = $before + array($field_name => $field_value) + $after;
+                        break;
+                    }
+                    $current_position++;
+                }
+            }
+        } else {
+            $fields[$field_name] = $field_value;
+        }
+        return $fields;
     }
 
 }
