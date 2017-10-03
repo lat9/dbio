@@ -17,7 +17,7 @@ class DbIoProductsHandler extends DbIoHandler
         global $db;
         DbIoHandler::loadHandlerMessageFile ('Products'); 
         return array (
-            'version' => '1.2.0',
+            'version' => '1.2.1',
             'handler_version' => '1.2.0',
             'include_header' => true,
             'export_only' => false,
@@ -559,6 +559,7 @@ class DbIoProductsHandler extends DbIoHandler
                 $table_fields['products_id'] = array ( 'value' => $products_id, 'type' => 'integer' );
             } else {
                 $this->where_clause = 'products_id = ' . (int)$this->key_fields['products_id'];
+                $products_id = (int)$this->key_fields['products_id'];
             }
         }
         if ($table_name == TABLE_PRODUCTS_TO_CATEGORIES) {
