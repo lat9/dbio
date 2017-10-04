@@ -17,8 +17,8 @@ class DbIoOrdersHandler extends DbIoOrdersBase
     {
         DbIoHandler::loadHandlerMessageFile ('Orders'); 
         return array (
-            'version' => '1.2.0',
-            'handler_version' => '1.2.0',
+            'version' => '1.3.0',
+            'handler_version' => '1.3.0',
             'include_header' => true,
             'export_only' => true,
             'allow_export_customizations' => true,
@@ -33,7 +33,7 @@ class DbIoOrdersHandler extends DbIoOrdersBase
         if (!($this->config['additional_headers']['v_orders_status_name'] & self::DBIO_FLAG_NO_EXPORT)) {
             $orders_status_id = $fields['orders_status'];
             unset ($fields['orders_status']);
-            $fields['orders_status_name'] = $this->getOrdersStatusName ($orders_status_id);
+            $fields = $this->insertAtCustomizedPosition($fields, 'orders_status_name', $this->getOrdersStatusName($orders_status_id));            
         }
         return $fields;
     }

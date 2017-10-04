@@ -17,8 +17,8 @@ class DbIoProductsHandler extends DbIoHandler
         global $db;
         DbIoHandler::loadHandlerMessageFile ('Products'); 
         return array (
-            'version' => '1.2.1',
-            'handler_version' => '1.2.0',
+            'version' => '1.3.0',
+            'handler_version' => '1.3.0',
             'include_header' => true,
             'export_only' => false,
             'allow_export_customizations' => true,
