@@ -84,7 +84,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
 
 <body>
   <h1 id="title">Database I/O Manager (DbIo) for Zen Cart&reg;</h1>
-  <p>Version 1.3.1 Copyright &copy; 2015-2017, <a href="http://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
+  <p>Version 1.4.0 Copyright &copy; 2015-2017, <a href="http://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
   <p>Current Support Thread on the Zen Cart forums: <a href="https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread</a></p>
   
   <div class="tab-container" id="outer-container">
@@ -345,7 +345,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td>Product Status, Manufacturer, Category</td>
                   <td>Yes</td>
                   <td>This handler supports import/export of <b>all</b> fields within the <code>products</code> and <code>products_description</code> tables, the basic product information.<ol>
-                    <li>Starting with <em>DbIo</em> v1.1.0, a product's record can be located via either its <code>products_id</code> or <code>products_model</code> (both columns are required in the import file) and an existing product can be <em>removed</em> by creating a <code>v_dbio_command</code> column with a product's entry set to <code>REMOVE</code>.</li>
+                    <li>Starting with <em>DbIo</em> v1.1.0, a product's record can be located via either its <code>products_id</code> or <code>products_model</code> (both columns are required in the import file) and an existing product can be <em>removed</em> by creating a <code>v_dbio_command</code> column with a product's entry set to <code>REMOVE</code>.  Starting with v1.4.0, a product's record can be forced to be created when the <code>v_dbio_command</code> column for the product is set to <code>ADD</code>.</li>
                     <li>Starting with v1.3.0, if a non-existent category is specified in a <code>v_categories_name</code> field, you control whether that category is automatically generated; see the <em>Configure</em> tab for more information.  Note that categories cannot be created within categories that currently contain products and that products cannot be added to categories that currently contain sub-categories.</li>
                   </ol></td>
                   <td>Complete Products</td>
@@ -568,6 +568,14 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <noscript><h3>Version History</h3></noscript>
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
         <ul>
+          <li>v1.4.0, 2017-11-28:<ul>
+            <li>CHANGE: Update the &quot;Products&quot; handler to allow a product to be unconditionally created.</li>
+            <li>The following files were changed:<ol>
+            </ol></li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+          </ul></li>
           <li>v1.3.1, 2017-10-04:<ul>
             <li>BUGFIX: Properly detect missing/read-only input-output directories.</li>
             <li>BUGFIX: (Products) Import with duplicate records results in debug-log.</li>
