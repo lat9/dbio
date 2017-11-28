@@ -3,8 +3,8 @@
 // Part of the DataBase Import/Export (aka dbIO) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2015-2017, Vinos de Frutas Tropicales.
 //
-if (!defined ('IS_ADMIN_FLAG')) {
-    exit ('Illegal access');
+if (!defined('IS_ADMIN_FLAG')) {
+    exit('Illegal access');
 }
 
 // -----
@@ -12,13 +12,15 @@ if (!defined ('IS_ADMIN_FLAG')) {
 //
 class DbIoProductsHandler extends DbIoHandler 
 {
-    public static function getHandlerInformation ()
+    const DBIO_COMMAND_ADD    = 'ADD';   //-Forces the current product to be added, even if the model already exists.
+    
+    public static function getHandlerInformation()
     {
         global $db;
-        DbIoHandler::loadHandlerMessageFile ('Products'); 
-        return array (
-            'version' => '1.3.0',
-            'handler_version' => '1.3.0',
+        DbIoHandler::loadHandlerMessageFile('Products'); 
+        return array(
+            'version' => '1.4.0',
+            'handler_version' => '1.4.0',
             'include_header' => true,
             'export_only' => false,
             'allow_export_customizations' => true,
@@ -26,15 +28,15 @@ class DbIoProductsHandler extends DbIoHandler
         );
     }
     
-    public static function getHandlerExportFilters ()
+    public static function getHandlerExportFilters()
     {
         global $db;
         
         $manufacturers_options = array ();
-        $manufacturers_info = $db->Execute ("SELECT manufacturers_id as `id`, manufacturers_name as `text` FROM " . TABLE_MANUFACTURERS . " ORDER BY manufacturers_name ASC");
+        $manufacturers_info = $db->Execute("SELECT manufacturers_id as `id`, manufacturers_name as `text` FROM " . TABLE_MANUFACTURERS . " ORDER BY manufacturers_name ASC");
         while (!$manufacturers_info->EOF) {
             $manufacturers_options[] = $manufacturers_info->fields;
-            $manufacturers_info->MoveNext ();
+            $manufacturers_info->MoveNext();
         }
         unset ($manufacturers_info);
         
@@ -273,24 +275,31 @@ class DbIoProductsHandler extends DbIoHandler
     // This function, called by the base DbIoHandler class when a non-blank v_dbio_command field is found in the
     // current import-record, gives this handler a chance to REMOVE a product's information from the database.
     //
-    protected function importHandleDbIoCommand ($command, $data)
+    protected function importHandleDbIoCommand($command, $data)
     {
         global $db;
+        $continue_line_import = false;
+        $command = strtoupper($command);
         
-        if (strtoupper ($command) != self::DBIO_COMMAND_REMOVE) {
-            $this->debugMessage ("Unrecognized command ($command) found at line #" . $this->stats['record_count'] . "; the operation was not performed.", self::DBIO_ERROR);
-        } else {
+        if ($command == self::DBIO_COMMAND_ADD) {
+            $continue_line_import = true;
+            $this->import_is_insert = true;
+            $this->debugMessage("Forcing ADD of product at line #" . $this->stats['record_count'] . ', via DbIo command', self::DBIO_STATUS);
+        } elseif ($command == self::DBIO_COMMAND_REMOVE) {
             if (!function_exists ('zen_remove_product')) {
-                $this->debugMessage ("Product not removed; missing zen_remove_product function.", self::DBIO_ERROR);
+                $this->debugMessage("Product not removed; missing zen_remove_product function.", self::DBIO_ERROR);
             } elseif ($this->import_is_insert) {
-                $this->debugMessage ("Product not removed at line #" . $this->stats['record_count'] . "; it does not exist.", self::DBIO_WARNING);
+                $this->debugMessage("Product not removed at line #" . $this->stats['record_count'] . "; it does not exist.", self::DBIO_WARNING);
             } else {
-                $this->debugMessage ("Removing product ID #" . $this->key_fields['products_id'], self::DBIO_STATUS);
+                $this->debugMessage("Removing product ID #" . $this->key_fields['products_id'], self::DBIO_STATUS);
                 if ($this->operation != 'check') {
-                    zen_remove_product ($this->key_fields['products_id']);
+                    zen_remove_product($this->key_fields['products_id']);
                 }
             }
+        } else {
+            $this->debugMessage ("Unrecognized command ($command) found at line #" . $this->stats['record_count'] . "; the operation was not performed.", self::DBIO_ERROR);
         }
+        return $continue_line_import;
     }
     
     // -----

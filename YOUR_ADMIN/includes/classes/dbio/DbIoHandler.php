@@ -13,7 +13,7 @@ abstract class DbIoHandler extends base
 //                                    C O N S T A N T S 
 // ----------------------------------------------------------------------------------
     // ----- Interface Constants -----
-    const DBIO_HANDLER_VERSION   = '1.3.0';
+    const DBIO_HANDLER_VERSION   = '1.4.0';
     // ----- Field-Import Status Values -----
     const DBIO_IMPORT_OK         = '--ok--';
     const DBIO_NO_IMPORT         = '--none--';
@@ -851,9 +851,14 @@ abstract class DbIoHandler extends base
                 // Check to see if DbIo commands are included in this import and, if so, check to see if the current to-be-imported
                 // record includes a non-blank command; if so, pass that command off the the active handler.
                 //
-                if (isset ($this->dbio_command_index) && $data[$this->dbio_command_index] != '') {
-                    $this->importHandleDbIoCommand ($data[$this->dbio_command_index], $data);
-                } else {
+                // The handler might return nothing (null) or false, causing the import action for the current row to be
+                // considered "finished" or boolean true to indicate that the current row's processing should continue.
+                //
+                $continue_import = true;
+                if (isset($this->dbio_command_index) && $data[$this->dbio_command_index] != '') {
+                    $continue_import = $this->importHandleDbIoCommand($data[$this->dbio_command_index], $data);
+                }
+                if ($continue_import) {
                     // -----
                     // Otherwise ... loop, processing each 'column' of data into its respective database field(s).  At the end of this processing,
                     // we'll have a couple of sql-data arrays to be used as input to the database 'perform' function; that function will
@@ -1150,8 +1155,13 @@ abstract class DbIoHandler extends base
     // This function, provided by the detailed handler when it's set 'supports_dbio_commands', enables a handler to support
     // "special" functions (like "REMOVE") during its import processing.
     //
+    // Starting with DbIoHandler v1.4.0, this function returns a boolean indication as to whether (true) or not (false)
+    // the import should proceed normally.  Note that previous handlers implementing this function might not return anything,
+    // in which case the return value is null.
+    //
     protected function importHandleDbIoCommand ($command, $data)
     {
+        return false;
     }
 
     // -----
