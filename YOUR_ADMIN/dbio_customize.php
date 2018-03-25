@@ -202,7 +202,7 @@ if (!$ok_to_proceed) {
 <link rel="stylesheet" type="text/css" href="includes/cssjsmenuhover.css" media="all" id="hoverJS" />
 <?php
 $zen_cart_version = PROJECT_VERSION_MAJOR . '.' . PROJECT_VERSION_MINOR;
-if (version_compare ($zen_cart_version, '1.5.5', '<')) {
+if ($zen_cart_version < '1.5.5') {
 ?>
 <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" />
 <?php
@@ -496,7 +496,7 @@ if (!$ok_to_proceed) {
 
 <?php
 $zen_cart_version = PROJECT_VERSION_MAJOR . '.' . PROJECT_VERSION_MINOR;
-if ($zen_cart_version < '1.5.5') {
+if ($zen_cart_version < '1.5.5a') {
 ?>
 <script type="text/javascript" src="//code.jquery.com/jquery-1.11.3.min.js"></script>
 <?php
