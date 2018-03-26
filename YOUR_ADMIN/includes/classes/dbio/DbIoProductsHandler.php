@@ -91,8 +91,31 @@ class DbIoProductsHandler extends DbIoHandler
             $this->where_clause .= "p.products_id = pd.products_id AND pd.language_id = $export_language";
             $this->order_by_clause .= 'p.products_id ASC';
             
-            $this->saved_data['products_description_sql'] = 
-                'SELECT * FROM ' . TABLE_PRODUCTS_DESCRIPTION . ' WHERE products_id = %u AND language_id = %u LIMIT 1';
+            if (isset($this->customized_fields) && is_array($this->customized_fields)) {
+                $customized_description_fields = array();
+                $key_fields = array(
+                    'products_id',
+                    'products_model'
+                );
+                foreach ($this->customized_fields as $current_field) {
+                    if (in_array($current_field, $key_fields)) {
+                        continue;
+                    }
+                    if (isset($this->tables[TABLE_PRODUCTS_DESCRIPTION]['fields'][$current_field])) {
+                        $customized_description_fields[] = $current_field;
+                    }
+                }
+                if (count($customized_description_fields) == 0) {
+                    $this->saved_data['products_description_sql'] = '';
+                } else {
+                    $description_fields = implode(', ', $customized_description_fields);
+                    $this->saved_data['products_description_sql'] =
+                        "SELECT $description_fields FROM " . TABLE_PRODUCTS_DESCRIPTION . " WHERE products_id = %u AND language_id = %u LIMIT 1";
+                }
+            } else {
+                $this->saved_data['products_description_sql'] = 
+                    'SELECT * FROM ' . TABLE_PRODUCTS_DESCRIPTION . ' WHERE products_id = %u AND language_id = %u LIMIT 1';
+            }
         }
         return $initialized;
     }
@@ -127,9 +150,9 @@ class DbIoProductsHandler extends DbIoHandler
         return true;
     }
     
-    public function exportPrepareFields (array $fields) 
+    public function exportPrepareFields(array $fields) 
     {
-        $fields = parent::exportPrepareFields ($fields);
+        $fields = parent::exportPrepareFields($fields);
         $products_id = $fields['products_id'];
         
         $tax_class_id = 0;
@@ -140,16 +163,19 @@ class DbIoProductsHandler extends DbIoHandler
         
         $default_language_code = $this->first_language_code;
         global $db;
+
         if ($this->export_language == 'all') {
-            $this->debugMessage ('Products::exportPrepareFields, language = ' . $this->export_language . ', default language = ' . $default_language_code . ', sql: ' . $this->saved_data['products_description_sql'] . ', languages: ' . print_r ($this->languages, true));
-            foreach ($this->languages as $language_code => $language_id) {
-                if ($language_code != $default_language_code) {
-                    $description_info = $db->Execute (sprintf ($this->saved_data['products_description_sql'], $products_id, $language_id));
-                    if (!$description_info->EOF) {
-                        $encoded_fields = $this->exportEncodeData ($description_info->fields);
-                        foreach ($encoded_fields as $field_name => $field_value) {
-                            if ($field_name != 'products_id' && $field_name != 'language_id') {
-                                $fields[$field_name . '_' . $language_code] = $field_value;
+            $this->debugMessage('Products::exportPrepareFields, language = ' . $this->export_language . ', default language = ' . $default_language_code . ', sql: ' . $this->saved_data['products_description_sql'] . ', languages: ' . print_r($this->languages, true));
+            if ($this->saved_data['products_description_sql'] != '') {
+                foreach ($this->languages as $language_code => $language_id) {
+                    if ($language_code != $default_language_code) {
+                        $description_info = $db->Execute(sprintf($this->saved_data['products_description_sql'], $products_id, $language_id));
+                        if (!$description_info->EOF) {
+                            $encoded_fields = $this->exportEncodeData($description_info->fields);
+                            foreach ($encoded_fields as $field_name => $field_value) {
+                                if ($field_name != 'products_id' && $field_name != 'language_id') {
+                                    $fields[$field_name . '_' . $language_code] = $field_value;
+                                }
                             }
                         }
                     }
@@ -168,7 +194,7 @@ class DbIoProductsHandler extends DbIoHandler
         // Add the tax-class title to the export, if enabled.
         //
         if (!($this->config['additional_headers']['v_tax_class_title'] & self::DBIO_FLAG_NO_EXPORT)) {
-            $tax_class_info = $db->Execute ("SELECT tax_class_title FROM " . TABLE_TAX_CLASS . " WHERE tax_class_id = $tax_class_id LIMIT 1");
+            $tax_class_info = $db->Execute("SELECT tax_class_title FROM " . TABLE_TAX_CLASS . " WHERE tax_class_id = $tax_class_id LIMIT 1");
             $fields = $this->insertAtCustomizedPosition($fields, 'tax_class_title', ($tax_class_info->EOF) ? '' : $tax_class_info->fields['tax_class_title']);            
         }
       
@@ -176,7 +202,7 @@ class DbIoProductsHandler extends DbIoHandler
         // Add the product's category-path to the export, if enabled.
         //
         if (!($this->config['additional_headers']['v_categories_name'] & self::DBIO_FLAG_NO_EXPORT)) {
-            $cPath_array = explode ('_', zen_get_product_path ($products_id));
+            $cPath_array = explode('_', zen_get_product_path($products_id));
             $default_language_id = $this->languages[DEFAULT_LANGUAGE];
             $categories_name = '';
             foreach ($cPath_array as $next_category_id) {
