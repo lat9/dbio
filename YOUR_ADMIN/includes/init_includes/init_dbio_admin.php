@@ -1,14 +1,14 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2017, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2018, Vinos de Frutas Tropicales.
 //
 if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
 }
 
-define('DBIO_CURRENT_VERSION', '1.4.0');
-define('DBIO_CURRENT_UPDATE_DATE', '2017-11-28');
+define('DBIO_CURRENT_VERSION', '1.4.1-beta1');
+define('DBIO_CURRENT_UPDATE_DATE', '2018-03-xx');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
 
