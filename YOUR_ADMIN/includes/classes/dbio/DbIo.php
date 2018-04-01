@@ -178,9 +178,9 @@ class DbIo extends base
                     $this->debugMessage('dbioExport: Begin CSV creation loop.');
                     ini_set('max_execution_time', DBIO_MAX_EXECUTION_TIME);
               
-                    $this->writeCsvRecord($this->handler->exportGetHeader ());
+                    $this->writeCsvRecord($this->handler->exportGetHeader());
                     while (!$export_info->EOF) {
-                        $this->writeCsvRecord($this->handler->exportPrepareFields ($export_info->fields));
+                        $this->writeCsvRecord($this->handler->exportPrepareFields($export_info->fields));
                         $export_info->MoveNext();
                     }
                     $completion_code = true;
@@ -295,15 +295,31 @@ class DbIo extends base
     }
   
     // -----
-    // Write the specified array of data to the current export .csv file.
+    // Write the specified array (or arrays!) of data to the current export .csv file.
     //
     private function writeCsvRecord($csv_record) 
     {
         if (is_array($csv_record) && count($csv_record) != 0) {
+            // -----
+            // Regardless of the current PHP version, if the first element of the to-be-written information is, itself,
+            // an array then the ASSUMPTION is that the export has returned an array of CSV records to be written.
+            //
             if (version_compare(PHP_VERSION, '5.5.4', '>=')) {
-                fputcsv($this->export_fp, $csv_record, $this->csv_parms['delimiter'], $this->csv_parms['enclosure'], $this->csv_parms['escape']);
+                if (is_array($csv_record[0])) {
+                    foreach ($csv_record as $next_record) {
+                        fputcsv($this->export_fp, $next_record, $this->csv_parms['delimiter'], $this->csv_parms['enclosure'], $this->csv_parms['escape']);
+                    }
+                } else {
+                    fputcsv($this->export_fp, $csv_record, $this->csv_parms['delimiter'], $this->csv_parms['enclosure'], $this->csv_parms['escape']);
+                }
             } else {
-                fputcsv($this->export_fp, $csv_record, $this->csv_parms['delimiter'], $this->csv_parms['enclosure']);
+                if (is_array($csv_record[0])) {
+                    foreach ($csv_record as $next_record) {
+                        fputcsv($this->export_fp, $next_record, $this->csv_parms['delimiter'], $this->csv_parms['enclosure']);
+                    }
+                } else {
+                    fputcsv($this->export_fp, $csv_record, $this->csv_parms['delimiter'], $this->csv_parms['enclosure']);
+                }
             }
         }
     }
