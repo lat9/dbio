@@ -329,14 +329,14 @@ abstract class DbIoHandler extends base
     // 2) Calling this function with an empty array essentially disables the table's export!
     // 3) For proper operation, this function needs to be called prior to any call to the class' exportInitialize function!
     //
-    final public function exportCustomizeFields ($customized_fields)
+    final public function exportCustomizeFields($customized_fields)
     {
         $customized = false;
-        if (is_array ($customized_fields) && isset ($this->config['allow_export_customizations']) && $this->config['allow_export_customizations'] === true) {
+        if (is_array($customized_fields) && isset($this->config['allow_export_customizations']) && $this->config['allow_export_customizations'] === true) {
             $this->customized_fields = $customized_fields;
             $customized = true;
         }
-        $this->debugMessage ("exportCustomizeFields, returning ($customized):\n" . print_r ($customized_fields, true));
+        $this->debugMessage("exportCustomizeFields, returning ($customized):\n" . print_r($customized_fields, true));
         
         return $customized;
     }
@@ -703,10 +703,14 @@ abstract class DbIoHandler extends base
                         $this->import_sql_data[$import_table_name][$current_field] = array ( 'value' => '', 'type' => $field_type );
                     }
                     
-                    if (isset ($this->variable_keys[$current_field])) {
+                    if (isset($this->variable_keys[$current_field])) {
                         $this->key_index = $key_index;
                         $this->variable_keys[$current_field]['index'] = $key_index;
                         $this->variable_keys[$current_field]['type'] = $field_type;
+                    } elseif (isset($this->master_keys[$current_field])) {
+                        $this->key_index = $key_index;
+                        $this->master_keys[$current_field]['index'] = $key_index;
+                        $this->master_keys[$current_field]['type'] = $field_type;
                     }
                 }
             }  
@@ -722,7 +726,11 @@ abstract class DbIoHandler extends base
                 $missing_keys .= ', v_' . $field_name;
             }
         }
-        
+        foreach ($this->master_keys as $field_name => $field_info) {
+            if (!isset ($field_info['index'])) {
+                $missing_keys .= ', v_' . $field_name;
+            }
+        }        
         if ($missing_keys != '') {
             $this->message = sprintf (DBIO_ERROR_HEADER_MISSING_KEYS, substr ($missing_keys, 2));
             $initialization_complete = false;
@@ -801,7 +809,7 @@ abstract class DbIoHandler extends base
             // Otherwise, determine the action to be performed for the current record.
             //
             // Normally, a handler specifies a single, unique key value to be used to "match" the record to be processed, but some
-            // handlers slao provide an "alternate" key that can be used to find a unique record (e.g. a products_model
+            // handlers also provide an "alternate" key that can be used to find a unique record (e.g. a products_model
             // field as an alternate for a products_id).
             //
             // When a matching database record is located, one of three conditions are possible:
@@ -1116,7 +1124,10 @@ abstract class DbIoHandler extends base
         }
         $this->debugMessage (
             "exportInitializeCustomized" .
+            "\nSelect clause: " . $this->select_clause .
             "\nCustomized Fields:\n" . print_r ($this->customized_fields, true) . 
+            "\nHeaders:\n" . print_r($this->headers, true) .
+            "\nAdditional headers:\n" . print_r($this->config['additional_headers'], true) .
             "\nAvailable Fields\n" . print_r ($available_fields, true)
         );
         return $initialized;
@@ -1192,15 +1203,17 @@ abstract class DbIoHandler extends base
         return ($field_index === false) ? false : $data[$field_index];
     }
     
-    protected function importInitializeKeys ()
+    protected function importInitializeKeys()
     {
         $keys_ok = true;
         $this->key_from_clause = $this->key_select_clause = $this->key_where_clause = '';
         $key_number = 0;
         $this->alternate_key_included = false;
-        $this->variable_keys = array ();
+        $this->variable_keys = array();
+        $this->master_keys = array();
         $this->key_field_names = '';
         if (!$this->handler_overrides_import) {
+            $master_key_count = 0;
             foreach ($this->config['keys'] as $table_name => $table_key_fields) {
                 $table_alias = $table_key_fields['alias'];
                 $this->key_from_clause .= "$table_name AS $table_alias, ";
@@ -1221,7 +1234,11 @@ abstract class DbIoHandler extends base
                             $this->key_where_clause .= (($key_type & self::DBIO_KEY_IS_ALTERNATE) ? ' OR ' : ' AND ');
                         }
                         $this->key_where_clause .= "$table_alias.$key_field_name = $key_match_variable";
-                        $this->variable_keys[$key_field_name] = array ( 'table_name' => $table_name, 'match_variable_name' => $key_match_variable, 'key_is_alternate' => (boolean)($key_type & self::DBIO_KEY_IS_ALTERNATE) );
+                        $this->variable_keys[$key_field_name] = array( 
+                            'table_name' => $table_name, 
+                            'match_variable_name' => $key_match_variable, 
+                            'key_is_alternate' => (boolean)($key_type & self::DBIO_KEY_IS_ALTERNATE) 
+                        );
                     } elseif ($key_type & self::DBIO_KEY_IS_FIXED) {
                         if ($this->key_where_clause != '') {
                             $this->key_where_clause .= ' AND ';
@@ -1229,22 +1246,38 @@ abstract class DbIoHandler extends base
                         $this->key_where_clause .= "$table_alias.$key_field_name = " . $key_field_attributes['match_fixed_key'];
                     } elseif (!($key_type & self::DBIO_KEY_IS_MASTER)) {
                         $keys_ok = false;
-                        $this->message = sprintf ('Unknown key field type (%1$u) for %2$s::%3$s.', $field_type, $table_name, $key_field_name);
+                        $this->message = sprintf('Unknown key field type (%1$u) for %2$s::%3$s.', $field_type, $table_name, $key_field_name);
                     }
                     if ($key_type & (self::DBIO_KEY_SELECTED | self::DBIO_KEY_IS_MASTER)) {
                         $this->key_select_clause .= "$table_alias.$key_field_name, ";
+                        if ($key_type == self::DBIO_KEY_IS_MASTER) {
+                            $this->master_keys[$key_field_name] = array(
+                                'table_name' => $table_name,
+                            );
+                        }
+                    }
+                    if ($key_type == self::DBIO_KEY_IS_MASTER) {
+                        $master_key_count++;
                     }
                 }
             }
-            if (!$keys_ok || $this->key_from_clause == '' || $this->key_select_clause == '' || $this->key_where_clause == '') {
+            $master_key_only = ($master_key_count == count($this->config['keys']));
+            if (!$keys_ok || $this->key_from_clause == '' || $this->key_select_clause == '' || ($this->key_where_clause == '' && !$master_key_only)) {
                 $keys_ok = false;
                 $this->message = ($this->message == '') ? DBIO_MESSAGE_KEY_CONFIGURATION_ERROR : $this->message;
             } else {
-                $this->key_from_clause = substr ($this->key_from_clause, 0, -2);  //-Strip trailing ', '
-                $this->key_select_clause = substr ($this->key_select_clause, 0, -2);
-                $this->data_key_sql = "SELECT " . $this->key_select_clause . "
-                                         FROM " . $this->key_from_clause . " 
-                                        WHERE " . $this->key_where_clause . (($this->alternate_key_included) ? '' : ' LIMIT 1');
+                $this->key_from_clause = substr($this->key_from_clause, 0, -2);  //-Strip trailing ', '
+                $this->key_select_clause = substr($this->key_select_clause, 0, -2);
+                $this->key_field_names = substr($this->key_field_names, 0, -2);
+                
+                if ($master_key_only) {
+                    $where_limit_clause = ' LIMIT 1';
+                } else {
+                    $where_limit_clause = ' WHERE ' . $this->key_where_clause . (($this->alternate_key_included) ? '' : ' LIMIT 1');
+                }
+                $this->data_key_sql = 
+                    "SELECT " . $this->key_select_clause . "
+                       FROM " . $this->key_from_clause . "$where_limit_clause"; 
             }
         }
         return $keys_ok;
