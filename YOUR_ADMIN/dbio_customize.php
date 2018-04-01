@@ -498,7 +498,7 @@ if (!$ok_to_proceed) {
 $zen_cart_version = PROJECT_VERSION_MAJOR . '.' . PROJECT_VERSION_MINOR;
 if ($zen_cart_version < '1.5.5a') {
 ?>
-<script type="text/javascript" src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="//code.jquery.com/jquery-3.3.1.min.js"></script>
 <?php
 }
 

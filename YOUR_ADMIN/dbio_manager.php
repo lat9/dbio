@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka dbIO) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2017, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2018, Vinos de Frutas Tropicales.
 //
 require ('includes/application_top.php');
 require (DIR_FS_ADMIN . 'includes/functions/dbio_manager_functions.php');
@@ -831,9 +831,9 @@ if (!$ok_to_proceed || $error_message !== '') {
 
 <?php
 $zen_cart_version = PROJECT_VERSION_MAJOR . '.' . PROJECT_VERSION_MINOR;
-if ($zen_cart_version < '1.5.5') {
+if ($zen_cart_version < '1.5.5a') {
 ?>
-<script type="text/javascript" src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="//code.jquery.com/jquery-3.3.1.min.js"></script>
 <?php
 }
 ?>
