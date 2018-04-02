@@ -1394,14 +1394,21 @@ abstract class DbIoHandler extends base
             $field_error = false;
 
             $this->debugMessage("importProcessField, current field type: $field_type");
+            
             switch ($field_type) {
                 case 'integer':
+                    if ($this->tables[$table_name]['fields'][$field_name]['nullable'] && ($field_value == 'null' || $field_value == 'NULL')) {
+                        break;
+                    }
                     if (!ctype_digit($field_value)) {
                         $field_error = true;
                         $this->debugMessage("[*] $import_table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is not an integer", self::DBIO_ERROR);
                     }
                     break;
                 case 'float':
+                    if ($this->tables[$table_name]['fields'][$field_name]['nullable'] && ($field_value == 'null' || $field_value == 'NULL')) {
+                        break;
+                    }
                     if (!preg_match('/^-?(?:\d+|\d*\.\d+)$/', $field_value)) {
                         $field_error = true;
                         $this->debugMessage("[*] $import_table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is not a floating-point value.", self::DBIO_ERROR);
@@ -1420,6 +1427,9 @@ abstract class DbIoHandler extends base
                     $field_value = $formatted_field_value;
                     break;
                 case 'string':
+                    if ($this->tables[$table_name]['fields'][$field_name]['nullable'] && ($field_value == 'null' || $field_value == 'NULL')) {
+                        break;
+                    }
                     $max_field_length = $this->tables[$table_name]['fields'][$field_name]['max_length'];
                     if (mb_strlen($field_value) > $max_field_length) {
                         $this->debugMessage("[*] $import_table_name.$field_name, line#" . $this->stats['record_count'] . ": The value ($field_value) exceeds the field's maximum length ($max_field_length); the value will be truncated.", self::DBIO_WARNING);
