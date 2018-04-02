@@ -719,10 +719,6 @@ abstract class DbIoHandler extends base
                         $this->key_index = $key_index;
                         $this->variable_keys[$current_field]['index'] = $key_index;
                         $this->variable_keys[$current_field]['type'] = $field_type;
-                    } elseif (isset($this->master_keys[$current_field])) {
-                        $this->key_index = $key_index;
-                        $this->master_keys[$current_field]['index'] = $key_index;
-                        $this->master_keys[$current_field]['type'] = $field_type;
                     }
                 }
             }  
@@ -738,11 +734,6 @@ abstract class DbIoHandler extends base
                 $missing_keys .= ', v_' . $field_name;
             }
         }
-        foreach ($this->master_keys as $field_name => $field_info) {
-            if (!isset($field_info['index'])) {
-                $missing_keys .= ', v_' . $field_name;
-            }
-        }        
         if ($missing_keys != '') {
             $this->message = sprintf(DBIO_ERROR_HEADER_MISSING_KEYS, substr($missing_keys, 2));
             $initialization_complete = false;
@@ -770,8 +761,8 @@ abstract class DbIoHandler extends base
             'key_index' => $this->key_index,
             'variable_keys' => $this->variable_keys,
             'headers' => $this->headers), true));
+            
         return $initialization_complete;
-    
     }
   
     // -----
@@ -1222,10 +1213,8 @@ abstract class DbIoHandler extends base
         $key_number = 0;
         $this->alternate_key_included = false;
         $this->variable_keys = array();
-        $this->master_keys = array();
         $this->key_field_names = '';
         if (!$this->handler_overrides_import) {
-            $master_key_count = 0;
             foreach ($this->config['keys'] as $table_name => $table_key_fields) {
                 $table_alias = $table_key_fields['alias'];
                 $this->key_from_clause .= "$table_name AS $table_alias, ";
@@ -1262,34 +1251,21 @@ abstract class DbIoHandler extends base
                     }
                     if ($key_type & (self::DBIO_KEY_SELECTED | self::DBIO_KEY_IS_MASTER)) {
                         $this->key_select_clause .= "$table_alias.$key_field_name, ";
-                        if ($key_type == self::DBIO_KEY_IS_MASTER) {
-                            $this->master_keys[$key_field_name] = array(
-                                'table_name' => $table_name,
-                            );
-                        }
-                    }
-                    if ($key_type == self::DBIO_KEY_IS_MASTER) {
-                        $master_key_count++;
                     }
                 }
             }
-            $master_key_only = ($master_key_count == count($this->config['keys']));
-            if (!$keys_ok || $this->key_from_clause == '' || $this->key_select_clause == '' || ($this->key_where_clause == '' && !$master_key_only)) {
+            if (!$keys_ok || $this->key_from_clause == '' || $this->key_select_clause == '' || $this->key_where_clause == '') {
                 $keys_ok = false;
                 $this->message = ($this->message == '') ? DBIO_MESSAGE_KEY_CONFIGURATION_ERROR : $this->message;
             } else {
                 $this->key_from_clause = substr($this->key_from_clause, 0, -2);  //-Strip trailing ', '
                 $this->key_select_clause = substr($this->key_select_clause, 0, -2);
                 $this->key_field_names = substr($this->key_field_names, 0, -2);
-                
-                if ($master_key_only) {
-                    $where_limit_clause = ' LIMIT 1';
-                } else {
-                    $where_limit_clause = ' WHERE ' . $this->key_where_clause . (($this->alternate_key_included) ? '' : ' LIMIT 1');
-                }
+
                 $this->data_key_sql = 
                     "SELECT " . $this->key_select_clause . "
-                       FROM " . $this->key_from_clause . "$where_limit_clause"; 
+                       FROM " . $this->key_from_clause . "
+                      WHERE " . $this->key_where_clause . (($this->alternate_key_included) ? '' : ' LIMIT 1');
             }
         }
         return $keys_ok;
