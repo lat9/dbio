@@ -209,7 +209,7 @@ class DbIoProductsHandler extends DbIoHandler
                 $category_info = $db->Execute("SELECT categories_name FROM " . TABLE_CATEGORIES_DESCRIPTION . " WHERE categories_id = $next_category_id AND language_id = $default_language_id LIMIT 1");
                 $categories_name .= (($category_info->EOF) ? self::DBIO_UNKNOWN_VALUE : $category_info->fields['categories_name']) . '^';
             }
-            $fields = $this->insertAtCustomizedPosition($fields, 'categories_name', $this->exportEncodeData(substr($categories_name, 0, -1)));
+            $fields = $this->insertAtCustomizedPosition($fields, 'categories_name', $this->exportEncodeData(dbio_substr($categories_name, 0, -1)));
         }
 
         return $fields;
@@ -305,7 +305,7 @@ class DbIoProductsHandler extends DbIoHandler
     {
         global $db;
         $continue_line_import = false;
-        $command = strtoupper($command);
+        $command = dbio_strtoupper($command);
         
         if ($command == self::DBIO_COMMAND_ADD) {
             $continue_line_import = true;

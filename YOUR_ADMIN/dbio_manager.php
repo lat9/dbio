@@ -39,36 +39,36 @@ if (!$ok_to_proceed) {
     $dbio = new DbIo;
     if (!$dbio->isInitialized ()) {
         $ok_to_proceed = false;
-        $error_message = $dbio->getMessage ();
+        $error_message = $dbio->getMessage();
     } else {
         $dbio_handlers = $dbio->getAvailableHandlers ();
     }
 
     if (!$ok_to_proceed) {
-        $error_message = $dbio->getMessage ();
-    } elseif (count ($dbio_handlers) == 0) {
+        $error_message = $dbio->getMessage();
+    } elseif (count($dbio_handlers) == 0) {
         $ok_to_proceed = false;
         $error_message = DBIO_MESSAGE_NO_HANDLERS_FOUND;
     } else {
-        $available_handlers = array ();
-        $handler_name = (isset ($_POST['handler'])) ? $_POST['handler'] : ((isset ($_SESSION['dbio_vars']) && isset ($_SESSION['dbio_vars']['handler'])) ? $_SESSION['dbio_vars']['handler'] : false);
+        $available_handlers = array();
+        $handler_name = (isset($_POST['handler'])) ? $_POST['handler'] : ((isset($_SESSION['dbio_vars']) && isset($_SESSION['dbio_vars']['handler'])) ? $_SESSION['dbio_vars']['handler'] : false);
         foreach ($dbio_handlers as $current_handler => $handler_info) {
             if ($handler_name === false) {
                 $handler_name = $current_handler;
             }
-            $available_handlers[] = array (
+            $available_handlers[] = array(
                 'id' => $current_handler,
                 'text' => $current_handler
             );
         }
         $handler_info = $dbio_handlers[$handler_name];
         
-        if (!isset ($_SESSION['dbio_vars'])) {
-            $_SESSION['dbio_vars'] = array ();
+        if (!isset($_SESSION['dbio_vars'])) {
+            $_SESSION['dbio_vars'] = array();
             $_SESSION['dbio_vars']['handler'] = $handler_name;
         }
         if ($_SESSION['dbio_vars']['handler'] != $handler_name) {
-            unset ($_SESSION['dbio_active_filename'], $_SESSION['dbio_import_result']);
+            unset($_SESSION['dbio_active_filename'], $_SESSION['dbio_import_result']);
         }
         $_SESSION['dbio_vars']['handler'] = $handler_name;
         
@@ -167,19 +167,19 @@ if (!$ok_to_proceed) {
                 if (!zen_not_null ($_FILES['upload_filename']['name'])) {
                     $messageStack->add (ERROR_NO_FILE_TO_UPLOAD, 'error');
                 } else {
-                    if (strpos ($_FILES['upload_filename']['name'], "dbio.$handler_name.") !== 0) {
-                        $messageStack->add_session (sprintf (ERROR_FILENAME_MISMATCH, $handler_name), 'error');
+                    if (dbio_strpos($_FILES['upload_filename']['name'], "dbio.$handler_name.") !== 0) {
+                        $messageStack->add_session(sprintf (ERROR_FILENAME_MISMATCH, $handler_name), 'error');
                     } else {
-                        $upload = new upload ('upload_filename');
-                        $upload->set_extensions (explode (',', DBIO_SUPPORTED_FILE_EXTENSIONS));
-                        $upload->set_destination (DIR_FS_DBIO);
-                        if ($upload->parse ()) {
-                            $upload->save ();
+                        $upload = new upload('upload_filename');
+                        $upload->set_extensions(explode (',', DBIO_SUPPORTED_FILE_EXTENSIONS));
+                        $upload->set_destination(DIR_FS_DBIO);
+                        if ($upload->parse()) {
+                            $upload->save();
                         }
                         $_SESSION['dbio_active_filename'] = $_FILES['upload_filename']['name'];
                     }
 
-                    zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
+                    zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action'))));
                 }
                 break;
             case 'file':
@@ -316,7 +316,7 @@ if (!$ok_to_proceed) {
                             if ($fp === false) {
                                 $_SESSION['dbio_message'] = array ( 'error', sprintf (DBIO_CANT_OPEN_FILE, $action_filename) );
                             } else {
-                                if (strpos ($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false) {
+                                if (dbio_strpos ($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false) {
                                     header('Content-Type: "application/octet-stream"');
                                     header('Content-Disposition: attachment; filename="' . $dbio_files[$_POST['filename_hash']]['filename_only'] . '"');
                                     header('Expires: 0');
@@ -681,12 +681,12 @@ if (!$ok_to_proceed || $error_message !== '') {
                             <td class="file-item center"><?php echo HEADING_DELETE; ?></td>
                         </tr>
 <?php
-        uasort ($dbio_files, function ($a, $b)
+        uasort ($dbio_files, function($a, $b)
         {
-            $sort_type = (isset ($_GET['sort'])) ? $_GET['sort'] : DBIO_FILE_SORT_DEFAULT;
+            $sort_type = (isset($_GET['sort'])) ? $_GET['sort'] : DBIO_FILE_SORT_DEFAULT;
             switch ($sort_type) {
                 case '1d':          //-File-name, descending
-                    $compare_value = strcmp ($b['filename_only'], $a['filename_only']);
+                    $compare_value = strcmp($b['filename_only'], $a['filename_only']);
                     break;
                 case '2a':          //-File-size, ascending
                     $compare_value = ($a['bytes'] == $b['bytes']) ? 0 : (($a['bytes'] < $b['bytes']) ? -1 : 1);
@@ -701,7 +701,7 @@ if (!$ok_to_proceed || $error_message !== '') {
                     $compare_value = ($a['last_modified'] == $b['last_modified']) ? 0 : (($a['last_modified'] > $b['last_modified']) ? -1 : 1);
                     break;
                 default:            //-File-name, ascending (default)
-                    $compare_value = strcmp ($a['filename_only'], $b['filename_only']);
+                    $compare_value = strcmp($a['filename_only'], $b['filename_only']);
                     break;
             }
             return $compare_value;
@@ -709,7 +709,7 @@ if (!$ok_to_proceed || $error_message !== '') {
 
         $first_file = true;
         foreach ($dbio_files as $name_hash => $file_info) {
-            $select_parms = (strpos ($file_info['filename_only'], 'logs') === 0) ? 'class="dbio-log"' : '';
+            $select_parms = (dbio_strpos($file_info['filename_only'], 'logs') === 0) ? 'class="dbio-log"' : '';
 ?>
                         <tr class="file-row">
                             <td class="file-item"><?php echo zen_draw_radio_field ('filename_hash', $name_hash, $file_info['selected'], '', $select_parms); ?></td>
@@ -812,7 +812,7 @@ if (!$ok_to_proceed || $error_message !== '') {
             foreach ($_SESSION['dbio_import_result']['io_errors'] as $current_error) {
                 $message_status = ($current_error[2] & DbIoHandler::DBIO_WARNING) ? 'warning' : (($current_error[2] & DbIoHandler::DBIO_ERROR) ? 'error' : 'info');
 ?>
-            <div class="flii-<?php echo $message_status; ?>"><?php echo str_replace ('[*]', '<span class="flii-item">&cross;</span>', $current_error[0]); ?></div>
+            <div class="flii-<?php echo $message_status; ?>"><?php echo str_replace('[*]', '<span class="flii-item">&cross;</span>', $current_error[0]); ?></div>
 <?php
             }
 ?>

@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2016, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2018, Vinos de Frutas Tropicales.
 //
 if (!defined ('IS_ADMIN_FLAG')) {
   exit ('Illegal access');
@@ -197,7 +197,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
                 foreach ($options_values_names as $current_value_name) {
                     $options_values_list .= "'$current_value_name', ";
                 }
-                $options_values_list = substr ($options_values_list, 0, -2);
+                $options_values_list = dbio_substr($options_values_list, 0, -2);
                 $options_values_check = $db->Execute ("SELECT pov.products_options_values_id, pov.products_options_values_name
                                                          FROM " . TABLE_PRODUCTS_OPTIONS_VALUES . " pov, " . TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS . " pov2po
                                                         WHERE pov.products_options_values_name IN ($options_values_list)

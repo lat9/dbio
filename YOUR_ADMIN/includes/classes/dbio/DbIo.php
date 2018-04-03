@@ -26,16 +26,15 @@ class DbIo extends base
         spl_autoload_register(array ($this, 'autoloadDbIoClasses'));
 
         if (!function_exists('mb_internal_encoding')) {
-            $this->message = DBIO_ERROR_NO_PHP_MBSTRING;
-            trigger_error(DBIO_ERROR_NO_PHP_MBSTRING, E_USER_WARNING);
+            require_once DIR_WS_FUNCTIONS . 'dbio_string_functions.php';
+            $this->using_mbstring = false;
         } else {
-            mb_internal_encoding (CHARSET);
-            
-            ini_set('mbstring.substitute_character', DBIO_INVALID_CHAR_REPLACEMENT);
-            ini_set("auto_detect_line_endings", true);
-            
-            $this->initializeConfig($dbio_type);
+            require_once DIR_WS_FUNCTIONS . 'dbio_mb_string_functions.php';
+            dbio_string_initialize();
+            $this->using_mbstring = true;
         }
+        ini_set("auto_detect_line_endings", true);
+        $this->initializeConfig($dbio_type);
     }
     
     protected function autoloadDbIoClasses($class_name)
@@ -189,7 +188,7 @@ class DbIo extends base
                 unset($export_info);
             
                 if ($completion_code !== false && $export_to == 'download') {
-                    if (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false) {
+                    if (dbio_strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false) {
                         header('Content-Type: "application/octet-stream"');
                         header('Content-Disposition: attachment; filename="' . $this->export_filename . '"');
                         header('Expires: 0');
