@@ -581,10 +581,13 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
           <li>v1.5.0, 2018-07-xx:<ul>
             <li>CHANGE: Add the <code>ProductsDiscountQuantity</code> handler.</li>
             <li>BUGFIX: <code>Products</code> export results in error when imported.</li>
+            <li>CHANGE: Include each customer's default-address information for a <code>Customers</code> export.</li>
             <li>The following files were changed or <span class="added">added</span>:<ol>
                 <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                <li>/YOUR_ADMIN/includes/classes/dbio/DbIoCustomersHandler.php</li>
                 <li><span class="added">/YOUR_ADMIN/includes/classes/dbio/DbIoProductsDiscountQuantityHandler.php</span></li>
                 <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoCustomersHandler.php</li>
                 <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsDiscountQuantityHandler.php</span></li>
             </ol></li>
           </ul></li>
