@@ -13,7 +13,7 @@ abstract class DbIoHandler extends base
 //                                    C O N S T A N T S 
 // ----------------------------------------------------------------------------------
     // ----- Interface Constants -----
-    const DBIO_HANDLER_VERSION   = '1.4.0';
+    const DBIO_HANDLER_VERSION   = '1.5.0';
     // ----- Field-Import Status Values -----
     const DBIO_IMPORT_OK         = '--ok--';
     const DBIO_NO_IMPORT         = '--none--';
@@ -475,6 +475,9 @@ abstract class DbIoHandler extends base
     public function exportPrepareFields(array $fields) 
     {
         $this->stats['record_count']++;
+        if (isset($this->config['supports_dbio_commands']) && $this->config['supports_dbio_commands'] === true) {
+            $fields[] = '';
+        }
         return $this->exportEncodeData($fields);
     }
 
