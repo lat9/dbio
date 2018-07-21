@@ -84,7 +84,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
 
 <body>
   <h1 id="title">Database I/O Manager (DbIo) for Zen Cart&reg;</h1>
-  <p>Version 1.4.1 Copyright &copy; 2015-2018, <a href="http://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
+  <p>Version 1.5.0 Copyright &copy; 2015-2018, <a href="http://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
   <p>Current Support Thread on the Zen Cart forums: <a href="https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread</a></p>
   
   <div class="tab-container" id="outer-container">
@@ -283,7 +283,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <th>Actions</th>
                   <th>Export Filters</th>
                   <th>Customizable?</th>
-                  <th>Descripton</th>
+                  <th>Description</th>
                   <th>EP-4 Name</th>
                 </tr>
                 
@@ -389,6 +389,14 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td>Detailed Products Attributes</td>
                 </tr>  
                 
+                <tr>
+                  <td class="h-name">ProductsDiscountQuantity</td>
+                  <td>Import, Export</td>
+                  <td>None</td>
+                  <td>No</td>
+                  <td>This handler supports import/export of fields associated with the <code>products_discount_quantity</code> table, using the <code>products_id</code> value to identify the product for which the discount-quantities are to be updated.  Refer to the handler's on-screen instructions for additional information.</td>
+                  <td>&mdash;</td>
+                </tr>                  
                 <tr>
                   <td class="h-name">Stats</td>
                   <td>Export</td>
@@ -570,6 +578,16 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <noscript><h3>Version History</h3></noscript>
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
         <ul>
+          <li>v1.5.0, 2018-07-xx:<ul>
+            <li>CHANGE: Add the <code>ProductsDiscountQuantity</code> handler.</li>
+            <li>BUGFIX: <code>Products</code> export results in error when imported.</li>
+            <li>The following files were changed or <span class="added">added</span>:<ol>
+                <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                <li><span class="added">/YOUR_ADMIN/includes/classes/dbio/DbIoProductsDiscountQuantityHandler.php</span></li>
+                <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsDiscountQuantityHandler.php</span></li>
+            </ol></li>
+          </ul></li>
           <li>v1.4.1, 2018-04-05:<ul>
             <li>BUGFIX: Zen Cart admin versions less than 1.5.5<b>a</b> don't auto-load jQuery.</li>
             <li>BUGFIX: Customized <code>Products</code> export returns <em>all</em> fields of the <code>products_description</code> table.</li>
