@@ -167,6 +167,7 @@ class DbIoProductsHandler extends DbIoHandler
         if ($this->export_language == 'all') {
             $this->debugMessage('Products::exportPrepareFields, language = ' . $this->export_language . ', default language = ' . $default_language_code . ', sql: ' . $this->saved_data['products_description_sql'] . ', languages: ' . print_r($this->languages, true));
             if ($this->saved_data['products_description_sql'] != '') {
+                $previous_language_code = '';
                 foreach ($this->languages as $language_code => $language_id) {
                     if ($language_code != $default_language_code) {
                         $description_info = $db->Execute(sprintf($this->saved_data['products_description_sql'], $products_id, $language_id));
@@ -174,10 +175,15 @@ class DbIoProductsHandler extends DbIoHandler
                             $encoded_fields = $this->exportEncodeData($description_info->fields);
                             foreach ($encoded_fields as $field_name => $field_value) {
                                 if ($field_name != 'products_id' && $field_name != 'language_id') {
-                                    $fields[$field_name . '_' . $language_code] = $field_value;
+                                    if (!isset($this->customized_fields)) {
+                                        $fields[$field_name . '_' . $language_code] = $field_value;
+                                    } else {
+                                        $fields = $this->insertCustomizedLanguageField($fields, $field_name, $field_value, "_$language_code", $previous_language_code);
+                                    }
                                 }
                             }
                         }
+                        $previous_language_code = "_$language_code";
                     }
                 }
             }
@@ -218,6 +224,18 @@ class DbIoProductsHandler extends DbIoHandler
 // ----------------------------------------------------------------------------------
 //             I N T E R N A L / P R O T E C T E D   F U N C T I O N S 
 // ----------------------------------------------------------------------------------
+    
+    protected function insertCustomizedLanguageField($fields, $field_name, $field_value, $language_code, $previous_language_code)
+    {
+        $field_position = array_search($field_name . $previous_language_code, array_keys($fields));
+        if ($field_position !== false) {
+            $field_position++;
+            $before = array_slice($fields, 0, $field_position);
+            $after = array_slice($fields, $field_position);
+            $fields = array_merge($before, array($field_name . $language_code => $field_value), $after);
+        }
+        return $fields;
+    }
     
     // -----
     // This function, called during the overall class construction, is used to set this handler's database
