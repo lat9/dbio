@@ -19,7 +19,7 @@ class DbIoProductsHandler extends DbIoHandler
         global $db;
         DbIoHandler::loadHandlerMessageFile('Products'); 
         return array(
-            'version' => '1.4.0',
+            'version' => '1.4.1',
             'handler_version' => '1.4.0',
             'include_header' => true,
             'export_only' => false,
@@ -155,6 +155,18 @@ class DbIoProductsHandler extends DbIoHandler
         $fields = parent::exportPrepareFields($fields);
         $products_id = $fields['products_id'];
         
+        // -----
+        // Starting with v1.5.0, the base DbIoHandler class' processing has added an empty element to the
+        // end of the $fields array to hold any to-be-imported DbIo command.  The command, if present
+        // is always the very last column of an export.
+        //
+        // We'll pop (i.e. remove) that last element and re-add it once the "special" products' export
+        // fields are inserted.
+        //
+        if (version_compare(parent::getHandlerVersion(), '1.5.0', '>=')) {
+            array_pop($fields);
+        }
+        
         $tax_class_id = 0;
         if (isset ($fields['products_tax_class_id'])) {
             $tax_class_id = $fields['products_tax_class_id'];
@@ -217,6 +229,11 @@ class DbIoProductsHandler extends DbIoHandler
             }
             $fields = $this->insertAtCustomizedPosition($fields, 'categories_name', $this->exportEncodeData(dbio_substr($categories_name, 0, -1)));
         }
+        
+        // -----
+        // Now, add an empty column at the very end to hold the 'v_dbio_command' when the CSV is imported.
+        //
+        $fields[] = '';
 
         return $fields;
     }
