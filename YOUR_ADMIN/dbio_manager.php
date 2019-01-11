@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka dbIO) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2018, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2019, Vinos de Frutas Tropicales.
 //
 require ('includes/application_top.php');
 require (DIR_FS_ADMIN . 'includes/functions/dbio_manager_functions.php');
@@ -16,12 +16,12 @@ if (!defined ('DBIO_SUPPORTED_FILE_EXTENSIONS')) define ('DBIO_SUPPORTED_FILE_EX
 $ok_to_proceed = true;
 $error_message = '';
 $info_message = '';
-if (strtolower (DB_CHARSET) == 'utf8') {
-    if (stripos (CHARSET, 'utf') !== 0) {
+if (stripos(DB_CHARSET, 'utf') === 0) {
+    if (stripos(CHARSET, 'utf') !== 0) {
         $ok_to_proceed = false;
     }
 } else {
-    if (stripos (CHARSET, 'utf') === 0) {
+    if (stripos(CHARSET, 'utf') === 0) {
         $ok_to_proceed = false;
     }
 }
