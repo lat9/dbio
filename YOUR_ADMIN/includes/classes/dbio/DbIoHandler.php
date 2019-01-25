@@ -692,6 +692,7 @@ abstract class DbIoHandler extends base
                                 break;
                             case 'float':
                             case 'decimal':
+                            case 'double':
                                 $field_type = 'float';
                                 break;
                             case 'date':

@@ -578,10 +578,12 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <noscript><h3>Version History</h3></noscript>
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
         <ul>
-          <li>v1.5.2, 2019-01-11:<ul>
+          <li>v1.5.2, 2019-01-25:<ul>
             <li>BUGFIX: <code>DB_CHARSET</code> of <code>utf8mb4</code> not recognized as valid <em>utf8</em> variant.</li>
+            <li>BUGFIX: Properly recognize a database field type of <code>double</code>.</li>
             <li>The following files were changed:<ol>
                 <li>/YOUR_ADMIN/dbio_manager.php</li>
+                <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
                 <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
             </ol></li>
           </ul></li>
