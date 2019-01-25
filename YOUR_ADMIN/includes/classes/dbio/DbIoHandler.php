@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2018, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2019, Vinos de Frutas Tropicales.
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -13,7 +13,7 @@ abstract class DbIoHandler extends base
 //                                    C O N S T A N T S 
 // ----------------------------------------------------------------------------------
     // ----- Interface Constants -----
-    const DBIO_HANDLER_VERSION   = '1.5.0';
+    const DBIO_HANDLER_VERSION   = '1.5.2';
     // ----- Field-Import Status Values -----
     const DBIO_IMPORT_OK         = '--ok--';
     const DBIO_NO_IMPORT         = '--none--';
@@ -1396,7 +1396,7 @@ abstract class DbIoHandler extends base
                     if ($this->tables[$table_name]['fields'][$field_name]['nullable'] && ($field_value == 'null' || $field_value == 'NULL')) {
                         break;
                     }
-                    if (!ctype_digit($field_value)) {
+                    if (((string)((int)$field_value)) === ((string)$field_value)) {
                         $field_error = true;
                         $this->debugMessage("[*] $import_table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is not an integer", self::DBIO_ERROR);
                     }

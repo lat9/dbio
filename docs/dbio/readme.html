@@ -581,6 +581,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
           <li>v1.5.2, 2019-01-25:<ul>
             <li>BUGFIX: <code>DB_CHARSET</code> of <code>utf8mb4</code> not recognized as valid <em>utf8</em> variant.</li>
             <li>BUGFIX: Properly recognize a database field type of <code>double</code>.</li>
+            <li>BUGFIX: Negative integers, e.g. -30, should be accepted as valid integer values.</li>
             <li>The following files were changed:<ol>
                 <li>/YOUR_ADMIN/dbio_manager.php</li>
                 <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
