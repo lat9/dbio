@@ -653,11 +653,13 @@ class DbIoProductsHandler extends DbIoHandler
     // date_added, keeping its last_updated as the default; on an update, keep the existing date_added but
     // make sure the product's last_updated date is "now".
     //
+    // For product inserts, ensure that the `products_id` field is not part of the to-be-inserted record.
+    //
     protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
     {
         if ($table_name == TABLE_PRODUCTS) {
             if (($is_override && $is_insert) || (!$is_override && $this->import_is_insert)) {
-                unset($table_fields['products_last_modified']);
+                unset($table_fields['products_last_modified'], $table_fields['products_id']);
                 $table_fields['products_date_added'] = array(
                     'value' => 'now()',
                     'type' => 'datetime'
