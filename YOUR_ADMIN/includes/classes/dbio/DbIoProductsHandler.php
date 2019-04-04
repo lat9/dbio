@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka dbIO) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2018, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2019, Vinos de Frutas Tropicales.
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -19,7 +19,7 @@ class DbIoProductsHandler extends DbIoHandler
         global $db;
         DbIoHandler::loadHandlerMessageFile('Products'); 
         return array(
-            'version' => '1.4.1',
+            'version' => '1.4.2',
             'handler_version' => '1.4.0',
             'include_header' => true,
             'export_only' => false,
@@ -590,6 +590,11 @@ class DbIoProductsHandler extends DbIoHandler
                         'fieldName' => 'categories_name', 
                         'value' => $categories_name, 
                         'type' => 'string' 
+                    ),
+                    array(
+                        'fieldName' => 'categories_description',
+                        'value' => '',
+                        'type' => 'string'
                     )
                 );
                 foreach ($this->languages as $language_code => $language_id) {
