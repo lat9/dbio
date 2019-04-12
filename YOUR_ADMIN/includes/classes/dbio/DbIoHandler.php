@@ -13,7 +13,7 @@ abstract class DbIoHandler extends base
 //                                    C O N S T A N T S 
 // ----------------------------------------------------------------------------------
     // ----- Interface Constants -----
-    const DBIO_HANDLER_VERSION   = '1.5.2';
+    const DBIO_HANDLER_VERSION   = '1.5.3';
     // ----- Field-Import Status Values -----
     const DBIO_IMPORT_OK         = '--ok--';
     const DBIO_NO_IMPORT         = '--none--';
@@ -1396,7 +1396,7 @@ abstract class DbIoHandler extends base
                     if ($this->tables[$table_name]['fields'][$field_name]['nullable'] && ($field_value == 'null' || $field_value == 'NULL')) {
                         break;
                     }
-                    if (((string)((int)$field_value)) === ((string)$field_value)) {
+                    if (!ctype_digit((string)$field_value)) {
                         $field_error = true;
                         $this->debugMessage("[*] $import_table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is not an integer", self::DBIO_ERROR);
                     }

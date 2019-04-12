@@ -581,7 +581,9 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
           <li>v1.5.3, 2019-04-xx:<ul>
             <li>BUGFIX: PHP error thrown for the <em>Products</em> handler, when creating a category.</li>
             <li>BUGFIX: PHP error thrown for the <em>Products</em> handler, when forcing a product to be created via DbIo command.</li>
+            <li>BUGFIX: Incorrect report of invalid <em>integer</em> values in some configurations.</li>
             <li>The following files were changed:<ol>
+                <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
                 <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
                 <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
             </ol></li>
