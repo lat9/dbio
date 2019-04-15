@@ -1396,7 +1396,7 @@ abstract class DbIoHandler extends base
                     if ($this->tables[$table_name]['fields'][$field_name]['nullable'] && ($field_value == 'null' || $field_value == 'NULL')) {
                         break;
                     }
-                    if (!ctype_digit((string)$field_value)) {
+                    if (!preg_match('/^-?\d+$/', $field_value)) {
                         $field_error = true;
                         $this->debugMessage("[*] $import_table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is not an integer", self::DBIO_ERROR);
                     }
