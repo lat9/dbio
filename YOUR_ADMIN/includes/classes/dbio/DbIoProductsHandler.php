@@ -527,13 +527,15 @@ class DbIoProductsHandler extends DbIoHandler
                             }
                         }
                         if ($categories_name_ok) {
-                            $category_check = $db->Execute ("SELECT categories_id FROM " . TABLE_CATEGORIES . " WHERE parent_id = $parent_category LIMIT 1", false, false, 0, true);
+                            $category_check = $db->Execute("SELECT categories_id FROM " . TABLE_CATEGORIES . " WHERE parent_id = $parent_category LIMIT 1", false, false, 0, true);
                             if (!$category_check->EOF) {
                                 $categories_name_ok = false;
-                                $this->debugMessage ("[*] Product not inserted at line number " . $this->stats['record_count'] . "; category id ($parent_category) has categories.", self::DBIO_WARNING);
+                                $this->debugMessage("[*] Product not inserted at line number " . $this->stats['record_count'] . "; category id ($parent_category) has categories.", self::DBIO_WARNING);
                             } else {
-                                $this->import_sql_data[TABLE_PRODUCTS]['master_categories_id'] = array ( 'value' => $parent_category, 'type' => 'integer' );
-                                $this->import_sql_data[TABLE_PRODUCTS_TO_CATEGORIES]['categories_id'] = array ( 'value' => $parent_category, 'type' => 'integer' );
+                                $this->import_sql_data[TABLE_PRODUCTS]['master_categories_id'] = array('value' => $parent_category, 'type' => 'integer');
+                                
+                                $this->config['tables'][TABLE_PRODUCTS_TO_CATEGORIES]['alias'] = 'p2c';
+                                $this->import_sql_data[TABLE_PRODUCTS_TO_CATEGORIES]['categories_id'] = array('value' => $parent_category, 'type' => 'integer');
                             }
                         }
                         if (!$categories_name_ok) {
