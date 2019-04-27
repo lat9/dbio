@@ -406,9 +406,10 @@ abstract class DbIoHandler extends base
         if ($initialized) {
             $initialized = $this->exportFinalizeInitialization();
         }
+        $additional_headers = (isset($this->config['additional_headers'])) ? ("\nAdditional Headers\n" . print_r($this->config['additional_headers'], true)) : '';
         $this->debugMessage("exportInitialize ($language), " . (($initialized) ? 'Successful' : ('Unsuccessful (' . $this->message . ')')) . 
                              "\nTables:\n" . print_r($this->tables, true) . 
-                             "\nAdditional Headers\n" . print_r($this->config['additional_headers'], true) .
+                             $additional_headers .
                              "\nHeaders:\n" . print_r($this->headers, true));
         return $initialized;
     }
@@ -1349,7 +1350,7 @@ abstract class DbIoHandler extends base
             $sql_query = dbio_substr($sql_query, 0, -2) . ' WHERE ' . $where_clause . $extra_where_clause;
         }
         $this->debugMessage("importBuildSqlQuery ($table_name, " . print_r($table_fields, true));
-        $this->debugMessage ("importBuildSqlQuery for $table_name:\n$sql_query", self::DBIO_STATUS);  //- Forces the generated SQL to be logged!!
+        $this->debugMessage("importBuildSqlQuery for $table_name:\n$sql_query", self::DBIO_STATUS);  //- Forces the generated SQL to be logged!!
         return $sql_query;
     }
     

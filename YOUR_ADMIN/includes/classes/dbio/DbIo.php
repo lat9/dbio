@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2018, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2019, Vinos de Frutas Tropicales.
 //
 if (!defined('IS_ADMIN_FLAG')) { 
     exit('Illegal access');
@@ -304,7 +304,7 @@ class DbIo extends base
             // an array then the ASSUMPTION is that the export has returned an array of CSV records to be written.
             //
             if (version_compare(PHP_VERSION, '5.5.4', '>=')) {
-                if (is_array($csv_record[0])) {
+                if (isset($csv_record[0]) && is_array($csv_record[0])) {
                     foreach ($csv_record as $next_record) {
                         fputcsv($this->export_fp, $next_record, $this->csv_parms['delimiter'], $this->csv_parms['enclosure'], $this->csv_parms['escape']);
                     }
@@ -312,7 +312,7 @@ class DbIo extends base
                     fputcsv($this->export_fp, $csv_record, $this->csv_parms['delimiter'], $this->csv_parms['enclosure'], $this->csv_parms['escape']);
                 }
             } else {
-                if (is_array($csv_record[0])) {
+                if (isset($csv_record[0]) && is_array($csv_record[0])) {
                     foreach ($csv_record as $next_record) {
                         fputcsv($this->export_fp, $next_record, $this->csv_parms['delimiter'], $this->csv_parms['enclosure']);
                     }
