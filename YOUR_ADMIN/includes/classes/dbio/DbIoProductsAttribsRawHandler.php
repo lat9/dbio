@@ -13,7 +13,10 @@ if (!defined ('IS_ADMIN_FLAG')) {
 // Each table-record is exported as a single CSV record; all currently-defined fields in each of those tables are exported.  
 //
 // For the import, the CSV **must** contain the 'products_id', 'options_id', and 'options_values_id' fields, since those are
-// used to determine whether the import inserts or updates a database record.
+// used to determine whether the import inserts or updates a database record.  
+//
+// An optional 'v_dbio_command' column can be supplied, where the command 'REMOVE' causes a matching attribute to
+// be removed from the database.
 //
 class DbIoProductsAttribsRawHandler extends DbIoHandler 
 {
@@ -21,8 +24,8 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile('ProductsAttribsRaw'); 
         return array(
-            'version' => '1.0.0',
-            'handler_version' => '1.0.0',
+            'version' => '1.1.0',
+            'handler_version' => '1.4.0',
             'include_header' => true,
             'export_only' => false,
             'description' => DBIO_PRODUCTSATTRIBSRAW_DESCRIPTION,
@@ -99,6 +102,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     {
         $this->stats['report_name'] = 'ProductsAttribsRaw';
         $this->config = self::getHandlerInformation();
+        $this->config['supports_dbio_commands'] = true;
         $this->config['keys'] = array(
             TABLE_PRODUCTS_ATTRIBUTES => array(
                 'alias' => 'pa',
@@ -177,6 +181,44 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     }
     
     // -----
+    // This function, called by the base DbIoHandler class when a non-blank v_dbio_command field is found in the
+    // current import-record, gives this handler a chance to REMOVE a product option-combination from the database.
+    //
+    protected function importHandleDbIoCommand($command, $data)
+    {
+        $command = dbio_strtoupper($command);
+        if ($command == self::DBIO_COMMAND_REMOVE) {
+            $check = $GLOBALS['db']->Execute(
+                "SELECT products_attributes_id
+                   FROM " . TABLE_PRODUCTS_ATTRIBUTES . "
+                  WHERE products_id = " . (int)$this->importGetFieldValue('products_id', $data) . "
+                    AND options_id = " . (int)$this->importGetFieldValue('options_id', $data) . "
+                    AND options_values_id = " . (int)$this->importGetFieldValue('options_values_id', $data) . "
+                  LIMIT 1"
+            );
+            if ($check->EOF) {
+                $this->debugMessage("Product option-combination not found at line #" . $this->stats['record_count'] . "; the 'REMOVE' operation was not performed.", self::DBIO_ERROR);
+            } elseif ($this->operation != 'check') {
+                $attributes_id = $check->fields['products_attributes_id'];
+                $GLOBALS['db']->Execute(
+                    "DELETE FROM " . TABLE_PRODUCTS_ATTRIBUTES . "
+                      WHERE products_attributes_id = $attributes_id
+                      LIMIT 1"
+                );
+                $GLOBALS['db']->Execute(
+                    "DELETE FROM " . TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD . "
+                      WHERE products_attributes_id = $attributes_id
+                      LIMIT 1"
+                );
+                zen_update_products_price_sorter($this->importGetFieldValue('products_id', $data));
+            }
+        } else {
+            $this->debugMessage("Unrecognized command ($command) found at line #" . $this->stats['record_count'] . "; the operation was not performed.", self::DBIO_ERROR);
+        }
+        return false;
+    }
+    
+    // -----
     // Fix-up any blank values in the attribute's download maxdays/maxcount fields (they're output as blank if no associated downloads-table
     // record is found) to prevent unwanted warnings from being issued.
     //
@@ -223,24 +265,30 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     }
     
     // -----
-    // At the end of a record's import, make sure that there's an entry in the po2pov table that ties the just-processed option/value pair together.
+    // At the end of a record's import, make sure that there's an entry in the po2pov table that ties the just-processed 
+    // option/value pair together and update the associated product's price-sorter.
     //
     protected function importRecordPostProcess($record_key_value)
     {
         global $db;
-        if ($this->operation != 'check' && $this->import_is_insert) {
-            $record_inserted = 'no';
-            $check = $db->Execute("SELECT products_options_id FROM " . TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS . " 
-                                    WHERE products_options_id = " . $this->saved_data['options_id'] . "
-                                      AND products_options_values_id = " . $this->saved_data['options_values_id'] . "
-                                    LIMIT 1");
-            if ($check->EOF) {
-                $record_inserted = 'yes';
-                $sql_query = "INSERT INTO " . TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS . " (products_options_id, products_options_values_id) VALUES ( " . $this->saved_data['options_id'] . ', ' . $this->saved_data['options_values_id'] . ')';
-                $this->debugMessage("ProductsAttribsRaw::importRecordPostProcess\n$sql_query", self::DBIO_STATUS);  //- Forces the generated SQL to be logged!!
-                $db->Execute($sql_query);
+        if ($this->operation != 'check') {
+            if ($this->import_is_insert) {
+                $record_inserted = 'no';
+                $check = $db->Execute(
+                    "SELECT products_options_id FROM " . TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS . " 
+                      WHERE products_options_id = " . $this->saved_data['options_id'] . "
+                        AND products_options_values_id = " . $this->saved_data['options_values_id'] . "
+                      LIMIT 1");
+                if ($check->EOF) {
+                    $record_inserted = 'yes';
+                    $sql_query = 
+                        "INSERT INTO " . TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS . " (products_options_id, products_options_values_id) VALUES ( " . $this->saved_data['options_id'] . ', ' . $this->saved_data['options_values_id'] . ')';
+                    $this->debugMessage("ProductsAttribsRaw::importRecordPostProcess\n$sql_query", self::DBIO_STATUS);  //- Forces the generated SQL to be logged!!
+                    $db->Execute($sql_query);
+                }
+                $this->debugMessage("ProductsAttribsRaw::importRecordPostProcess, record updated ($record_inserted), options: " . print_r($this->saved_data, true));
             }
-            $this->debugMessage("ProductsAttribsRaw::importRecordPostProcess, record updated ($record_inserted), options: " . print_r($this->saved_data, true));
+            zen_update_products_price_sorter($this->saved_data['products_id']);
         }
     }
 
