@@ -7,7 +7,7 @@ if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
 }
 
-define('DBIO_CURRENT_VERSION', '1.5.5-beta1');
+define('DBIO_CURRENT_VERSION', '1.5.5');
 define('DBIO_CURRENT_UPDATE_DATE', '2019-07-24');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
