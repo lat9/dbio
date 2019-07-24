@@ -13,7 +13,7 @@ abstract class DbIoHandler extends base
 //                                    C O N S T A N T S 
 // ----------------------------------------------------------------------------------
     // ----- Interface Constants -----
-    const DBIO_HANDLER_VERSION   = '1.5.3';
+    const DBIO_HANDLER_VERSION   = '1.5.5';
     // ----- Field-Import Status Values -----
     const DBIO_IMPORT_OK         = '--ok--';
     const DBIO_NO_IMPORT         = '--none--';
@@ -810,8 +810,9 @@ abstract class DbIoHandler extends base
         //
         $key_index = $this->key_index;
         if (!$this->handler_overrides_import && count($data) < count($this->headers)) {
-            $this->debugMessage('Data record at line #' . $this->stats['record_count'] . ' not imported.  Column count (' . count($data) . ') less than header column count (' . count($this->headers) . ').', self::DBIO_ERROR);
-          
+            if (!empty(trim($data))) {
+                $this->debugMessage('Data record at line #' . $this->stats['record_count'] . ' not imported.  Column count (' . count($data) . ') less than header column count (' . count($this->headers) . ').', self::DBIO_ERROR);
+            }
         } else {
             // -----
             // Otherwise, determine the action to be performed for the current record.
@@ -1350,7 +1351,13 @@ abstract class DbIoHandler extends base
             $sql_query = dbio_substr($sql_query, 0, -2) . ' WHERE ' . $where_clause . $extra_where_clause;
         }
         $this->debugMessage("importBuildSqlQuery ($table_name, " . print_r($table_fields, true));
-        $this->debugMessage("importBuildSqlQuery for $table_name:\n$sql_query", self::DBIO_STATUS);  //- Forces the generated SQL to be logged!!
+        
+        // -----
+        // Force the generated SQL to be logged, but only when the import is being checked.  For
+        // full-import processing, this log could be a performance issue for large imports.
+        //
+        $log_status = ($this->operation == 'check') ? self::DBIO_STATUS : self::DBIO_INFORMATIONAL;
+        $this->debugMessage("importBuildSqlQuery for $table_name:\n$sql_query", $log_status);
         return $sql_query;
     }
     
