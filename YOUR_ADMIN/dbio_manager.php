@@ -236,79 +236,84 @@ if (!$ok_to_proceed) {
                             break;
                         case 'split':
                             $_SESSION['dbio_active_filename'] = $active_filename;
-                            if (!is_readable ($action_filename) || ($fp = fopen ($action_filename, "r")) === false) {
-                                $messageStack->add_session (sprintf (ERROR_CANT_SPLIT_FILE_OPEN_ERROR, $action_filename));
+                            if (!is_readable($action_filename) || ($fp = fopen($action_filename, "r")) === false) {
+                                $messageStack->add_session(sprintf(ERROR_CANT_SPLIT_FILE_OPEN_ERROR, $action_filename));
                             } else {
                                 $split_count = 0;
                                 $record_count = 0;
                                 $header_record = false;
                                 $split_error = false;
-                                $files_created = array ();
+                                $files_created = array();
                                 $header_included = $dbio_files[$_POST['filename_hash']]['is_header_included'];
-                                $split_file_info = pathinfo ($action_filename);
+
+                                $split_file_info = pathinfo($action_filename);
                                 $chunk_filename = $split_file_info['dirname'] . '/' . $split_file_info['filename'];
                                 $chunk_extension = '.' . $split_file_info['extension'];
-                                unset ($split_file_info);
-                                while (($data = fgetcsv ($fp)) !== false) {
-                                    if ($record_count == 0 && $header_included) {
+                                unset($split_file_info);
+
+                                while (($data = fgetcsv($fp)) !== false) {
+                                    if ($split_count == 0 && $header_included) {
                                         $header_record = $data;
                                     }
-                                    if ($record_count == 0 || $record_count > DBIO_SPLIT_RECORD_COUNT) {
-                                        if (isset ($fp_out)) {
-                                            fclose ($fp_out);
+                                    if ($split_count == 0 || $record_count > DBIO_SPLIT_RECORD_COUNT) {
+                                        if (isset($fp_out)) {
+                                            fclose($fp_out);
                                         }
                                         $split_count++;
                                         $out_filename = $chunk_filename . ".part-$split_count" . $chunk_extension;
-                                        $fp_out = fopen ($out_filename, "w");
+                                        $fp_out = fopen($out_filename, "w");
                                         if ($fp_out === false) {
                                             $split_error = true;
-                                            $messageStack->add_session (sprintf (ERROR_CREATING_SPLIT_FILE, $out_filename));
+                                            $messageStack->add_session(sprintf(ERROR_CREATING_SPLIT_FILE, $out_filename));
                                             break;
                                         }
                                         $files_created[] = $out_filename;
                                         $record_count = 0;
                                         if ($header_included) {
                                             $record_count++;
-                                            if (fputcsv ($fp_out, $header_record) === false) {
+                                            if (fputcsv($fp_out, $header_record) === false) {
                                                 $split_error = true;
-                                                $messageStack->add_session (sprintf (ERROR_WRITING_SPLIT_FILE, $out_filename, $record_count));
+                                                $messageStack->add_session(sprintf(ERROR_WRITING_SPLIT_FILE, $out_filename, $record_count));
                                                 break;
+                                            }
+                                            if ($split_count == 1) {
+                                                continue;
                                             }
                                         }
                                     }
                                     if (!($record_count == 0 && $header_included)) {
                                         $record_count++;
-                                        if (fputcsv ($fp_out, $data) === false) {
+                                        if (fputcsv($fp_out, $data) === false) {
                                             $split_error = true;
-                                            $messageStack->add_session (sprintf (ERROR_WRITING_SPLIT_FILE, $out_filename, $record_count));
+                                            $messageStack->add_session(sprintf(ERROR_WRITING_SPLIT_FILE, $out_filename, $record_count));
                                             break;
                                         }
                                     }
                                 }
 
-                                if (isset ($fp_out) && $fp_out !== false) {
-                                    fclose ($fp_out);
+                                if (isset($fp_out) && $fp_out !== false) {
+                                    fclose($fp_out);
                                 }
-                                if (!$split_error && !feof ($fp)) {
-                                    $messageStack->add_session (sprintf (ERROR_SPLIT_INPUT_NOT_AT_EOF, $action_filename));
+                                if (!$split_error && !feof($fp)) {
+                                    $messageStack->add_session(sprintf(ERROR_SPLIT_INPUT_NOT_AT_EOF, $action_filename));
                                     $split_error = true;
                                 }
-                                fclose ($fp);
+                                fclose($fp);
                                 
                                 if (!$split_error && $split_count == 1) {
-                                    $messageStack->add_session (sprintf (WARNING_FILE_TOO_SMALL_TO_SPLIT, $action_filename, $record_count), 'caution');
+                                    $messageStack->add_session(sprintf(WARNING_FILE_TOO_SMALL_TO_SPLIT, $action_filename, $record_count), 'caution');
                                     $split_error = true;
                                 } else {
-                                    $messageStack->add_session (sprintf (FILE_SUCCESSFULLY_SPLIT, $action_filename, $split_count), 'success');
+                                    $messageStack->add_session(sprintf(FILE_SUCCESSFULLY_SPLIT, $action_filename, $split_count), 'success');
                                 }
                                 
                                 if ($split_error) {
                                     foreach ($files_created as $file_to_remove) {
-                                        unlink ($file_to_remove);
+                                        unlink($file_to_remove);
                                     }
                                 }
                             }
-                            zen_redirect (zen_href_link (FILENAME_DBIO_MANAGER, zen_get_all_get_params (array ('action'))));
+                            zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action'))));
                             break;
                         case 'download':
                             $_SESSION['dbio_active_filename'] = $active_filename;
