@@ -379,7 +379,7 @@ legend { background-color: #fff8dc; padding: 0.3em; border: 1px solid #e5e5e5; }
 #export-form form, #upload-form form { display: block; }
 #configuration { width: 25%; }
 #submit-report { text-align: right; margin: 0.5em 0; }
-#file-delete-action { text-align: center; }
+#file-delete-action, #file-toggle { text-align: center; }
 #configuration-info { padding-bottom: 0.5em; }
 #file-list, #export-form { border-right: 1px solid #e5e5e5; }
 #file-row-header { background-color: #fbf6d9; }
@@ -672,7 +672,8 @@ if (!$ok_to_proceed || $error_message !== '') {
                             <td colspan="5" id="file-instrs"><?php echo TEXT_FILE_ACTION_INSTRUCTIONS; ?></td>
                         </tr>
                         <tr>
-                            <td colspan="5" class="file-row-caption"><?php echo TEXT_CHOOSE_ACTION . ' ' . zen_draw_pull_down_menu ('file_action', $file_actions_array, $file_action, 'id="file-action"'); ?>&nbsp;&nbsp;<?php echo zen_draw_input_field ('go_button', DBIO_BUTTON_GO, 'title="' . DBIO_BUTTON_GO_TITLE . '" onclick="return checkSubmit ();"', false, 'submit') . "&nbsp;&nbsp;$last_update_button"; ?></td>
+                            <td colspan="4" class="file-row-caption"><?php echo TEXT_CHOOSE_ACTION . ' ' . zen_draw_pull_down_menu ('file_action', $file_actions_array, $file_action, 'id="file-action"'); ?>&nbsp;&nbsp;<?php echo zen_draw_input_field ('go_button', DBIO_BUTTON_GO, 'title="' . DBIO_BUTTON_GO_TITLE . '" onclick="return checkSubmit ();"', false, 'submit') . "&nbsp;&nbsp;$last_update_button"; ?></td>
+                            <td id="file-toggle"><button type="button" id="select-all" title="<?php echo DBIO_SELECT_ALL_TITLE; ?>"><?php echo DBIO_SELECT_ALL; ?></button><br /><button type="button" id="unselect-all" title="<?php echo DBIO_UNSELECT_ALL_TITLE; ?>"><?php echo DBIO_UNSELECT_ALL; ?></button></td>
                         </tr>
                         <tr>
                             <td colspan="4" class="right"><?php echo TEXT_FILE_ACTION_DELETE_INSTRUCTIONS; ?></td>
@@ -847,6 +848,14 @@ if ($zen_cart_version < '1.5.5a') {
 <!--
     $(document).ready( function() {
         $(".import-info").colorbox({inline:true, width:"auto"});
+        
+        $('#select-all').on('click', function() {
+            $('.delete-hash').prop('checked', true);
+        });
+        
+        $('#unselect-all').on('click', function() {
+            $('.delete-hash').prop('checked', false);
+        });
     });
 
     function init()
