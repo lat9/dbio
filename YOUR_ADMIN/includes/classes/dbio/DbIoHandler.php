@@ -810,7 +810,7 @@ abstract class DbIoHandler extends base
         //
         $key_index = $this->key_index;
         if (!$this->handler_overrides_import && count($data) < count($this->headers)) {
-            if (!empty(trim($data))) {
+            if (!empty(trim(implode('', $data)))) {
                 $this->debugMessage('Data record at line #' . $this->stats['record_count'] . ' not imported.  Column count (' . count($data) . ') less than header column count (' . count($this->headers) . ').', self::DBIO_ERROR);
             }
         } else {
