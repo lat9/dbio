@@ -251,7 +251,7 @@ if (!$ok_to_proceed) {
                                 $chunk_extension = '.' . $split_file_info['extension'];
                                 unset($split_file_info);
 
-                                while (($data = fgetcsv($fp)) !== false) {
+                                while (($data = fgets($fp)) !== false) {
                                     if ($split_count == 0 && $header_included) {
                                         $header_record = $data;
                                     }
@@ -271,7 +271,7 @@ if (!$ok_to_proceed) {
                                         $record_count = 0;
                                         if ($header_included) {
                                             $record_count++;
-                                            if (fputcsv($fp_out, $header_record) === false) {
+                                            if (fputs($fp_out, $header_record) === false) {
                                                 $split_error = true;
                                                 $messageStack->add_session(sprintf(ERROR_WRITING_SPLIT_FILE, $out_filename, $record_count));
                                                 break;
@@ -283,7 +283,7 @@ if (!$ok_to_proceed) {
                                     }
                                     if (!($record_count == 0 && $header_included)) {
                                         $record_count++;
-                                        if (fputcsv($fp_out, $data) === false) {
+                                        if (fputs($fp_out, $data) === false) {
                                             $split_error = true;
                                             $messageStack->add_session(sprintf(ERROR_WRITING_SPLIT_FILE, $out_filename, $record_count));
                                             break;
