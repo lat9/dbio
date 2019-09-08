@@ -518,7 +518,7 @@ if (!$ok_to_proceed || $error_message !== '') {
                                                 $form_field .= '<span class="filter-subfield">' . zen_draw_input_field ($subfield_name, dbioGetFieldValue ($subfield_name)) . '</span>';
                                                 break;
                                             case 'dropdown_multiple':
-                                                $dropdown_options = 'multiple';
+                                                $dropdown_options = 'style="height:200px;"' . ' multiple';
                                                 $dropdown_field_suffix = '[]';      //-Fall-through to dropdown handling
                                             case 'dropdown':
                                                 if (!isset ($subfield_parms['dropdown_options']) || !is_array ($subfield_parms['dropdown_options'])) {
