@@ -24,7 +24,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile('ProductsAttribsRaw'); 
         return array(
-            'version' => '1.1.0',
+            'version' => '1.5.7',
             'handler_version' => '1.4.0',
             'include_header' => true,
             'export_only' => false,
@@ -226,7 +226,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     {
         if ($table_name == TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
             if (($field_name == 'products_attributes_maxdays' || $field_name == 'products_attributes_maxcount') && empty($field_value)) {
-                $field_value = '0';
+                $field_value = 0;
             }
         } else {
             switch ($field_name) {
@@ -243,25 +243,39 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     }
     
     // -----
+    // There are two tables updated for each import record - products_attributes and products_attributes_download - so each
+    // line of the imported CSV receives two 'importBuildSqlQuery' requests.  This function enables the addition of the
+    // previous record's 'record_key', i.e. the products_attributes_id, to the to-be-generated SQL for the downloads.
+    //
+    protected function importUpdateRecordKey($table_name, $table_fields, $record_key_value)
+    {
+        $proceed_with_update = true;
+        if ($table_name == TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
+            if (empty($table_fields['products_attributes_filename']['value'])) {
+                $proceed_with_update = false;
+            } elseif ($this->import_is_insert) {
+                $table_fields['products_attributes_id'] = array(
+                    'value' => $record_key_value,
+                    'type' => 'integer',
+                );
+            }
+        }
+        return ($proceed_with_update) ? $table_fields : false;
+    }
+    
+    // -----
     // This function, called to create an import-record's associated SQL, checks to see if the current attribute is to have a download-file associated with it.
     // That's tested by the presence of a value (unchecked) in the 'products_attributes_filename' field.  If the value is present, the associated record in the
     // 'products_attributes_download' table is created/modified; if that field's value is empty (a null-string), then any existing record will be removed.
     //
     protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
     {
-        $proceed_with_query = true;
         if ($table_name == TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
-            if (empty($this->import_sql_data[TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD]['products_attributes_filename']['value'])) {
-                $proceed_with_query = false;
-            } elseif ($this->operation != 'check') {
-                if ($this->import_is_insert) {
-                    $this->import_sql_data[TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD]['products_attributes_id']['value'] = $this->key_fields['products_attributes_id'];
-                } else {
-                    $this->where_clause = "pad.products_attributes_id = " . $this->key_fields['products_attributes_id'];
-                }
+            if ($this->operation != 'check' && !$this->import_is_insert) {
+                $this->where_clause = "pad.products_attributes_id = " . $this->key_fields['products_attributes_id'];
             }
         }
-        return ($proceed_with_query) ? parent::importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause, $is_override, $is_insert) : false;
+        return parent::importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause, $is_override, $is_insert);
     }
     
     // -----
