@@ -839,7 +839,7 @@ if (!$ok_to_proceed || $error_message !== '') {
 $zen_cart_version = PROJECT_VERSION_MAJOR . '.' . PROJECT_VERSION_MINOR;
 if ($zen_cart_version < '1.5.5a') {
 ?>
-<script type="text/javascript" src="//code.jquery.com/jquery-3.3.1.min.js"></script>
+<script type="text/javascript" src="//code.jquery.com/jquery-3.4.1.min.js"></script>
 <?php
 }
 ?>
@@ -919,6 +919,8 @@ foreach ($customization_choices as $index => $info) {
             $( '#file-action option' ).prop( 'disabled', false );
         }
     });
+    
+    $('select[multiple]').css('resize', 'vertical');
   // -->
 </script>
 </body>
