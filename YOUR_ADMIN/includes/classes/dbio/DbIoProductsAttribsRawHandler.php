@@ -41,10 +41,18 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
         // -----
         // Grab the fields from the various product/attribute tables.
         //
-        $this->from_clause = TABLE_PRODUCTS . " AS p, " . TABLE_PRODUCTS_OPTIONS . " AS po, " . TABLE_PRODUCTS_OPTIONS_VALUES . " AS pov, " . TABLE_PRODUCTS_ATTRIBUTES . " AS pa LEFT JOIN " . TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD . " AS pad ON (pa.products_attributes_id = pad.products_attributes_id)";
+        $this->from_clause = 
+            TABLE_PRODUCTS . " AS p, " . 
+            TABLE_PRODUCTS_OPTIONS . " AS po, " . 
+            TABLE_PRODUCTS_OPTIONS_VALUES . " AS pov, " . 
+            TABLE_MANUFACTURERS . " AS m, " .
+            TABLE_PRODUCTS_ATTRIBUTES . " AS pa 
+                LEFT JOIN " . TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD . " AS pad 
+                    ON (pa.products_attributes_id = pad.products_attributes_id)";
         
         // -----
-        // Insert the products_model, products_options_name and products_options_values_name fields, to make the output a little more readable.
+        // Insert the products_model, manufacturers_name, products_options_name and 
+        // products_options_values_name fields, to make the output a little more readable.
         //
         $this->select_clause = str_replace(
             array( 
@@ -53,7 +61,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
                 'pa.options_values_id,',
             ),
             array( 
-                'pa.products_id, p.products_model,', 
+                'pa.products_id, p.products_model, m.manufacturers_name,', 
                 'pa.options_id, po.products_options_name,',
                 'pa.options_values_id, pov.products_options_values_name,',
             ),
@@ -64,6 +72,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
         //
         $inserted_columns = array(
             'v_products_id' => 'v_products_model',
+            'v_products_model' => 'v_manufacturers_name',
             'v_options_id' => 'v_products_options_name',
             'v_options_values_id' => 'v_products_options_values_name',
         );
@@ -80,6 +89,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
         //
         $this->where_clause = "
                 pa.products_id = p.products_id
+            AND m.manufacturers_id = p.manufacturers_id
             AND pa.options_id = po.products_options_id
             AND po.language_id = " . (int)$_SESSION['languages_id'] . "
             AND pa.options_values_id = pov.products_options_values_id
