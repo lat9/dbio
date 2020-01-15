@@ -1,6 +1,6 @@
 <?php
 // -----
-// Part of the DataBase Import/Export (aka dbIO) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
+// Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2015-2019, Vinos de Frutas Tropicales.
 //
 if (!defined('IS_ADMIN_FLAG')) {
@@ -8,7 +8,7 @@ if (!defined('IS_ADMIN_FLAG')) {
 }
 
 // -----
-// This dbIO class handles the customizations required for a basic Zen Cart product import/export.
+// This DbIo class handles the customizations required for a basic Zen Cart product import/export.
 //
 class DbIoProductsHandler extends DbIoHandler 
 {
@@ -19,7 +19,7 @@ class DbIoProductsHandler extends DbIoHandler
         global $db;
         DbIoHandler::loadHandlerMessageFile('Products'); 
         return array(
-            'version' => '1.4.2',
+            'version' => '1.4.3',
             'handler_version' => '1.4.0',
             'include_header' => true,
             'export_only' => false,
@@ -32,7 +32,7 @@ class DbIoProductsHandler extends DbIoHandler
     {
         global $db;
         
-        $manufacturers_options = array ();
+        $manufacturers_options = array();
         $manufacturers_info = $db->Execute("SELECT manufacturers_id as `id`, manufacturers_name as `text` FROM " . TABLE_MANUFACTURERS . " ORDER BY manufacturers_name ASC");
         while (!$manufacturers_info->EOF) {
             $manufacturers_options[] = $manufacturers_info->fields;
@@ -40,36 +40,36 @@ class DbIoProductsHandler extends DbIoHandler
         }
         unset ($manufacturers_info);
         
-        $status_options = array (
-            array ( 'id' => 'all', 'text' => DBIO_PRODUCTS_TEXT_STATUS_ALL ),
-            array ( 'id' => '1', 'text' => DBIO_PRODUCTS_TEXT_STATUS_ENABLED ),
-            array ( 'id' => '0', 'text' => DBIO_PRODUCTS_TEXT_STATUS_DISABLED ),
+        $status_options = array(
+            array('id' => 'all', 'text' => DBIO_PRODUCTS_TEXT_STATUS_ALL),
+            array('id' => '1', 'text' => DBIO_PRODUCTS_TEXT_STATUS_ENABLED),
+            array('id' => '0', 'text' => DBIO_PRODUCTS_TEXT_STATUS_DISABLED),
         );
         
-        $categories_options = zen_get_category_tree ();
-        unset ($categories_options[0]);
+        $categories_options = zen_get_category_tree();
+        unset($categories_options[0]);
         
-        $export_filters['products_filters'] = array (
+        $export_filters['products_filters'] = array(
             'type' => 'array',
             'label' => DBIO_PRODUCTS_FILTERS_LABEL,
-            'fields' => array (
-                'products_status' => array (
+            'fields' => array(
+                'products_status' => array(
                     'type' => 'dropdown',
                     'dropdown_options' => $status_options,
                     'label' => DBIO_PRODUCTS_STATUS_LABEL,
                 ),
             ),
         );
-        if (count ($manufacturers_options) > 0) {
-            $export_filters['products_filters']['fields']['products_manufacturers'] = array (
+        if (count($manufacturers_options) > 0) {
+            $export_filters['products_filters']['fields']['products_manufacturers'] = array(
                 'type' => 'dropdown_multiple',
                 'dropdown_options' => $manufacturers_options,
                 'label' => DBIO_PRODUCTS_MANUFACTURERS_LABEL,
             );
         }
-        $export_filters['products_filters']['fields']['products_categories'] = array (
+        $export_filters['products_filters']['fields']['products_categories'] = array(
             'type' => 'dropdown_multiple',
-            'dropdown_options' => array_values ($categories_options),
+            'dropdown_options' => array_values($categories_options),
             'label' => DBIO_PRODUCTS_CATEGORIES_LABEL,
         );
         return $export_filters;
@@ -79,9 +79,9 @@ class DbIoProductsHandler extends DbIoHandler
     // This function, called at the beginning of an export operation, gives the handler an opportunity to perform
     // some special checks.
     // 
-    public function exportInitialize ($language = 'all') 
+    public function exportInitialize($language = 'all') 
     {
-        $initialized = parent::exportInitialize ($language);
+        $initialized = parent::exportInitialize($language);
         if ($initialized) {
             if ($this->where_clause != '') {
                 $this->where_clause .= ' AND ';
@@ -128,23 +128,23 @@ class DbIoProductsHandler extends DbIoHandler
     // Returns a boolean (true/false) indication of whether the export's initialization was successful.  If unsuccessful, the handler
     // is **assumed** to have set its reason into the class message variable.
     //
-    public function exportFinalizeInitialization ()
+    public function exportFinalizeInitialization()
     {
-        $this->debugMessage ('Products::exportFinalizeInitialization. POST variables:' . print_r ($_POST, true));
+        $this->debugMessage('Products::exportFinalizeInitialization. POST variables:' . print_r ($_POST, true));
         
         // -----
         // Check to see if any of this handler's filter variables have been set.  If set, check the values and then
         // update the where_clause for the to-be-issued SQL query for the export.
         //
-        if (isset ($_POST['products_status']) && $_POST['products_status'] != 'all') {
+        if (isset($_POST['products_status']) && $_POST['products_status'] != 'all') {
             $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . 'p.products_status = ' . (int)$_POST['products_status'];
         }
-        if (isset ($_POST['products_manufacturers']) && is_array ($_POST['products_manufacturers'])) {
-            $manufacturers_list = implode (',', $_POST['products_manufacturers']);
+        if (isset($_POST['products_manufacturers']) && is_array($_POST['products_manufacturers'])) {
+            $manufacturers_list = implode(',', $_POST['products_manufacturers']);
             $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "p.manufacturers_id IN ($manufacturers_list)";
         }
-        if (isset ($_POST['products_categories']) && is_array ($_POST['products_categories'])) {
-            $categories_list = implode (',', $_POST['products_categories']);
+        if (isset($_POST['products_categories']) && is_array($_POST['products_categories'])) {
+            $categories_list = implode(',', $_POST['products_categories']);
             $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "p.master_categories_id IN ($categories_list)";
         }
         return true;
@@ -258,47 +258,47 @@ class DbIoProductsHandler extends DbIoHandler
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the dbIO operations.
     //
-    protected function setHandlerConfiguration () 
+    protected function setHandlerConfiguration() 
     {
         $this->stats['report_name'] = 'Products';
         $this->config = self::getHandlerInformation ();
         $this->config['supports_dbio_commands'] = true;
-        $this->config['keys'] = array (
-            TABLE_PRODUCTS => array (
+        $this->config['keys'] = array(
+            TABLE_PRODUCTS => array(
                 'alias' => 'p',
                 'capture_key_value' => true,
-                'products_id' => array (
+                'products_id' => array(
                     'type' => self::DBIO_KEY_IS_VARIABLE | self::DBIO_KEY_SELECTED,
                 ),
-                'products_model' => array (
+                'products_model' => array(
                     'type' => self::DBIO_KEY_IS_VARIABLE | self::DBIO_KEY_SELECTED | self::DBIO_KEY_IS_ALTERNATE,
                 ),
             ),
         );
-        $this->config['tables'] = array (
-            TABLE_PRODUCTS => array ( 
+        $this->config['tables'] = array(
+            TABLE_PRODUCTS => array( 
                 'alias' => 'p',
-                'io_field_overrides' => array (
+                'io_field_overrides' => array(
                     'manufacturers_id' => false,
                     'products_tax_class_id' => 'no-header',
                     'master_categories_id' => false,
                 ),
             ), 
-            TABLE_PRODUCTS_DESCRIPTION => array ( 
+            TABLE_PRODUCTS_DESCRIPTION => array( 
                 'alias' => 'pd',
                 'language_field' => 'language_id',
-                'io_field_overrides' => array (
+                'io_field_overrides' => array(
                     'products_id' => false,
                     'language_id' => false,
                 ),
             ), 
         );
-        $this->config['additional_headers'] = array (
+        $this->config['additional_headers'] = array(
             'v_manufacturers_name' => self::DBIO_FLAG_NONE,
             'v_tax_class_title' => self::DBIO_FLAG_FIELD_SELECT,
             'v_categories_name' => self::DBIO_FLAG_NONE,
         );
-        $this->config['additional_header_select'] = array (
+        $this->config['additional_header_select'] = array(
             'v_tax_class_title' => 'p.products_tax_class_id'
         );
     }  
@@ -311,7 +311,7 @@ class DbIoProductsHandler extends DbIoHandler
     //                           that the field is calculated separately by the handler's processing.
     // - DBIO_SPECIAL_IMPORT ... The field requires special-handling by the handler to create the associated database elements.
     //
-    protected function importHeaderFieldCheck ($field_name) 
+    protected function importHeaderFieldCheck($field_name) 
     {
         $field_status = self::DBIO_IMPORT_OK;
         switch ($field_name) {
@@ -347,7 +347,7 @@ class DbIoProductsHandler extends DbIoHandler
             $this->import_is_insert = true;
             $this->debugMessage("Forcing ADD of product at line #" . $this->stats['record_count'] . ', via DbIo command', self::DBIO_STATUS);
         } elseif ($command == self::DBIO_COMMAND_REMOVE) {
-            if (!function_exists ('zen_remove_product')) {
+            if (!function_exists('zen_remove_product')) {
                 $this->debugMessage("Product not removed; missing zen_remove_product function.", self::DBIO_ERROR);
             } elseif ($this->import_is_insert) {
                 $this->debugMessage("Product not removed at line #" . $this->stats['record_count'] . "; it does not exist.", self::DBIO_WARNING);
@@ -371,7 +371,7 @@ class DbIoProductsHandler extends DbIoHandler
     // It's the responsibility of this handler to deal with the case where multiple database entries are found that match
     // the current record's specification.
     //
-    protected function importCheckKeyValue ($data)
+    protected function importCheckKeyValue($data)
     {
         global $db;
         
@@ -386,31 +386,31 @@ class DbIoProductsHandler extends DbIoHandler
         // it's not importable.  It's the responsibility of this function to determine whether that duplication is OK.
         //
         if (!$this->import_is_insert) {
-            if (isset ($this->data_key_check)) {
-                $products_id = $this->importGetFieldValue ('products_id', $data);
+            if (isset($this->data_key_check)) {
+                $products_id = $this->importGetFieldValue('products_id', $data);
                 $import_allowed = false;
-                if (!zen_not_null ($products_id)) {
-                    $this->debugMessage ("Multiple records match the products_model, but no products_id specified; the record at line #" . $this->stats['record_count'] . " was not imported.", self::DBIO_WARNING);
+                if (!zen_not_null($products_id)) {
+                    $this->debugMessage("Multiple records match the products_model, but no products_id specified; the record at line #" . $this->stats['record_count'] . " was not imported.", self::DBIO_WARNING);
                 } else {
-                    $current_products_model = zen_get_products_model ($products_id);
-                    $products_model = $this->importGetFieldValue ('products_model', $data);
-                    if ($products_model != $current_products_model && (!defined ('DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS') || DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS == 'No')) {
-                        $this->debugMessage ("Record at line #" . $this->stats['record_count'] . " not imported; products_model ($products_model) exists and cannot, by configuration, be duplicated.", self::DBIO_WARNING);
+                    $current_products_model = zen_get_products_model($products_id);
+                    $products_model = $this->importGetFieldValue('products_model', $data);
+                    if ($products_model != $current_products_model && (!defined('DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS') || DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS == 'No')) {
+                        $this->debugMessage("Record at line #" . $this->stats['record_count'] . " not imported; products_model ($products_model) exists and cannot, by configuration, be duplicated.", self::DBIO_WARNING);
                     } else {
                         while (!$this->data_key_check->EOF) {
                             if ($this->data_key_check->fields['products_id'] == $products_id) {
                                 $import_allowed = true;
                                 $this->key_fields = $this->data_key_check->fields;
                                 
-                                $this->where_clause = $this->importBindKeyValues ($data, $this->key_where_clause);
-                                $where_clause_elements = explode (' OR ', $this->where_clause);
+                                $this->where_clause = $this->importBindKeyValues($data, $this->key_where_clause);
+                                $where_clause_elements = explode(' OR ', $this->where_clause);
                                 $this->where_clause = $where_clause_elements[0];
                                 break;  //- Out of while-loop
                             }
                             $this->data_key_check->MoveNext ();
                         }
                         if (!$import_allowed) {
-                            $this->debugMessage ("No matching products_id, but multiple records match the products_model so no unique product could be determined for the update.  The record at line #" . $this->stats['record_count'] . " was not imported.", self::DBIO_WARNING);
+                            $this->debugMessage("No matching products_id, but multiple records match the products_model so no unique product could be determined for the update.  The record at line #" . $this->stats['record_count'] . " was not imported.", self::DBIO_WARNING);
                         }
                     }
                 }
@@ -424,16 +424,16 @@ class DbIoProductsHandler extends DbIoHandler
     // This function handles any overall record post-processing required for the Products import, specifically
     // making sure that the products' price sorter is run for the just inserted/updated product.
     //
-    protected function importRecordPostProcess ($products_id)
+    protected function importRecordPostProcess($products_id)
     {
-        $this->debugMessage ('Products::importRecordPostProcess: ' . $this->data_key_sql . "\n" . print_r ($this->key_fields, true), self::DBIO_INFORMATIONAL);
+        $this->debugMessage('Products::importRecordPostProcess: ' . $this->data_key_sql . "\n" . print_r($this->key_fields, true), self::DBIO_INFORMATIONAL);
         if ($products_id !== false && $this->operation != 'check') {
-            zen_update_products_price_sorter ($products_id);
+            zen_update_products_price_sorter($products_id);
         }
     }    
 
-    protected function importAddField ($table_name, $field_name, $field_value) {
-        $this->debugMessage ("Products::importAddField ($table_name, $field_name, $field_value)");
+    protected function importAddField($table_name, $field_name, $field_value) {
+        $this->debugMessage("Products::importAddField ($table_name, $field_name, $field_value)");
         global $db;
         switch ($table_name) {
             case TABLE_PRODUCTS:
@@ -448,7 +448,7 @@ class DbIoProductsHandler extends DbIoHandler
                         $field_value = 'now()';
                     }
                 }
-                parent::importAddField ($table_name, $field_name, $field_value);
+                parent::importAddField($table_name, $field_name, $field_value);
                 break;
             case self::DBIO_SPECIAL_IMPORT:
                 switch ($field_name) {
@@ -458,39 +458,39 @@ class DbIoProductsHandler extends DbIoHandler
 
                         } else {
                             $manufacturer_check_sql = "SELECT manufacturers_id FROM " . TABLE_MANUFACTURERS . " WHERE manufacturers_name = :manufacturer_name: LIMIT 1";
-                            $manufacturer_check = $db->Execute ($db->bindVars ($manufacturer_check_sql, ':manufacturer_name:', $field_value, 'string'), false, false, 0, true);
+                            $manufacturer_check = $db->Execute($db->bindVars ($manufacturer_check_sql, ':manufacturer_name:', $field_value, 'string'), false, false, 0, true);
                             if (!$manufacturer_check->EOF) {
                                 $manufacturers_id = $manufacturer_check->fields['manufacturers_id'];
                           
                             } else {
-                                $this->debugMessage ("[*] Import, creating database entry for manufacturer named \"$field_value\"", self::DBIO_ACTIVITY | self::DBIO_STATUS);
+                                $this->debugMessage("[*] Import, creating database entry for manufacturer named \"$field_value\"", self::DBIO_ACTIVITY | self::DBIO_STATUS);
                                 if ($this->operation != 'check') {
-                                    $sql_data_array = array ();
-                                    $sql_data_array[] = array ( 'fieldName' => 'manufacturers_name', 'value' => $field_value, 'type' => 'string' );
-                                    $sql_data_array[] = array ( 'fieldName' => 'date_added', 'value' => 'now()', 'type' => 'noquotestring' );
-                                    $db->perform (TABLE_MANUFACTURERS, $sql_data_array);
+                                    $sql_data_array = array();
+                                    $sql_data_array[] = array('fieldName' => 'manufacturers_name', 'value' => $field_value, 'type' => 'string');
+                                    $sql_data_array[] = array('fieldName' => 'date_added', 'value' => 'now()', 'type' => 'noquotestring');
+                                    $db->perform(TABLE_MANUFACTURERS, $sql_data_array);
                                     $manufacturers_id = $db->Insert_ID();
                               
                                     foreach ($this->languages as $language_code => $language_id) {
-                                        $sql_data_array = array ();
-                                        $sql_data_array[] = array ( 'fieldName' => 'manufacturers_id', 'value' => $manufacturers_id, 'type' => 'integer' );
-                                        $sql_data_array[] = array ( 'fieldName' => 'languages_id', 'value' => $language_id, 'type' => 'integer' );
+                                        $sql_data_array = array();
+                                        $sql_data_array[] = array('fieldName' => 'manufacturers_id', 'value' => $manufacturers_id, 'type' => 'integer');
+                                        $sql_data_array[] = array('fieldName' => 'languages_id', 'value' => $language_id, 'type' => 'integer');
                                         $db->perform (TABLE_MANUFACTURERS_INFO, $sql_data_array);
                                     }
                                 }
                             }
                         }
-                        $this->import_sql_data[TABLE_PRODUCTS]['manufacturers_id'] = array ( 'value' => $manufacturers_id, 'type' => 'integer' );
+                        $this->import_sql_data[TABLE_PRODUCTS]['manufacturers_id'] = array('value' => $manufacturers_id, 'type' => 'integer');
                         break;
                     case 'tax_class_title':
-                        if (zen_not_null ($field_value)) {
+                        if (zen_not_null($field_value)) {
                             $tax_class_check_sql = "SELECT tax_class_id FROM " . TABLE_TAX_CLASS . " WHERE tax_class_title = :tax_class_title: LIMIT 1";
-                            $tax_class_check = $db->Execute ($db->bindVars ($tax_class_check_sql, ':tax_class_title:', $field_value, 'string'));
+                            $tax_class_check = $db->Execute($db->bindVars($tax_class_check_sql, ':tax_class_title:', $field_value, 'string'));
                             if ($tax_class_check->EOF) {
-                                $this->debugMessage ('[*] Import line #' . $this->stats['record_count'] . ", undefined tax_class_title ($field_value).  Defaulting product to untaxed.", self::DBIO_WARNING);
+                                $this->debugMessage('[*] Import line #' . $this->stats['record_count'] . ", undefined tax_class_title ($field_value).  Defaulting product to untaxed.", self::DBIO_WARNING);
                             }
                             $tax_class_id = ($tax_class_check->EOF) ? 0 : $tax_class_check->fields['tax_class_id'];
-                            $this->import_sql_data[TABLE_PRODUCTS]['products_tax_class_id'] = array ( 'value' => $tax_class_id, 'type' => 'integer' );
+                            $this->import_sql_data[TABLE_PRODUCTS]['products_tax_class_id'] = array( 'value' => $tax_class_id, 'type' => 'integer' );
                         }
                         break;
                     case 'categories_name':
@@ -507,14 +507,14 @@ class DbIoProductsHandler extends DbIoHandler
                                   WHERE c.parent_id = $parent_category 
                                     AND cd.categories_name = :categories_name: 
                                   LIMIT 1";
-                            $category_info = $db->Execute ($db->bindVars ($category_info_sql, ':categories_name:', $current_category_name, 'string'), false, false, 0, true);
+                            $category_info = $db->Execute($db->bindVars ($category_info_sql, ':categories_name:', $current_category_name, 'string'), false, false, 0, true);
                             if (!$category_info->EOF) {
                                 $parent_category = $category_info->fields['categories_id'];
                               
                             } elseif ($this->import_is_insert) {
                                 if (DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES != 'Yes') {
                                     $categories_name_ok = false;
-                                    $this->debugMessage ('[*] Product not inserted at line number ' . $this->stats['record_count'] . ", no match found for categories_name ($current_category_name).", self::DBIO_WARNING);
+                                    $this->debugMessage('[*] Product not inserted at line number ' . $this->stats['record_count'] . ", no match found for categories_name ($current_category_name).", self::DBIO_WARNING);
                                 } else {
                                     $parent_category = $this->createCategory($current_category_name, $parent_category);
                                     if ($parent_category === false) {
@@ -547,7 +547,7 @@ class DbIoProductsHandler extends DbIoHandler
                 }  //-END switch interrogating $field_name for self::DBIO_SPECIAL_IMPORT
                 break;
             default:
-                parent::importAddField ($table_name, $field_name, $field_value);
+                parent::importAddField($table_name, $field_name, $field_value);
                 break;
         }  //-END switch interrogating $table_name
     }  //-END function importAddField
@@ -601,7 +601,7 @@ class DbIoProductsHandler extends DbIoHandler
                 );
                 foreach ($this->languages as $language_code => $language_id) {
                     $sql_data_array = $description_array;
-                    $sql_data_array[] = array (
+                    $sql_data_array[] = array(
                         'fieldName' => 'language_id', 
                         'value' => $language_id, 
                         'type' => 'integer' 
@@ -625,12 +625,12 @@ class DbIoProductsHandler extends DbIoHandler
     // happens within this function and we set the return value to false to indicate to the parent processing that the
     // associated update has been already handled.
     //
-    protected function importUpdateRecordKey ($table_name, $table_fields, $products_id) 
+    protected function importUpdateRecordKey($table_name, $table_fields, $products_id) 
     {
         global $db;
         if ($table_name != TABLE_PRODUCTS) {
             if ($this->import_is_insert) {
-                $table_fields['products_id'] = array ( 'value' => $products_id, 'type' => 'integer' );
+                $table_fields['products_id'] = array( 'value' => $products_id, 'type' => 'integer' );
             } else {
                 $this->where_clause = 'products_id = ' . (int)$this->key_fields['products_id'];
                 $products_id = (int)$this->key_fields['products_id'];
@@ -642,12 +642,12 @@ class DbIoProductsHandler extends DbIoHandler
                     "INSERT IGNORE INTO $table_name 
                         (products_id, categories_id) 
                      VALUES 
-                        ( $products_id, " . (int)$table_fields['categories_id']['value'] . ")"
+                        ($products_id, " . (int)$table_fields['categories_id']['value'] . ")"
                 );
             }
             $table_fields = false;
         }
-        return parent::importUpdateRecordKey ($table_name, $table_fields, $products_id);
+        return parent::importUpdateRecordKey($table_name, $table_fields, $products_id);
     }
     
     // -----

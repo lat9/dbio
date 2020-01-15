@@ -1,2 +1,5 @@
-dbio/import/rg-EZBG Boot Guards.csv
+characters.txt
+*.html
+!readme.html
+*.htm
 *.php~

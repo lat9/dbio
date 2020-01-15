@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Database I/O Manager (DbIo)</title>
 <link rel="icon" href="../vinos_favicon.ico" type="image/x-icon" />
@@ -84,7 +84,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
 
 <body>
   <h1 id="title">Database I/O Manager (DbIo) for Zen Cart&reg;</h1>
-  <p>Version 1.5.7 Copyright &copy; 2015-2019, <a href="https://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
+  <p>Version 1.5.8 Copyright &copy; 2015-2020, <a href="https://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
   <p>Current Support Thread on the Zen Cart forums: <a href="https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread</a></p>
   
   <div class="tab-container" id="outer-container">
@@ -578,6 +578,14 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <noscript><h3>Version History</h3></noscript>
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
         <ul>
+          <li>v1.5.8, 2020-01-15:<ul>
+            <li>BUGFIX: Update <em>ProductsHandler</em> to include the products' meta-tags' language-based settings.<ol>
+            <li>The following files were changed:<ol>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+            </ol></li>
+            </ol></li>
+          </ul></li>
           <li>v1.5.7, 2019-09-22:<ul>
             <li>BUGFIX: Correct <em>ProductsAttribsRawHandler</em> PHP error on attribute addition with download.</li>
             <li>CHANGE: Add jQuery to enable the multi-select dropdowns to be resized vertically.</li>
