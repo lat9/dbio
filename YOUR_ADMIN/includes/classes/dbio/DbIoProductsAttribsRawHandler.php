@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2019, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2020, Vinos de Frutas Tropicales.
 //
 if (!defined ('IS_ADMIN_FLAG')) {
     exit ('Illegal access');
@@ -24,7 +24,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile('ProductsAttribsRaw'); 
         return array(
-            'version' => '1.5.7',
+            'version' => '1.5.8',
             'handler_version' => '1.4.0',
             'include_header' => true,
             'export_only' => false,
@@ -41,14 +41,18 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
         // -----
         // Grab the fields from the various product/attribute tables.
         //
-        $this->from_clause = 
-            TABLE_PRODUCTS . " AS p, " . 
-            TABLE_PRODUCTS_OPTIONS . " AS po, " . 
-            TABLE_PRODUCTS_OPTIONS_VALUES . " AS pov, " . 
-            TABLE_MANUFACTURERS . " AS m, " .
-            TABLE_PRODUCTS_ATTRIBUTES . " AS pa 
+        $this->from_clause =
+            TABLE_PRODUCTS_ATTRIBUTES . " AS pa
+                INNER JOIN " . TABLE_PRODUCTS . " AS p
+                    ON pa.products_id = p.products_id
+                INNER JOIN " . TABLE_PRODUCTS_OPTIONS . " AS po
+                    ON pa.options_id = po.products_options_id
+                INNER JOIN " . TABLE_PRODUCTS_OPTIONS_VALUES . " AS pov
+                    ON pa.options_values_id = pov.products_options_values_id
                 LEFT JOIN " . TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD . " AS pad 
-                    ON (pa.products_attributes_id = pad.products_attributes_id)";
+                    ON pa.products_attributes_id = pad.products_attributes_id
+                LEFT JOIN " . TABLE_MANUFACTURERS . " AS m
+                    ON m.manufacturers_id = p.manufacturers_id";
         
         // -----
         // Insert the products_model, manufacturers_name, products_options_name and 
@@ -88,16 +92,31 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
         // Tie all the tables together via the WHERE/AND clauses.
         //
         $this->where_clause = "
-                pa.products_id = p.products_id
-            AND m.manufacturers_id = p.manufacturers_id
-            AND pa.options_id = po.products_options_id
-            AND po.language_id = " . (int)$_SESSION['languages_id'] . "
-            AND pa.options_values_id = pov.products_options_values_id
+                po.language_id = " . (int)$_SESSION['languages_id'] . "
             AND pov.language_id = " . (int)$_SESSION['languages_id'];
             
         $this->order_by_clause = "pa.products_id ASC, pa.options_id ASC, pa.options_values_id ASC";
         
         return parent::exportFinalizeInitialization();
+    }
+    
+    // -----
+    // This function, called just prior to writing each exported record, increments the count of records exported and
+    // also makes sure that the encoding for the output is based on the character-set specified.
+    //
+    // For this report, we need to make sure that the products_attributes_maxdays and products_attributes_maxcount
+    // fields' output is set to 0 if empty, i.e. when there is no associated products_attributes_download record
+    // for the associated attribute.
+    //
+    public function exportPrepareFields(array $fields) 
+    {
+        if (empty($fields['products_attributes_maxdays'])) {
+            $fields['products_attributes_maxdays'] = 0;
+        }
+        if (empty($fields['products_attributes_maxcount'])) {
+            $fields['products_attributes_maxcount'] = 0;
+        }
+        return parent::exportPrepareFields($fields);
     }
 
 // ----------------------------------------------------------------------------------
