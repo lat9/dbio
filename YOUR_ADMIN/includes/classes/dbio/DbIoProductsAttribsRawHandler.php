@@ -227,7 +227,9 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
             );
             if ($check->EOF) {
                 $this->debugMessage("Product option-combination not found at line #" . $this->stats['record_count'] . "; the 'REMOVE' operation was not performed.", self::DBIO_ERROR);
-            } elseif ($this->operation != 'check') {
+            } elseif ($this->operation == 'check') {
+                $this->debugMessage("importHandleDbioCommand, removing attribute #" . $check->fields['products_attributes_id'], self::DBIO_STATUS);
+            } else {
                 $attributes_id = $check->fields['products_attributes_id'];
                 $GLOBALS['db']->Execute(
                     "DELETE FROM " . TABLE_PRODUCTS_ATTRIBUTES . "
@@ -276,12 +278,27 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     // line of the imported CSV receives two 'importBuildSqlQuery' requests.  This function enables the addition of the
     // previous record's 'record_key', i.e. the products_attributes_id, to the to-be-generated SQL for the downloads.
     //
+    // At this time, if products_attributes_download::products_attributes_filename is empty, the record (on a full import)
+    // will be deleted.
+    //
     protected function importUpdateRecordKey($table_name, $table_fields, $record_key_value)
     {
         $proceed_with_update = true;
         if ($table_name == TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
             if (empty($table_fields['products_attributes_filename']['value'])) {
                 $proceed_with_update = false;
+
+                // -----
+                // If the current DbIo operation is an import-check, simply output a debug message containing
+                // the record-deletion SQL.  Otherwise, actually run the SQL, removing that record.
+                //
+                $sql = 
+                    "DELETE FROM " . TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD . " WHERE products_attributes_id = " . $this->key_fields['products_attributes_id'] . " LIMIT 1";
+                if ($this->operation == 'check') {
+                    $this->debugMessage("importUpdateRecordKey, removing record: $sql", self::DBIO_STATUS);
+                } else {
+                    $GLOBALS['db']->Execute($sql);
+                }
             } elseif ($this->import_is_insert) {
                 $table_fields['products_attributes_id'] = array(
                     'value' => $record_key_value,
@@ -300,7 +317,31 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
     {
         if ($table_name == TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
-            if ($this->operation != 'check' && !$this->import_is_insert) {
+            // -----
+            // Grab the current 'products_attributes_id', location dependent on whether the base attribute
+            // record is an import or update.
+            //
+            $products_attributes_id = ($this->import_is_insert) ? $table_fields['products_attributes_id']['value'] : $this->key_fields['products_attributes_id'];
+            
+            // -----
+            // Check to see if we're to insert an attributes' download record for a pre-existing
+            // attribute (the base attribute will be updated, but the download information inserted).
+            //
+            $check = $GLOBALS['db']->Execute(
+                "SELECT *
+                   FROM " . TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD . "
+                  WHERE products_attributes_id = $products_attributes_id
+                  LIMIT 1"
+            );
+            if ($check->EOF) {
+                $is_override = true;
+                $is_insert = true;
+                $table_fields['products_attributes_id'] = array(
+                    'value' => $products_attributes_id,
+                    'type' => 'integer',
+                );
+            }
+            if (!$this->import_is_insert || ($is_override && !$is_insert)) {
                 $this->where_clause = "pad.products_attributes_id = " . $this->key_fields['products_attributes_id'];
             }
         }
