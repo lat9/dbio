@@ -57,6 +57,7 @@ class DbIoManufacturersHandler extends DbIoHandler
 
         if ($this->export_language == 'all') {
             $this->debugMessage('Manufacturers::exportPrepareFields, language = ' . $this->export_language . ', default language = ' . $default_language_code . ', sql: ' . $this->saved_data['manufacturers_info_sql'] . ', languages: ' . print_r($this->languages, true));
+            $manufacturers_id = $fields['manufacturers_id'];
             foreach ($this->languages as $language_code => $language_id) {
                 if ($language_code != $default_language_code) {
                     $description_info = $db->Execute(sprintf($this->saved_data['manufacturers_info_sql'], $manufacturers_id, $language_id));
