@@ -1,10 +1,10 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2017, Vinos de Frutas Tropicales.
+// Copyright (c) 2017-2020, Vinos de Frutas Tropicales.
 //
-if (!defined ('IS_ADMIN_FLAG')) {
-    exit ('Illegal access');
+if (!defined('IS_ADMIN_FLAG')) {
+    exit('Illegal access');
 }
 
 // -----
@@ -12,12 +12,12 @@ if (!defined ('IS_ADMIN_FLAG')) {
 //
 class DbIoManufacturersHandler extends DbIoHandler 
 {
-    public static function getHandlerInformation ()
+    public static function getHandlerInformation()
     {
         global $db;
-        DbIoHandler::loadHandlerMessageFile ('Manufacturers'); 
-        return array (
-            'version' => '1.0.0',
+        DbIoHandler::loadHandlerMessageFile('Manufacturers'); 
+        return array(
+            'version' => '1.5.8',
             'handler_version' => '1.2.0',
             'include_header' => true,
             'export_only' => false,
@@ -29,9 +29,9 @@ class DbIoManufacturersHandler extends DbIoHandler
     // This function, called at the beginning of an export operation, gives the handler an opportunity to perform
     // some special checks.
     // 
-    public function exportInitialize ($language = 'all') 
+    public function exportInitialize($language = 'all') 
     {
-        $initialized = parent::exportInitialize ($language);
+        $initialized = parent::exportInitialize($language);
         if ($initialized) {
             if ($this->where_clause != '') {
                 $this->where_clause .= ' AND ';
@@ -48,20 +48,20 @@ class DbIoManufacturersHandler extends DbIoHandler
     }
     
    
-    public function exportPrepareFields (array $fields) 
+    public function exportPrepareFields(array $fields) 
     {
         global $db;
         
-        $fields = parent::exportPrepareFields ($fields);
+        $fields = parent::exportPrepareFields($fields);
         $default_language_code = $this->first_language_code;
 
         if ($this->export_language == 'all') {
-            $this->debugMessage ('Manufacturers::exportPrepareFields, language = ' . $this->export_language . ', default language = ' . $default_language_code . ', sql: ' . $this->saved_data['manufacturers_info_sql'] . ', languages: ' . print_r ($this->languages, true));
+            $this->debugMessage('Manufacturers::exportPrepareFields, language = ' . $this->export_language . ', default language = ' . $default_language_code . ', sql: ' . $this->saved_data['manufacturers_info_sql'] . ', languages: ' . print_r($this->languages, true));
             foreach ($this->languages as $language_code => $language_id) {
                 if ($language_code != $default_language_code) {
-                    $description_info = $db->Execute (sprintf ($this->saved_data['manufacturers_info_sql'], $manufacturers_id, $language_id));
+                    $description_info = $db->Execute(sprintf($this->saved_data['manufacturers_info_sql'], $manufacturers_id, $language_id));
                     if (!$description_info->EOF) {
-                        $encoded_fields = $this->exportEncodeData ($description_info->fields);
+                        $encoded_fields = $this->exportEncodeData($description_info->fields);
                         foreach ($encoded_fields as $field_name => $field_value) {
                             if ($field_name != 'manufacturers_id' && $field_name != 'languages_id') {
                                 $fields[$field_name . '_' . $language_code] = $field_value;
@@ -82,27 +82,27 @@ class DbIoManufacturersHandler extends DbIoHandler
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the dbIO operations.
     //
-    protected function setHandlerConfiguration () 
+    protected function setHandlerConfiguration() 
     {
         $this->stats['report_name'] = 'Manufacturers';
-        $this->config = self::getHandlerInformation ();
-        $this->config['keys'] = array (
-            TABLE_MANUFACTURERS => array (
+        $this->config = self::getHandlerInformation();
+        $this->config['keys'] = array(
+            TABLE_MANUFACTURERS => array(
                 'alias' => 'm',
                 'capture_key_value' => true,
-                'manufacturers_id' => array (
+                'manufacturers_id' => array(
                     'type' => self::DBIO_KEY_IS_VARIABLE | self::DBIO_KEY_SELECTED,
                 ),
             ),
         );
-        $this->config['tables'] = array (
-            TABLE_MANUFACTURERS => array ( 
+        $this->config['tables'] = array(
+            TABLE_MANUFACTURERS => array( 
                 'alias' => 'm',
             ), 
-            TABLE_MANUFACTURERS_INFO => array ( 
+            TABLE_MANUFACTURERS_INFO => array( 
                 'alias' => 'mi',
                 'language_field' => 'languages_id',
-                'io_field_overrides' => array (
+                'io_field_overrides' => array(
                     'manufacturers_id' => false,
                     'languages_id' => false,
                 ),
@@ -120,16 +120,16 @@ class DbIoManufacturersHandler extends DbIoHandler
     // If we're doing an update (i.e. existing manufacturer), need to update the primary where-clause to make sure that the
     // manufacturers table alias isn't part of the string for the non-manufacturers table.
     //
-    protected function importUpdateRecordKey ($table_name, $table_fields, $products_id) 
+    protected function importUpdateRecordKey($table_name, $table_fields, $products_id) 
     {
         if ($table_name != TABLE_MANUFACTURERS) {
             if ($this->import_is_insert) {
-                $table_fields['manufacturers_id'] = array ( 'value' => $products_id, 'type' => 'integer' );
+                $table_fields['manufacturers_id'] = array('value' => $products_id, 'type' => 'integer');
             } else {
                 $this->where_clause = 'manufacturers_id = ' . (int)$this->key_fields['manufacturers_id'];
             }
         }
-        return parent::importUpdateRecordKey ($table_name, $table_fields, $products_id);
+        return parent::importUpdateRecordKey($table_name, $table_fields, $products_id);
     }
 
 }  //-END class DbIoManufacturersHandler

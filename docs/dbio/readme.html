@@ -584,7 +584,9 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                 <li>Ensure the export properly outputs possibly not present fields.</li>
                 <li>Correct management of the (possibly not present) 'products_attributes_downloads' table's fields.</li>
             </ol></li>
+            <li>BUGFIX: Correct <em>Manufacturers</em> only exports default language for multi-lingual stores.</li>
             <li>The following files were changed:<ol>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoManufacturersHandler.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsRawHandler.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
               <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
