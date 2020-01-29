@@ -1640,24 +1640,44 @@ abstract class DbIoHandler extends base
     
     // -----
     // Function to insert an associative-array element into the specified array at the location
-    // identified in the current customized field-list.
+    // identified in the current non-language customized field-list.
+    //
+    // Note: The $fields array is an associative key/value pair, keyed on the field's name.  The
+    // class' customized_fields array is numerically indexed, based on the to-be-exported report's
+    // previously-determined header-order.
     //
     protected function insertAtCustomizedPosition($fields, $field_name, $field_value)
     {
         if (isset($this->customized_fields) && is_array($this->customized_fields)) {
             $field_position = array_search($field_name, $this->customized_fields);
             if ($field_position !== false) {
-                $prior_fields = array_slice($this->customized_fields, 0, $field_position);
-                $current_position = 0;
-                foreach ($fields as $key => $value) {
-                    if (!in_array($key, $prior_fields)) {
-                        $before = array_slice($fields, 0, $current_position, true);
-                        $after = array_slice($fields, $current_position, null, true);
-                        $fields = $before + array($field_name => $field_value) + $after;
-                        break;
-                    }
-                    $current_position++;
+                $updated_fields = array();
+                $customized_field_count = count($this->customized_fields);
+                
+                // -----
+                // First, copy the elements from the input fields' array up to the point of the customized
+                // fields' insertion.
+                //
+                for ($next_field = 0; $next_field < $customized_field_count && $this->customized_fields[$next_field] != $field_name; $next_field++) {
+                    $next_field_name = $this->customized_fields[$next_field];
+                    $updated_fields[$next_field_name] = $fields[$next_field_name];
                 }
+                
+                
+                // -----
+                // Next, insert the requested key/value pair into the updated fields' array.
+                //
+                $updated_fields[$field_name] = $field_value;
+                
+                // -----
+                // Finally, copy the remaining elements of the input fields' array after that insertion
+                // and set the reconstructed array as the method's return value.
+                //
+                for ($next_field++; $next_field < $customized_field_count; $next_field++) {
+                    $next_field_name = $this->customized_fields[$next_field];
+                    $updated_fields[$next_field_name] = $fields[$next_field_name];
+                }
+                $fields = $updated_fields;
             }
         } else {
             $fields[$field_name] = $field_value;
