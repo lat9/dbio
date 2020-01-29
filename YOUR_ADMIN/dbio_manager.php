@@ -122,6 +122,7 @@ if (!$ok_to_proceed) {
             case 'choose':
                 zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action'))));
                 break;
+
             case 'export':
                 $_SESSION['dbio_show_filters'] = isset($_POST['show_filters']);
                 if (isset($_POST['export_button'])) {
@@ -140,7 +141,7 @@ if (!$ok_to_proceed) {
                         }
                         $report_suffix = $custom_info->fields['report_name'];
                         $customized_fields = $custom_info->fields['field_info'];
-                        unset ($custom_info);
+                        unset($custom_info);
                     }
                     
                     unset($dbio);
@@ -149,6 +150,8 @@ if (!$ok_to_proceed) {
                     if ($customized_fields !== false) {
                         $dbio->handler->exportCustomizeFields(json_decode ($customized_fields));
                     }
+        
+                    $_SESSION['dbio_auto_download'] = (isset($_POST['auto_download']));
                     
                     $export_info = $dbio->dbioExport('file');
                     if ($export_info['status'] === false) {
@@ -159,10 +162,23 @@ if (!$ok_to_proceed) {
                         $_SESSION['dbio_vars']['handler'] = $handler_name;
                         $_SESSION['dbio_last_export'] = $export_info;
                         $_SESSION['dbio_active_filename'] = $export_info['export_filename'];
+                        
+                        $download_active_filename = (!empty($_SESSION['dbio_auto_download']));
+                        if ($download_active_filename) {
+                            $download_filename = $export_info['export_filename'];
+                            $download_info = array(
+                                'name' => $download_filename,
+                                'bytes' => filesize(DIR_FS_DBIO . $download_filename),
+                            );
+                        }
                     }
                 }
-                zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(array ('action'))));
+                
+                if (empty($download_active_filename)) {
+                    zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action'))));
+                }
                 break;
+
             case 'upload':
                 if (empty($_FILES['upload_filename']['name'])) {
                     $messageStack->add(ERROR_NO_FILE_TO_UPLOAD, 'error');
@@ -178,10 +194,10 @@ if (!$ok_to_proceed) {
                         }
                         $_SESSION['dbio_active_filename'] = $_FILES['upload_filename']['name'];
                     }
-
                     zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action'))));
                 }
                 break;
+
             case 'file':
                 if (!((isset($_POST['file_action']) && isset($_POST['filename_hash']) && isset($dbio_files[$_POST['filename_hash']])) ||
                       (isset($_POST['delete_button']) && isset($_POST['delete_hash'])))) {
@@ -211,6 +227,7 @@ if (!$ok_to_proceed) {
                             $messageStack->add_session(sprintf(ERROR_CHOOSE_FILE_ACTION, $action_filename));
                             zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params()));
                             break;
+
                         case 'import-run':
                         case 'import-check':
                             unset ($dbio);
@@ -234,6 +251,7 @@ if (!$ok_to_proceed) {
                             }
                             zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action'))));
                             break;
+
                         case 'split':
                             $_SESSION['dbio_active_filename'] = $active_filename;
                             if (!is_readable($action_filename) || ($fp = fopen($action_filename, "r")) === false) {
@@ -315,41 +333,58 @@ if (!$ok_to_proceed) {
                             }
                             zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action'))));
                             break;
+
                         case 'download':
                             $_SESSION['dbio_active_filename'] = $active_filename;
-                            $fp = fopen($action_filename, 'r');
-                            if ($fp === false) {
-                                $_SESSION['dbio_message'] = array( 'error', sprintf(DBIO_CANT_OPEN_FILE, $action_filename));
-                            } else {
-                                if (dbio_strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false) {
-                                    header('Content-Type: "application/octet-stream"');
-                                    header('Content-Disposition: attachment; filename="' . $dbio_files[$_POST['filename_hash']]['filename_only'] . '"');
-                                    header('Expires: 0');
-                                    header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-                                    header("Content-Transfer-Encoding: binary");
-                                    header('Pragma: public');
-                                    header("Content-Length: " . $dbio_files[$_POST['filename_hash']]['bytes']);
-                                } else {
-                                    header('Content-Type: "application/octet-stream"');
-                                    header('Content-Disposition: attachment; filename="' . $dbio_files[$_POST['filename_hash']]['filename_only'] . '"');
-                                    header("Content-Transfer-Encoding: binary");
-                                    header('Expires: 0');
-                                    header('Pragma: no-cache');
-                                    header("Content-Length: " . $dbio_files[$_POST['filename_hash']]['bytes']);
-                                }
-                                fpassthru($fp);
-                                fclose($fp);
-                                exit();
-                            }
+                            $download_info = array(
+                                'name' => $dbio_files[$_POST['filename_hash']]['filename_only'],
+                                'bytes' => $dbio_files[$_POST['filename_hash']]['bytes'],
+                            );
                             break;
+
                         default:
                             break;
                     }
                 }
                 break;
+
              default:
                 $action = '';
                 break;
+        }
+        
+        // -----
+        // If a file-download is requested (either via direct "Download" selection or as a result of an
+        // export's automatic download), download the file now.
+        //
+        if (!empty($download_info)) {
+            $action_filename = $download_info['name'];
+            $fp = fopen(DIR_FS_DBIO . $action_filename, 'r');
+            if ($fp === false) {
+                $messageStack->add_session(sprintf(DBIO_CANT_OPEN_FILE, $action_filename), 'error');
+                zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action'))));
+            } else {
+                if (dbio_strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false) {
+                    header('Content-Type: "application/octet-stream"');
+                    header('Content-Disposition: attachment; filename="' . $action_filename . '"');
+                    header('Expires: 0');
+                    header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+                    header("Content-Transfer-Encoding: binary");
+                    header('Pragma: public');
+                    header("Content-Length: " . $download_info['bytes']);
+                } else {
+                    header('Content-Type: "application/octet-stream"');
+                    header('Content-Disposition: attachment; filename="' . $action_filename . '"');
+                    header("Content-Transfer-Encoding: binary");
+                    header('Expires: 0');
+                    header('Pragma: no-cache');
+                    header("Content-Length: " . $download_info['bytes']);
+                }
+                fpassthru($fp);
+                fclose($fp);
+                unset($_GET['action']);
+                exit();
+            }
         }
     }
 }  //-END configuration OK, proceeding ...
@@ -472,7 +507,7 @@ if (!$ok_to_proceed || $error_message !== '') {
 ?>
                     <div class="reports-details-row">
 <?php
-            $handler_filters = $handler_class::getHandlerExportFilters ();
+            $handler_filters = $handler_class::getHandlerExportFilters();
             if (is_array ($handler_filters)) {
 ?>
                         <div class="reports-export-filters">
@@ -610,7 +645,10 @@ if (!$ok_to_proceed || $error_message !== '') {
     }
 ?>
                     </div>
-                    <div id="export-button"><?php echo zen_draw_input_field('export_button', BUTTON_EXPORT, 'title="' . BUTTON_EXPORT_TITLE . '"', false, 'submit'); ?></div>
+                    <div id="export-button">
+                        <?php echo zen_draw_checkbox_field('auto_download', '', !empty($_SESSION['dbio_auto_download'])) . ' ' . TEXT_AUTO_DOWNLOAD; ?>&nbsp;
+                        <?php echo zen_draw_input_field('export_button', BUTTON_EXPORT, 'title="' . BUTTON_EXPORT_TITLE . '"', false, 'submit'); ?>
+                    </div>
                     <div class="clearBoth"></div>
                 </div>
             </form></td>

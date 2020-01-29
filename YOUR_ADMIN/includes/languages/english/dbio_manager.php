@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2019, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2020, Vinos de Frutas Tropicales.
 //
 define('HEADING_TITLE', 'Database I/O (DbIo) Manager');
 
@@ -44,6 +44,7 @@ define('DBIO_BUTTON_DELETE', 'Delete');
 define('DBIO_BUTTON_DELETE_TITLE', 'Click here to delete the currently-selected file(s) from the server.');
 define('DBIO_BUTTON_GO', 'Go');
 define('DBIO_BUTTON_GO_TITLE', 'Click here to perform the chosen action for the file chosen below.');
+define('TEXT_AUTO_DOWNLOAD', 'Download export immediately after generation');
 define('BUTTON_EXPORT', 'Export');
 define('BUTTON_EXPORT_TITLE', 'Click here to export the information associated with the selected DbIo report.');
 define('BUTTON_UPLOAD', 'Upload');
@@ -121,6 +122,8 @@ define('DBIO_MGR_EXPORT_SUCCESSFUL', 'Your <em>%1$s</em> export was successfully
 
 define('ERROR_NO_FILE_TO_UPLOAD', 'No file was selected for the upload.  Please try again.');
 define('FILE_UPLOADED_SUCCESSFULLY', 'The file <em>%s</em> was successfully uploaded.');
+
+define('DBIO_CANT_OPEN_FILE', "Download unsuccessful, the file '%s' does not exist.");
 
 define('JS_MESSAGE_OK2DELETE_PART1', 'Are you sure you want to permanently remove the ');  //-The count of files selected is inserted between these two messages
 define('JS_MESSAGE_OK2DELETE_PART2', ' selected file(s) from the server?');
