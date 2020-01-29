@@ -17,7 +17,7 @@ class DbIoManufacturersHandler extends DbIoHandler
         global $db;
         DbIoHandler::loadHandlerMessageFile('Manufacturers'); 
         return array(
-            'version' => '1.5.8',
+            'version' => '1.6.0',
             'handler_version' => '1.2.0',
             'include_header' => true,
             'export_only' => false,
