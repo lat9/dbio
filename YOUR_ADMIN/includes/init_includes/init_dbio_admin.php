@@ -7,17 +7,17 @@ if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
 }
 
-define('DBIO_CURRENT_VERSION', '1.6.0-beta1');
-define('DBIO_CURRENT_UPDATE_DATE', '2020-01-27');
+// -----
+// Quick return if no admin is currently logged in to see the potential upgrade messages.
+//
+if (empty($_SESSION['admin_id'])) {
+    return;
+}
+
+define('DBIO_CURRENT_VERSION', '1.6.0-beta2');
+define('DBIO_CURRENT_UPDATE_DATE', '2020-01-29');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
-
-function init_dbio_next_sort($menu_key) 
-{
-    global $db;
-    $next_sort = $db->Execute('SELECT MAX(sort_order) as max_sort FROM ' . TABLE_ADMIN_PAGES . " WHERE menu_key='$menu_key'");
-    return $next_sort->fields['max_sort'] + 1;
-}
 
 $configurationGroupTitle = 'Database I/O Manager Settings';
 $configuration = $db->Execute("SELECT configuration_group_id FROM " . TABLE_CONFIGURATION_GROUP . " WHERE configuration_group_title = '$configurationGroupTitle' LIMIT 1");
@@ -183,13 +183,13 @@ if (DBIO_CURRENT_VERSION != $dbio_current_version) {
     //
     if (function_exists('zen_page_key_exists')) {
         if (!zen_page_key_exists('toolsDbIo')) {
-            zen_register_admin_page('toolsDbIo', 'BOX_TOOLS_DBIO', 'FILENAME_DBIO_MANAGER', '', 'tools', 'Y', init_dbio_next_sort ('tools'));
+            zen_register_admin_page('toolsDbIo', 'BOX_TOOLS_DBIO', 'FILENAME_DBIO_MANAGER', '', 'tools', 'Y');
         }
         if (!zen_page_key_exists('configDbIo')) {
-            zen_register_admin_page('configDbIo', 'BOX_CONFIGURATION_DBIO', 'FILENAME_CONFIGURATION', "gID=$cgi", 'configuration', 'Y', init_dbio_next_sort ('configuration'));
+            zen_register_admin_page('configDbIo', 'BOX_CONFIGURATION_DBIO', 'FILENAME_CONFIGURATION', "gID=$cgi", 'configuration', 'Y');
         }
         if (!zen_page_key_exists('toolsDbIoCustomize')) {
-            zen_register_admin_page('toolsDbIoCustomize', 'BOX_TOOLS_DBIO_CUSTOMIZE', 'FILENAME_DBIO_CUSTOMIZE', '', 'tools', 'N', init_dbio_next_sort ('tools'));
+            zen_register_admin_page('toolsDbIoCustomize', 'BOX_TOOLS_DBIO_CUSTOMIZE', 'FILENAME_DBIO_CUSTOMIZE', '', 'tools', 'N');
         }
     }
 
