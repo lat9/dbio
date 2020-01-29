@@ -102,7 +102,7 @@ if (!$ok_to_proceed) {
                     $action = ($action == 'insert') ? 'new' : (($action == 'update') ? 'edit' : 'copy');
                 } else {
                     $report_name = zen_db_input($report_name);
-                    $field_info = zen_db_input(json_encode ($customized));
+                    $field_info = zen_db_input(json_encode($customized));
                     
                     if ($action == 'insert_copy') {
                         $copy_info = $db->Execute(
@@ -112,7 +112,7 @@ if (!$ok_to_proceed) {
                               LIMIT 1"
                         );
                         if ($copy_info->EOF) {
-                            zen_redirect(zen_href_link(FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params(array ('action', 'tID'))));
+                            zen_redirect(zen_href_link(FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params(array('action', 'tID'))));
                         }
                         $field_info = $copy_info->fields['field_info'];
                         
@@ -137,7 +137,7 @@ if (!$ok_to_proceed) {
                         );
                         $dbio_reports_id = $db->insert_ID();
                         foreach ($dbio_languages as $current_language) {
-                            $the_description = zen_db_input($report_description[$current_language['id']]);
+                            $the_description = isset($report_description[$current_language['id']]) ? zen_db_input($report_description[$current_language['id']]) : '';
                             $db->Execute(
                                 "INSERT INTO " . TABLE_DBIO_REPORTS_DESCRIPTION . " (dbio_reports_id, language_id, report_description)
                                     VALUES ( $dbio_reports_id, " . $current_language['id'] . ", '$the_description')"
@@ -399,11 +399,13 @@ if (!$ok_to_proceed) {
         $language_instructions = INSTRUCTIONS_DESCRIPTION;
         foreach ($dbio_languages as $current_language) {
             $language_image = zen_image(DIR_WS_CATALOG_LANGUAGES . $current_language['directory'] . '/images/' . $current_language['image'], $current_language['name']);
+            $description = (isset($report_description[$current_language['id']])) ? $report_description[$current_language['id']] : TEXT_ENTER_REPORT_DESCRIPTION_HERE;
+            $description = htmlspecialchars(stripslashes($description), ENT_COMPAT, CHARSET, TRUE);
 ?>
 
                         <tr>
                             <td class="dbio-label"><?php echo $language_image . '&nbsp;' . COLUMN_HEADING_DESCRIPTION; ?></td>
-                            <td class="dbio-field"><?php echo zen_draw_textarea_field('report_description[' . $current_language['id'] . ']', 'soft', '100%', '5', htmlspecialchars(stripslashes($report_description[$current_language['id']]), ENT_COMPAT, CHARSET, TRUE), $disabled); ?></td>
+                            <td class="dbio-field"><?php echo zen_draw_textarea_field('report_description[' . $current_language['id'] . ']', 'soft', '100%', '5', $description, $disabled); ?></td>
                             <td class="dbio-desc"><?php echo $language_instructions; ?></td>
                         </tr>
 <?php

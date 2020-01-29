@@ -33,6 +33,7 @@ define('INSTRUCTIONS_CHOOSE', 'You can move fields from those <em>available</em>
 define('INSTRUCTIONS_CHOOSE_COPY', 'When you <em>copy</em> a template, the copied template initially contains the fields previously configured.  Once the template is copied, you can edit that copy to adjust the fields.  If you can\'t view all the fields, use your mouse and drag the drop-down list down until all are visible.');
 
 define('NO_TEMPLATES_EXIST', 'There are currently no templates defined.  Use the &quot;New Template&quot; button to add one!');
+define('TEXT_ENTER_REPORT_DESCRIPTION_HERE', 'Enter the report\'s description here.');
 
 define('BUTTON_EDIT', 'Edit');
 define('BUTTON_EDIT_TITLE', 'Click here to edit this template');
