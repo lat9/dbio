@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2019, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2020, Vinos de Frutas Tropicales.
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -19,8 +19,8 @@ class DbIoProductsHandler extends DbIoHandler
         global $db;
         DbIoHandler::loadHandlerMessageFile('Products'); 
         return array(
-            'version' => '1.4.3',
-            'handler_version' => '1.4.0',
+            'version' => '1.6.0',
+            'handler_version' => '1.6.0',
             'include_header' => true,
             'export_only' => false,
             'allow_export_customizations' => true,
@@ -77,7 +77,8 @@ class DbIoProductsHandler extends DbIoHandler
 
     // -----
     // This function, called at the beginning of an export operation, gives the handler an opportunity to perform
-    // some special checks.
+    // some special checks.  For this handler, that's the gathering of the language-specific elements in the 
+    // 'products_description' and 'meta_tags_products_description' tables.
     // 
     public function exportInitialize($language = 'all') 
     {
@@ -93,6 +94,7 @@ class DbIoProductsHandler extends DbIoHandler
             
             if (isset($this->customized_fields) && is_array($this->customized_fields)) {
                 $customized_description_fields = array();
+                $customized_metatags_fields = array();
                 $key_fields = array(
                     'products_id',
                     'products_model'
@@ -104,6 +106,9 @@ class DbIoProductsHandler extends DbIoHandler
                     if (isset($this->tables[TABLE_PRODUCTS_DESCRIPTION]['fields'][$current_field])) {
                         $customized_description_fields[] = $current_field;
                     }
+                    if (isset($this->tables[TABLE_META_TAGS_PRODUCTS_DESCRIPTION]['fields'][$current_field])) {
+                        $customized_metatags_fields[] = $current_field;
+                    }
                 }
                 if (count($customized_description_fields) == 0) {
                     $this->saved_data['products_description_sql'] = '';
@@ -112,9 +117,22 @@ class DbIoProductsHandler extends DbIoHandler
                     $this->saved_data['products_description_sql'] =
                         "SELECT $description_fields FROM " . TABLE_PRODUCTS_DESCRIPTION . " WHERE products_id = %u AND language_id = %u LIMIT 1";
                 }
+                if (count($customized_metatags_fields) == 0) {
+                    $this->saved_data['products_metatags_sql'] = '';
+                } else {
+                    $metatags_fields = implode(', ', $customized_metatags_fields);
+                    $this->saved_data['products_metatags_fields'] = $customized_metatags_fields;
+                    $this->saved_data['products_metatags_sql'] =
+                        "SELECT $metatags_fields FROM " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . " WHERE products_id = %u AND language_id = %u LIMIT 1";
+                }
             } else {
                 $this->saved_data['products_description_sql'] = 
-                    'SELECT * FROM ' . TABLE_PRODUCTS_DESCRIPTION . ' WHERE products_id = %u AND language_id = %u LIMIT 1';
+                    "SELECT * FROM " . TABLE_PRODUCTS_DESCRIPTION . " WHERE products_id = %u AND language_id = %u LIMIT 1";
+                $this->saved_data['products_description_last_field'] = $this->getTableLastFieldName(TABLE_PRODUCTS_DESCRIPTION);
+                
+                $this->saved_data['products_metatags_sql'] = 
+                    "SELECT * FROM " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . " WHERE products_id = %u AND language_id = %u LIMIT 1";
+                $this->saved_data['products_metatags_last_field'] = $this->getTableLastFieldName(TABLE_META_TAGS_PRODUCTS_DESCRIPTION);
             }
         }
         return $initialized;
@@ -177,9 +195,21 @@ class DbIoProductsHandler extends DbIoHandler
         global $db;
 
         if ($this->export_language == 'all') {
-            $this->debugMessage('Products::exportPrepareFields, language = ' . $this->export_language . ', default language = ' . $default_language_code . ', sql: ' . $this->saved_data['products_description_sql'] . ', languages: ' . print_r($this->languages, true));
+            $this->debugMessage('Products::exportPrepareFields, language = ' . $this->export_language . ', default language = ' . $default_language_code . ', saved data: ' . print_r($this->saved_data, true) . ', languages: ' . print_r($this->languages, true));
+            
+            // -----
+            // Check for, and insert, any additional language fields for the 'products_description' table.  The
+            // processing (and result) is a bit different if we're exporting **all** product-related fields
+            // than if we're using a customized template (i.e. a subset of all possible fields).
+            //
+            // - For an export that gathers **all** fields, each additional language's fields are be placed
+            //   (as a block) after the previous language's 'block'.
+            // - For a customized export, each additional language's field is placed directly after the previous language's
+            //   field.
+            //
             if ($this->saved_data['products_description_sql'] != '') {
                 $previous_language_code = '';
+                $language_fields = array();
                 foreach ($this->languages as $language_code => $language_id) {
                     if ($language_code != $default_language_code) {
                         $description_info = $db->Execute(sprintf($this->saved_data['products_description_sql'], $products_id, $language_id));
@@ -188,7 +218,7 @@ class DbIoProductsHandler extends DbIoHandler
                             foreach ($encoded_fields as $field_name => $field_value) {
                                 if ($field_name != 'products_id' && $field_name != 'language_id') {
                                     if (!isset($this->customized_fields)) {
-                                        $fields[$field_name . '_' . $language_code] = $field_value;
+                                        $language_fields[$field_name . '_' . $language_code] = $field_value;
                                     } else {
                                         $fields = $this->insertCustomizedLanguageField($fields, $field_name, $field_value, "_$language_code", $previous_language_code);
                                     }
@@ -197,6 +227,62 @@ class DbIoProductsHandler extends DbIoHandler
                         }
                         $previous_language_code = "_$language_code";
                     }
+                }
+                if (count($language_fields) != 0) {
+                    $fields = $this->insertLanguageFields($fields, $language_fields, $this->saved_data['products_description_last_field']);
+                }
+            }
+
+            // -----
+            // Product-related metatags 'language' fields are to be included.  The 'exportInitialize' method
+            // has set some information into the 'saved_data' variable:
+            //
+            // 1) products_metatags_sql.
+            //      If this is an empty string, no metatags output is requested.
+            // 2) products_metatags_fields.
+            //      This value, **if set** is an array of customized metatags fields to be included.  If the value
+            //      is not set, then *all* metatag fields are to be included.
+            //
+            // If no metatags have been configured for a product, the default value for the requested fields is
+            // included for the export.
+            //
+            if ($this->saved_data['products_metatags_sql'] != '') {
+                $previous_language_code = '';
+                $language_fields = array();
+                $include_all_fields = !isset($this->saved_data['products_metatags_fields']);
+                
+                // -----
+                // The meta-tags language-related fields are a bit different, since they might not be present!
+                //
+                foreach ($this->languages as $language_code => $language_id) {
+                    if ($language_code != $default_language_code) {
+                        $metatags_info = $db->Execute(sprintf($this->saved_data['products_metatags_sql'], $products_id, $language_id));
+                        if (!$metatags_info->EOF) {
+                            $metatags_fields = $metatags_info->fields;
+                        } else {
+                            $metatags_fields = array();
+                            foreach ($this->tables[TABLE_META_TAGS_PRODUCTS_DESCRIPTION]['fields'] as $key => $values) {
+                                if ($include_all_fields || in_array($key, $this->saved_data['products_metatags_fields'])) {
+                                    $default_value = $values['default'];
+                                    $metatags_fields[$key] = ($default_value == 'NULL') ? null : trim($values['default'], "'");
+                                }
+                            }
+                        }
+                        $encoded_fields = $this->exportEncodeData($metatags_fields);
+                        foreach ($encoded_fields as $field_name => $field_value) {
+                            if ($field_name != 'products_id' && $field_name != 'language_id') {
+                                if (!isset($this->customized_fields)) {
+                                    $language_fields[$field_name . '_' . $language_code] = $field_value;
+                                } else {
+                                    $fields = $this->insertCustomizedLanguageField($fields, $field_name, $field_value, "_$language_code", $previous_language_code);
+                                }
+                            }
+                        }
+                        $previous_language_code = "_$language_code";
+                    }
+                }
+                if (count($language_fields) != 0) {
+                    $fields = $this->insertLanguageFields($fields, $language_fields, $this->saved_data['products_metatags_last_field']);
                 }
             }
         }
@@ -207,7 +293,7 @@ class DbIoProductsHandler extends DbIoHandler
         if (!($this->config['additional_headers']['v_manufacturers_name'] & self::DBIO_FLAG_NO_EXPORT)) {
             $fields = $this->insertAtCustomizedPosition($fields, 'manufacturers_name', zen_get_products_manufacturers_name($products_id));
         }
-      
+
         // -----
         // Add the tax-class title to the export, if enabled.
         //
@@ -241,22 +327,122 @@ class DbIoProductsHandler extends DbIoHandler
 // ----------------------------------------------------------------------------------
 //             I N T E R N A L / P R O T E C T E D   F U N C T I O N S 
 // ----------------------------------------------------------------------------------
+
+    // -----
+    // Called as the very last step of an import's header processing (so long as no previous error), giving this handler
+    // the opportunity to inspect the input header information to make sure that any to-be-imported records contain
+    // sufficient fields to perform a product's insertion, if needed.
+    //
+    // For an import to 'create' a product, we'll need:
+    // - A v_categories_name.
+    // - At least one of:
+    //   - v_products_name_xx (in at least one of the store's languages).
+    //   - v_products_model
+    //   - v_products_url_xx (in at least one of the store's languages).
+    //   - v_products_description_xx (in at least one of the store's languages).
+    //
+    // On entry, the base handler's importGetHeader processing has initialized the class' $headers array.  We'll set
+    // a processing flag (used in importCheckKeyValue) to indicate whether/not sufficient fields are present for
+    // a valid product insert.
+    //
+    // Take this opportunity to determine whether the to-be-imported record includes any elements
+    // in the `meta_tags_products_description` table.  If no such fields are supplied, there won't be a need
+    // to perform the 'clean-up' to keep that table's records 'in sync' with the main product.
+    //
+    protected function importFinalizeHeader()
+    {
+        $categories_name_found = false;
+        $required_fields_found = false;
+        foreach ($this->headers as $current_header) {
+            switch ($current_header) {
+                case 'categories_name':
+                    $categories_name_found = true;
+                    break;
+                case 'products_model':
+                case 'products_name':
+                case 'products_url':
+                case 'products_description':
+                    $required_fields_found = true;
+                    break;
+            }
+        }
+        $this->import_can_insert = ($categories_name_found && $required_fields_found);
+        
+        // -----
+        // If the import includes product-specific meta-tags, set an indication for use by
+        // importRecordPostProcess.  The meta-tags' recording is 'tricky' for stores with
+        // multiple languages, since an empty record needs to be created for any language that
+        // doesn't have those records, so long as one language in the store has a non-empty
+        // record.
+        //
+        $metatags_fields_included = false;
+        foreach ($this->table_names as $table_name) {
+            if ($table_name == TABLE_META_TAGS_PRODUCTS_DESCRIPTION) {
+                $metatags_fields_included = true;
+                break;
+            }
+        }
+        $this->import_meta_tags_post_process = (count($this->languages) > 1 && $metatags_fields_included);
+        return true;
+    }
+    
+    // -----
+    // For a 'full' export of the products' information, the store's non-default language fields are
+    // inserted into the export after the specified field.
+    //
+    protected function insertLanguageFields($fields, $language_fields, $insert_after_field)
+    {
+        $keys = array_keys($fields);
+        $fields_updated = array();
+        for ($i = 0, $n = count($keys); $i < $n; $i++) {
+            $key = $keys[$i];
+            $fields_updated[$key] = $fields[$key];
+            if ($key == $insert_after_field) {
+                break;
+            }
+        }
+        foreach ($language_fields as $key => $value) {
+            $fields_updated[$key] = $value;
+        }
+        for ($i++; $i < $n; $i++) {
+            $key = $keys[$i];
+            $fields_updated[$key] = $fields[$key];
+        }
+        return $fields_updated;
+    }
     
     protected function insertCustomizedLanguageField($fields, $field_name, $field_value, $language_code, $previous_language_code)
     {
-        $field_position = array_search($field_name . $previous_language_code, array_keys($fields));
+        $field_keys = array_keys($fields);
+        $field_position = array_search($field_name . $previous_language_code, $field_keys);
         if ($field_position !== false) {
-            $field_position++;
-            $before = array_slice($fields, 0, $field_position);
-            $after = array_slice($fields, $field_position);
-            $fields = array_merge($before, array($field_name . $language_code => $field_value), $after);
+            $fields_updated = array();
+            for ($i = 0; $i <= $field_position; $i++) {
+                $fields_updated[$field_keys[$i]] = $fields[$field_keys[$i]];
+            }
+            $fields_updated[$field_name . $language_code] = $field_value;
+            for ($n = count($fields); $i < $n; $i++) {
+                $fields_updated[$field_keys[$i]] = $fields[$field_keys[$i]];
+            }
+            $fields = $fields_updated;
         }
         return $fields;
     }
     
     // -----
+    // This function, called during exportInitialize, determines the last field name in the
+    // supplied table.  This establishes the 'anchor' position for the insertion of any additional
+    // languages that might be used in the store.
+    //
+    protected function getTableLastFieldName($table_name)
+    {
+        $keys = array_keys($this->tables[$table_name]['fields']);
+        return end($keys);
+    }
+    
+    // -----
     // This function, called during the overall class construction, is used to set this handler's database
-    // configuration for the dbIO operations.
+    // configuration for the DbIo operations.
     //
     protected function setHandlerConfiguration() 
     {
@@ -283,6 +469,9 @@ class DbIoProductsHandler extends DbIoHandler
                     'products_tax_class_id' => 'no-header',
                     'master_categories_id' => false,
                 ),
+                'join_clause' =>
+                    "LEFT JOIN " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . " AS mtpd
+                        ON mtpd.products_id = p.products_id"
             ), 
             TABLE_PRODUCTS_DESCRIPTION => array( 
                 'alias' => 'pd',
@@ -291,7 +480,16 @@ class DbIoProductsHandler extends DbIoHandler
                     'products_id' => false,
                     'language_id' => false,
                 ),
-            ), 
+            ),
+            TABLE_META_TAGS_PRODUCTS_DESCRIPTION => array(
+                'alias' => 'mtpd',
+                'language_field' => 'language_id',
+                'no_from_clause' => true,
+                'io_field_overrides' => array(
+                    'products_id' => false,
+                    'language_id' => false,
+                ),
+            ),
         );
         $this->config['additional_headers'] = array(
             'v_manufacturers_name' => self::DBIO_FLAG_NONE,
@@ -358,7 +556,7 @@ class DbIoProductsHandler extends DbIoHandler
                 }
             }
         } else {
-            $this->debugMessage ("Unrecognized command ($command) found at line #" . $this->stats['record_count'] . "; the operation was not performed.", self::DBIO_ERROR);
+            $this->debugMessage("Unrecognized command ($command) found at line #" . $this->stats['record_count'] . "; the operation was not performed.", self::DBIO_ERROR);
         }
         return $continue_line_import;
     }
@@ -389,7 +587,7 @@ class DbIoProductsHandler extends DbIoHandler
             if (isset($this->data_key_check)) {
                 $products_id = $this->importGetFieldValue('products_id', $data);
                 $import_allowed = false;
-                if (!zen_not_null($products_id)) {
+                if (empty($products_id)) {
                     $this->debugMessage("Multiple records match the products_model, but no products_id specified; the record at line #" . $this->stats['record_count'] . " was not imported.", self::DBIO_WARNING);
                 } else {
                     $current_products_model = zen_get_products_model($products_id);
@@ -416,6 +614,55 @@ class DbIoProductsHandler extends DbIoHandler
                 }
                 $this->record_status = $import_allowed;
             }
+        // -----
+        // Otherwise, the record's been found to be a product-insert.
+        //
+        } else {
+            // -----
+            // If the processing by 'importFinalizeHeader' determined that there are insufficient header-fields to create
+            // a product's record, set the indication that the associated record can't be imported, with a message
+            // to the current admin.
+            //
+            if (!$this->import_can_insert) {
+                $this->record_status = false;
+                $this->debugMessage("Record at line #" . $this->stats['record_count'] . " not imported; insufficient header-fields provided for a product addition.", self::DBIO_WARNING);
+            // -----
+            // Otherwise, sufficient 'fields' are available, as found in the import's header.  Still need to check that the
+            // required fields' data itself is valid for a product insert.
+            //
+            } else {
+                // -----
+                // To 'insert' (i.e. add) a product, the categories_name field must be non-blank and at least one
+                // of the products_model or products_name, products_url or products description (in at least one of the
+                // store's languages) must also be non-blank.
+                //
+                $categories_name = $this->importGetFieldValue('categories_name', $data);
+                if (empty($categories_name)) {
+                    $this->record_status = false;
+                    $this->debugMessage("Record at line#" . $this->stats['record_count'] . " not imported; 'v_categories_name' must be supplied for a product addition.", self::DBIO_WARNING);
+                } else {
+                    $record_ok = false;
+                    if (!empty($this->importGetFieldValue('products_model', $data))) {
+                        $record_ok = true;
+                    } else {
+                        foreach ($this->languages as $id => $language_id) {
+                            if (!empty($this->importGetLanguageFieldValue('products_name', $language_id))) {
+                                $record_ok = true;
+                                break;
+                            }
+                            if (!empty($this->importGetLanguageFieldValue('products_description', $language_id))) {
+                                $record_ok = true;
+                                break;
+                            }
+                            if (!empty($this->importGetLanguageFieldValue('products_url', $language_id))) {
+                                $record_ok = true;
+                                break;
+                            }
+                        }
+                    }
+                    $this->record_status = $record_ok;
+                }
+            }
         }
         return $this->record_status;
     }
@@ -424,11 +671,75 @@ class DbIoProductsHandler extends DbIoHandler
     // This function handles any overall record post-processing required for the Products import, specifically
     // making sure that the products' price sorter is run for the just inserted/updated product.
     //
+    // If the import for a multi-lingual store includes product-related meta-tags, need some additional checking 
+    // to make sure that everything's 'in sync'.
+    //
     protected function importRecordPostProcess($products_id)
     {
-        $this->debugMessage('Products::importRecordPostProcess: ' . $this->data_key_sql . "\n" . print_r($this->key_fields, true), self::DBIO_INFORMATIONAL);
+        $this->debugMessage('Products::importRecordPostProcess (' . json_encode($products_id) . '): ' . $this->data_key_sql . "\n" . print_r($this->key_fields, true), self::DBIO_INFORMATIONAL);
         if ($products_id !== false && $this->operation != 'check') {
             zen_update_products_price_sorter($products_id);
+        }
+        
+        // -----
+        // If the import includes products' metatags entries for a multi-lingual store, need to check that:
+        //
+        // 1) If a metatags-entry exists for at least one of the store's languages, need to create an empty
+        //    entry for any language that doesn't currently have such a record.
+        // 2) If **all** metatags table-entries are empty, need to remove all such records (no metatags defined).
+        //
+        if ($this->import_meta_tags_post_process && $this->operation != 'check') {
+            $pID = ($products_id === false) ? $this->key_fields['products_id'] : $products_id;
+            $check = $GLOBALS['db']->Execute(
+                "SELECT *
+                   FROM " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . "
+                  WHERE products_id = $pID",
+                false,
+                false,
+                0,
+                true
+            );
+            $languages_found = array();
+            $empty_records_found = 0;
+            while (!$check->EOF) {
+                $is_empty_record = (empty($check->fields['metatags_title'] . $check->fields['metatags_keywords'] . $check->fields['metatags_description']));
+                $languages_found[$check->fields['language_id']] = $is_empty_record;
+                if ($is_empty_record) {
+                    $empty_records_found++;
+                }
+                $check->MoveNext();
+            }
+            $num_languages = count($this->languages);
+            
+            // -----
+            // If all metatags table entries are empty for the current product, remove them all.
+            //
+            if ($num_languages === $empty_records_found) {
+                $this->debugMessage("[*] Removing empty meta-tags records for products_id = $pID.", self::DBIO_INFORMATIONAL);
+                if ($this->operation != 'check') {
+                    $GLOBALS['db']->Execute(
+                        "DELETE FROM " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . " WHERE products_id = $pID"
+                    );
+                }
+            // -----
+            // Otherwise, if the number of meta-tag table entries doesn't match the number of languages, insert
+            // an empty table-record for any 'empty' languages.
+            //
+            } elseif ($num_languages != count($languages_found)) {
+                foreach ($this->languages as $code => $language_id) {
+                    if (!isset($languages_found[$language_id])) {
+                        $this->debugMessage("[*] Inserting empty meta-tag record for products_id = $pID, language_code = '$code'.", self::DBIO_INFORMATIONAL);
+                        if ($this->operation != 'check') {
+                            $GLOBALS['db']->Execute(
+                                "INSERT INTO " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . "
+                                    (products_id, language_id, metatags_title, metatags_keywords, metatags_description)
+                                 VALUES
+                                    ($pID, $language_id, '', '', '')"
+                            );
+                        }
+                    }
+                }
+            }
         }
     }    
 
@@ -497,7 +808,7 @@ class DbIoProductsHandler extends DbIoHandler
                         $parent_category = 0;
                         $categories_name_ok = true;
                         $language_id = $this->languages[DEFAULT_LANGUAGE];
-                        $categories = explode ('^', $field_value);
+                        $categories = explode('^', $field_value);
                         foreach ($categories as $current_category_name) {
                             $category_info_sql = 
                                 "SELECT c.categories_id FROM " . TABLE_CATEGORIES . " c
@@ -507,7 +818,7 @@ class DbIoProductsHandler extends DbIoHandler
                                   WHERE c.parent_id = $parent_category 
                                     AND cd.categories_name = :categories_name: 
                                   LIMIT 1";
-                            $category_info = $db->Execute($db->bindVars ($category_info_sql, ':categories_name:', $current_category_name, 'string'), false, false, 0, true);
+                            $category_info = $db->Execute($db->bindVars($category_info_sql, ':categories_name:', $current_category_name, 'string'), false, false, 0, true);
                             if (!$category_info->EOF) {
                                 $parent_category = $category_info->fields['categories_id'];
                               
@@ -620,32 +931,99 @@ class DbIoProductsHandler extends DbIoHandler
     // If we're doing an insert (i.e. a new product), simply add the products_id field to the non-products tables' SQL
     // input array.
     //
-    // If we're doing an update (i.e. existing product), the built-in handling has already taken care of the language
-    // tables, but there's some special handling required for the products-to-categories table.  That table's update
+    // If we're doing an update (i.e. existing product), the built-in handling has already taken care of the products_description
+    // table, but there's some special handling required for the products-to-categories table.  That table's update
     // happens within this function and we set the return value to false to indicate to the parent processing that the
     // associated update has been already handled.
     //
     protected function importUpdateRecordKey($table_name, $table_fields, $products_id) 
     {
         global $db;
-        if ($table_name != TABLE_PRODUCTS) {
-            if ($this->import_is_insert) {
-                $table_fields['products_id'] = array( 'value' => $products_id, 'type' => 'integer' );
-            } else {
-                $this->where_clause = 'products_id = ' . (int)$this->key_fields['products_id'];
-                $products_id = (int)$this->key_fields['products_id'];
-            }
-        }
-        if ($table_name == TABLE_PRODUCTS_TO_CATEGORIES) {
-            if ($this->operation != 'check') {
-                $db->Execute(
-                    "INSERT IGNORE INTO $table_name 
-                        (products_id, categories_id) 
-                     VALUES 
-                        ($products_id, " . (int)$table_fields['categories_id']['value'] . ")"
-                );
-            }
-            $table_fields = false;
+        switch ($table_name) {
+            case TABLE_PRODUCTS:
+                if ($this->import_is_insert) {
+                    $table_fields['products_id'] = array('value' => $products_id, 'type' => 'integer');
+                } else {
+                    $this->where_clause = 'products_id = ' . (int)$this->key_fields['products_id'];
+                    $products_id = (int)$this->key_fields['products_id'];
+                }
+                break;
+                
+            case TABLE_PRODUCTS_DESCRIPTION:
+                if ($this->import_is_insert) {
+                    $table_fields['products_id'] = array('value' => $products_id, 'type' => 'integer');
+                }
+                break;
+
+            case TABLE_PRODUCTS_TO_CATEGORIES:
+                if ($this->operation != 'check') {
+                    $pID = ($this->import_is_insert) ? $products_id : $this->key_fields['products_id'];
+                    $db->Execute(
+                        "INSERT IGNORE INTO $table_name 
+                            (products_id, categories_id) 
+                         VALUES 
+                            ($pID, " . (int)$table_fields['categories_id']['value'] . ")"
+                    );
+                }
+                $table_fields = false;
+                break;
+
+            // -----
+            // The 'meta_tags_products_description' language-specific entry for the product will be **REMOVED** if all
+            // associated fields are empty, bypassing the normal import processing for this table's fields.
+            //
+            // Note that an empty record in this table will be created at the end of the csv-record's import if meta
+            // tags were defined for some, but not all, languages supported by the current store!
+            //
+            case TABLE_META_TAGS_PRODUCTS_DESCRIPTION:
+                if (empty($this->import_language_id)) {
+                    trigger_error("importUpdateRecordKey, missing 'import_language_id'.", E_USER_ERROR);
+                    exit();
+                }
+                $this->debugMessage("importUpdateRecordKey: " . print_r($table_fields, true) . PHP_EOL . 'key_fields: ' . print_r($this->key_fields, true));
+                $table_data = '';
+                foreach ($table_fields as $key => $values) {
+                    $table_data .= trim($values['value']);
+                }
+                if (empty($table_data)) {
+                    // -----
+                    // Indicate to the parent class that the table-record has been processed.
+                    //
+                    $table_fields = false;
+                    
+                    // -----
+                    // If we're updating the product, remove this language-specific meta-tags' record.
+                    //
+                    if (!$this->import_is_insert) {
+                        // -----
+                        // If the current DbIo operation is an import-check, simply output a debug message containing
+                        // the record-deletion SQL.  Otherwise, actually run the SQL, removing that record.
+                        //
+                        $sql = 
+                            "DELETE FROM " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . " 
+                              WHERE products_id = " . $this->key_fields['products_id'] . "
+                                AND language_id = " . $this->import_language_id . "
+                              LIMIT 1";
+                        if ($this->operation == 'check') {
+                            $this->debugMessage("importUpdateRecordKey, removing record: $sql", self::DBIO_STATUS);
+                        } else {
+                            $GLOBALS['db']->Execute($sql);
+                        }
+                    }
+                } elseif ($this->import_is_insert) {
+                    $table_fields['products_id'] = array(
+                        'value' => $products_id,
+                        'type' => 'integer',
+                    );
+                    $table_fields['language_id'] = array(
+                        'value' => $this->import_language_id,
+                        'type' => 'integer',
+                    );
+                }
+                break;
+
+            default:
+                break;
         }
         return parent::importUpdateRecordKey($table_name, $table_fields, $products_id);
     }
@@ -673,8 +1051,48 @@ class DbIoProductsHandler extends DbIoHandler
                     'type' => 'datetime'
                 );
             }
+        } elseif ($table_name == TABLE_PRODUCTS_DESCRIPTION) {
+            if (!$this->import_is_insert) {
+                $this->where_clause = "pd.products_id = " . $this->key_fields['products_id'] . " AND pd.language_id = " . $this->import_language_id;
+            }
+        } elseif ($table_name == TABLE_META_TAGS_PRODUCTS_DESCRIPTION) {
+            // -----
+            // Since a product's meta-tags' table-entries are optional, it's possible on a product
+            // update that those fields aren't defined.  If that's the case, the meta-tag information
+            // needs to be inserted even though the product's being updated.
+            //
+            if (!$this->import_is_insert) {
+                $products_id = $this->key_fields['products_id'];
+
+                // -----
+                // Check to see if the existing product's language-specific meta-tags record exists. If not,
+                // we'll do an database action 'override' so that the meta-tag information can be inserted
+                // even though the base product's being updated.
+                //
+                $check = $GLOBALS['db']->Execute(
+                    "SELECT *
+                       FROM " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . "
+                      WHERE products_id = $products_id
+                        AND language_id = " . $this->import_language_id . "
+                      LIMIT 1"
+                );
+                if ($check->EOF) {
+                    $is_override = true;
+                    $is_insert = true;
+                    $table_fields['products_id'] = array(
+                        'value' => $products_id,
+                        'type' => 'integer',
+                    );
+                    $table_fields['language_id'] = array(
+                        'value' => $this->import_language_id,
+                        'type' => 'integer',
+                    );
+                } else {
+                    $this->where_clause = "mtpd.products_id = $products_id AND mtpd.language_id = " . $this->import_language_id;
+                }
+            }
         }
-        return parent::importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause, $is_override, $is_insert);
+        return parent::importBuildSqlQuery($table_name, $table_alias, $table_fields, ' LIMIT 1', $is_override, $is_insert);
     }
 
 }  //-END class DbIoProductsHandler

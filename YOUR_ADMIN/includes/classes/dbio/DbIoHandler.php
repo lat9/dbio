@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2019, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2020, Vinos de Frutas Tropicales.
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -13,7 +13,7 @@ abstract class DbIoHandler extends base
 //                                    C O N S T A N T S 
 // ----------------------------------------------------------------------------------
     // ----- Interface Constants -----
-    const DBIO_HANDLER_VERSION   = '1.5.5';
+    const DBIO_HANDLER_VERSION   = '1.6.0';
     // ----- Field-Import Status Values -----
     const DBIO_IMPORT_OK         = '--ok--';
     const DBIO_NO_IMPORT         = '--none--';
@@ -863,7 +863,7 @@ abstract class DbIoHandler extends base
             // First, give the current handler the opportunity to update the "key" value(s) associated with this record's DbIo operation, continuing
             // only if all is OK.
             //
-            if ($this->importCheckKeyValue($data) !== false) {           
+            if ($this->importCheckKeyValue($data) !== false) {
                 // -----
                 // Check to see if DbIo commands are included in this import and, if so, check to see if the current to-be-imported
                 // record includes a non-blank command; if so, pass that command off the the active handler.
@@ -912,6 +912,7 @@ abstract class DbIoHandler extends base
                                     $extra_where_clause = '';
                                     $capture_key_value = ($this->import_is_insert && isset($this->config['keys'][$database_table]['capture_key_value']));
 
+                                    $language_id = false;
                                     if (dbio_strpos($table_name, '^') !== false) {
                                         $language_tables = explode('^', $table_name);
                                         $table_name = $language_tables[0];
@@ -922,6 +923,13 @@ abstract class DbIoHandler extends base
                                             $extra_where_clause = " AND " . $this->config['tables'][$table_name]['alias'] . '.' . $this->config['tables'][$table_name]['language_field'] . " = $language_id";
                                         }
                                     }
+                                    
+                                    // -----
+                                    // Added in v1.6.0, as an 'aid' to the Products handler.  This should "really" be a parameter
+                                    // supplied to the two class methods in the following section, but that would break upward
+                                    // compatibility for any handlers that currently extend these methods.
+                                    //
+                                    $this->import_language_id = $language_id;
                                     
                                     $table_alias = $this->config['tables'][$table_name]['alias'];
                                     $table_fields = $this->importUpdateRecordKey($table_name, $table_fields, $record_key_value);
@@ -1201,6 +1209,21 @@ abstract class DbIoHandler extends base
     {
         $this->debugMessage("importGetFieldValue for '$field_name' from " . print_r($data, true) . print_r($this->headers, true));
         $field_index = array_search($field_name, $this->headers);
+        return ($field_index === false) ? false : $data[$field_index];
+    }
+    
+    // -----
+    // Retrieve the value associated with the specified language-specific field name in the current data record.
+    //
+    protected function importGetLanguageFieldValue($field_name, $language_id, $data)
+    {
+        $this->debugMessage("importGetLanguageFieldValue for '$field_name' ($language_id) from " . print_r($data, true) . print_r($this->headers, true) . print_r($this->language_ids, true));
+        for ($i = 0, $field_index = false; $i < $this->header_field_count; $i++) {
+            if ($this->headers[$i] == $field_name && $this->language_ids[$i] == $language_id) {
+                $field_index = $i;
+                break;
+            }
+        }
         return ($field_index === false) ? false : $data[$field_index];
     }
     
