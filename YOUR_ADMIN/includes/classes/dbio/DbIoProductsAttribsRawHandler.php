@@ -24,7 +24,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile('ProductsAttribsRaw'); 
         return array(
-            'version' => '1.5.8',
+            'version' => '1.6.0',
             'handler_version' => '1.4.0',
             'include_header' => true,
             'export_only' => false,
