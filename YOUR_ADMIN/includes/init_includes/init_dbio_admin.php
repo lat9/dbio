@@ -14,8 +14,8 @@ if (empty($_SESSION['admin_id'])) {
     return;
 }
 
-define('DBIO_CURRENT_VERSION', '1.6.0-beta2');
-define('DBIO_CURRENT_UPDATE_DATE', '2020-01-29');
+define('DBIO_CURRENT_VERSION', '1.6.0-beta3');
+define('DBIO_CURRENT_UPDATE_DATE', '2020-01-30');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
 
@@ -83,8 +83,8 @@ if (DBIO_CURRENT_VERSION != $dbio_current_version) {
                     dbio_reports_id int(11) NOT NULL auto_increment,
                     handler_name varchar(255) NOT NULL,
                     report_name varchar(32) NOT NULL,
-                    admin_id int(11) NOT NULL default '0',
-                    last_updated_by int(11) NOT NULL default '0',
+                    admin_id int(11) NOT NULL default 0,
+                    last_updated_by int(11) NOT NULL default 0,
                     last_updated datetime default '0001-01-01 00:00:00',
                     field_info mediumblob,
                     PRIMARY KEY (dbio_reports_id),
@@ -95,7 +95,7 @@ if (DBIO_CURRENT_VERSION != $dbio_current_version) {
             $db->Execute(
                 "CREATE TABLE " . TABLE_DBIO_REPORTS_DESCRIPTION . " (
                     dbio_reports_id int(11) NOT NULL,
-                    language_id int(11) NOT NULL default '1',
+                    language_id int(11) NOT NULL default 1,
                     report_description text,
                     PRIMARY KEY (dbio_reports_id,language_id)
                  ) ENGINE=MyISAM"
@@ -162,14 +162,14 @@ if (DBIO_CURRENT_VERSION != $dbio_current_version) {
         dbio_stats_id int(11) NOT NULL auto_increment,
         report_name varchar(255) NOT NULL default '',
         action varchar(128) NOT NULL default '',
-        record_count int(11) NOT NULL default '0',
-        errors int(11) NOT NULL default '0',
-        warnings int(11) NOT NULL default '0',  
-        inserts int(11) NOT NULL default '0',  
-        updates int(11) NOT NULL default '0',
-        parse_time float NOT NULL default '0',
-        memory_usage int(11) NOT NULL default '0',
-        memory_peak_usage int(11) NOT NULL default '0',
+        record_count int(11) NOT NULL default 0,
+        errors int(11) NOT NULL default 0,
+        warnings int(11) NOT NULL default 0,  
+        inserts int(11) NOT NULL default 0,  
+        updates int(11) NOT NULL default 0,
+        parse_time float NOT NULL default 0,
+        memory_usage int(11) NOT NULL default 0,
+        memory_peak_usage int(11) NOT NULL default 0,
         date_added datetime NOT NULL default '0001-01-01 00:00:00',
         PRIMARY KEY  (dbio_stats_id)
     ) ENGINE=MyISAM";
@@ -191,6 +191,32 @@ if (DBIO_CURRENT_VERSION != $dbio_current_version) {
         if (!zen_page_key_exists('toolsDbIoCustomize')) {
             zen_register_admin_page('toolsDbIoCustomize', 'BOX_TOOLS_DBIO_CUSTOMIZE', 'FILENAME_DBIO_CUSTOMIZE', '', 'tools', 'N');
         }
+    }
+    
+    // -----
+    // Versions prior to v1.6.0 had character defaults for numeric database fields, fix them up on any upgrade.
+    //
+    if ($dbio_current_version != '0.0.0' && version_compare($dbio_current_version, '1.6.0', '<')) {
+        $db->Execute(
+            "ALTER TABLE " . TABLE_DBIO_REPORTS . "
+                ALTER admin_id SET DEFAULT 0,
+                ALTER last_updated_by SET DEFAULT 0"
+        );
+        $db->Execute(
+            "ALTER TABLE " . TABLE_DBIO_REPORTS_DESCRIPTION . "
+                ALTER language_id SET DEFAULT 1"
+        );
+        $db->Execute(
+            "ALTER TABLE " . TABLE_DBIO_STATS . "
+                ALTER record_count SET DEFAULT 0,
+                ALTER errors SET DEFAULT 0,
+                ALTER warnings SET DEFAULT 0,
+                ALTER inserts SET DEFAULT 0,
+                ALTER updates SET DEFAULT 0,
+                ALTER parse_time SET DEFAULT 0,
+                ALTER memory_usage SET DEFAULT 0,
+                ALTER memory_peak_usage SET DEFAULT 0"
+        );
     }
 
     // -----

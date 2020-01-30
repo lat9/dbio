@@ -578,7 +578,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <noscript><h3>Version History</h3></noscript>
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
         <ul>
-          <li>v1.6.0, 2020-01-29:<ul>
+          <li>v1.6.0, 2020-01-30:<ul>
             <li>BUGFIX: Update <em>ProductsHandler</em> to include the products' meta-tags' language-based settings.</li>
             <li>BUGFIX: <em>ProductsAttribsRawHandler</em><ol type="a">
                 <li>Ensure the export properly outputs possibly not present fields.</li>
@@ -592,6 +592,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
             <li>BUGFIX: Correct PHP Notice issued when copying a customized template.</li>
             <li>BUGFIX: Correct insertion of customized fields, affects <em>Orders</em> and <em>Products</em> handlers.</li>
             <li>CHANGE: Enable 'automatic' download of exports.</li>
+            <li>BUGFIX: Correct database tables' integer fields' defaults (they're now numeric values).</li>
             <li>The following files were changed:<ol>
               <li>/YOUR_ADMIN/dbio_customize.php</li>
               <li>/YOUR_ADMIN/dbio_manager.php</li>
