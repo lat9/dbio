@@ -23,6 +23,35 @@ class DbIoStatsHandler extends DbIoHandler
             'description' => DBIO_STATS_DESCRIPTION,
         );
     }
+    
+    // -----
+    // Gets and returns the header-record for the current export.  Take this opportunity to determine
+    // the number of records in the 'dbio_stats' table, so that the table is truncated (i.e. emptied)
+    // after the last record's export.
+    //
+    public function exportGetHeader() 
+    {
+        $check = $GLOBALS['db']->Execute(
+            "SELECT COUNT(*) AS count
+               FROM " . TABLE_DBIO_STATS
+        );
+        $this->stats_records_count = $check->fields['count'];
+        $this->debugMessage("Stats table contains {$this->stats_records_count} entries.");
+        return parent::exportGetHeader();
+    }
+  
+    // -----
+    // This function is called just prior to writing each exported record.  We'll check to see if we're
+    // about to export the last record in the 'dbio_stats' table and, if so, will truncate/empty the
+    // table at that time.
+    //
+    public function exportPrepareFields(array $fields) 
+    {
+        if ($this->stats_records_count == $this->stats['record_count']) {
+            $GLOBALS['db']->Execute("TRUNCATE TABLE " . TABLE_DBIO_STATS);
+        }
+        return parent::exportPrepareFields($fields);
+    }
 
 // ----------------------------------------------------------------------------------
 //             I N T E R N A L / P R O T E C T E D   F U N C T I O N S 
