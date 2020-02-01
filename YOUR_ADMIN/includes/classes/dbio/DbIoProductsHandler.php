@@ -677,9 +677,24 @@ class DbIoProductsHandler extends DbIoHandler
     protected function importRecordPostProcess($products_id)
     {
         $this->debugMessage('Products::importRecordPostProcess (' . json_encode($products_id) . '): ' . $this->data_key_sql . "\n" . print_r($this->key_fields, true), self::DBIO_INFORMATIONAL);
-        if ($products_id !== false && $this->operation != 'check') {
-            zen_update_products_price_sorter($products_id);
+        
+        // -----
+        // If processing as an "Import (Check only)", no database operations are performed.
+        //
+        if ($this->operation == 'check') {
+            return;
         }
+        
+        // -----
+        // Determine the product on which we're operating; for a product-insert, use the $products_id input;
+        // otherwise, use the value determined by the product's 'key-field'.
+        //
+        $pID = ($products_id === false) ? $this->key_fields['products_id'] : $products_id;
+        
+        // -----
+        // Update the product's price-sorter.
+        //
+        zen_update_products_price_sorter($pID);
         
         // -----
         // If the import includes products' metatags entries for a multi-lingual store, need to check that:
@@ -688,8 +703,7 @@ class DbIoProductsHandler extends DbIoHandler
         //    entry for any language that doesn't currently have such a record.
         // 2) If **all** metatags table-entries are empty, need to remove all such records (no metatags defined).
         //
-        if ($this->import_meta_tags_post_process && $this->operation != 'check') {
-            $pID = ($products_id === false) ? $this->key_fields['products_id'] : $products_id;
+        if ($this->import_meta_tags_post_process) {
             $check = $GLOBALS['db']->Execute(
                 "SELECT *
                    FROM " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . "
