@@ -37,17 +37,22 @@ class DbIoSpecialsHandler extends DbIoHandler
     // For each 'specials' row's export, append the product's name, model-number and 'base price' to the output,
     // adding those fields for reference use.
     //
+    // Note: Since this handler supports DbIo commands, the base class' handling has appended an empty
+    // column as the last field to hold a potential command (this handler supports REMOVE).  Need to remove that
+    // column's data from the fields prior to inserting the 'helper' columns and then add it back.
+    //
     public function exportPrepareFields(array $fields) 
     {
         $fields = parent::exportPrepareFields($fields);
+        array_pop($fields);
         unset($fields['specials_id']);
-        
+
         $products_id = $fields['products_id'];
         
         $fields = $this->insertAtCustomizedPosition($fields, 'products_name', zen_get_products_name($products_id));
         $fields = $this->insertAtCustomizedPosition($fields, 'products_model', zen_get_products_model($products_id));
         $fields = $this->insertAtCustomizedPosition($fields, 'products_price', zen_get_products_base_price($products_id));
-        
+        $fields['v_dbio_command'] = '';
         return $fields;
     }
     
@@ -77,6 +82,7 @@ class DbIoSpecialsHandler extends DbIoHandler
     {
         $this->stats['report_name'] = 'Specials';
         $this->config = self::getHandlerInformation();
+        $this->config['supports_dbio_commands'] = true;
         $this->config['keys'] = array (
             TABLE_SPECIALS => array (
                 'alias' => 's',
@@ -248,5 +254,28 @@ class DbIoSpecialsHandler extends DbIoHandler
         if ($this->operation != 'check') {
             zen_update_products_price_sorter($this->products_id);
         }
+    }
+    
+    // -----
+    // This function, called by the base DbIoHandler class when a non-blank v_dbio_command field is found in the
+    // current import-record, gives this handler a chance to REMOVE a special's information from the database.
+    //
+    protected function importHandleDbIoCommand($command, $data)
+    {
+        $command = dbio_strtoupper($command);
+        if ($command == self::DBIO_COMMAND_REMOVE) {
+            $this->debugMessage("Removing special for product_id (" . $this->products_id . ")", self::DBIO_STATUS);
+            if ($this->operation != 'check') {
+                $GLOBALS['db']->Execute(
+                    "DELETE FROM " . TABLE_SPECIALS . "
+                      WHERE products_id = " . $this->products_id . "
+                      LIMIT 1"
+                );
+                zen_update_products_price_sorter($this->products_id);
+            }
+        } else {
+            $this->debugMessage("Unrecognized command ($command) found at line #" . $this->stats['record_count'] . "; the operation was not performed.", self::DBIO_ERROR);
+        }
+        return false;
     }
 }
