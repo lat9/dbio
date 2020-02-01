@@ -361,7 +361,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td>This handler supports import/export of <b>all</b> fields within the <code>products_options</code> table, the products' options' information.  When importing <b>new</b> records for a multi-language store, the import should be run once per language value.  Otherwise, the products_options_id will get "out-of-sync" between the multiple languages.</td>
                   <td>&mdash;</td>
                 </tr> 
-                 
+
                 <tr>
                   <td class="h-name">ProductsOptionsValues</td>
                   <td>Import, Export</td>
@@ -370,7 +370,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td>This handler supports import/export of <b>all</b> fields within the <code>products_options_values</code> table, the products' options' values' information.  When importing <b>new</b> records for a multi-language store, the import should be run once per language value.  Otherwise, the products_options_id will get "out-of-sync" between the multiple languages.</td>
                   <td>&mdash;</td>
                 </tr>  
-                 
+
                 <tr>
                   <td class="h-name">ProductsAttribsBasic</td>
                   <td>Import, Export</td>
@@ -379,7 +379,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td>This handler supports import/export of the basic fields associated with the <code>products_attributes</code> table, using a <code>products_model</code> value to associate a product to the attribute-values (<code>products_options_type, products_options_name, and products_options_values name</code>).</td>
                   <td>Basic Products Attributes</td>
                 </tr>  
-                
+
                 <tr>
                   <td class="h-name">ProductsAttribsRaw</td>
                   <td>Import, Export</td>
@@ -388,7 +388,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td>This handler supports import/export of <b>all</b> fields associated with the <code>products_attributes</code> table, using the <code>products_id</code>, <code>options_id</code>, and <code>options_values_id</code> values to identify a record in the table and, thus, whether the record is an insert or an update.</td>
                   <td>Detailed Products Attributes</td>
                 </tr>  
-                
+
                 <tr>
                   <td class="h-name">ProductsDiscountQuantity</td>
                   <td>Import, Export</td>
@@ -396,13 +396,23 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td>No</td>
                   <td>This handler supports import/export of fields associated with the <code>products_discount_quantity</code> table, using the <code>products_id</code> value to identify the product for which the discount-quantities are to be updated.  Refer to the handler's on-screen instructions for additional information.</td>
                   <td>&mdash;</td>
-                </tr>                  
+                </tr>
+
+                <tr>
+                  <td class="h-name">Specials</td>
+                  <td>Import, Export</td>
+                  <td>None</td>
+                  <td>No</td>
+                  <td>This handler supports the import/export of fields associated with the <code>specials</code> table, using the <code>products_id</code> value to identify the product for which a special-price is to be updated.  Refer to the handler's on-screen instructions for additional information.<br /><br />A product's <em>special price</em> can be removed using a <code>v_dbio_command</code> column with the value set to <b>REMOVE</b>.</td>
+                  <td>&mdash;</td>
+                </tr>
+
                 <tr>
                   <td class="h-name">Stats</td>
                   <td>Export</td>
                   <td>None</td>
                   <td>No</td>
-                  <td>This handler supports export of <b>all</b> fields present in the <code>dbio_stats</code> table, where <em>DbIo</em> records its statistics.</td>
+                  <td>This handler supports export of <b>all</b> fields present in the <code>dbio_stats</code> table, where <em>DbIo</em> records its statistics.  After the table is exported, the table is emptied.</td>
                   <td>&mdash;</td>
                 </tr>  
                 
