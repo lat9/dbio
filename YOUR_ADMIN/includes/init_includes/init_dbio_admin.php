@@ -14,8 +14,8 @@ if (empty($_SESSION['admin_id'])) {
     return;
 }
 
-define('DBIO_CURRENT_VERSION', '1.6.0-beta3');
-define('DBIO_CURRENT_UPDATE_DATE', '2020-01-30');
+define('DBIO_CURRENT_VERSION', '1.6.0-beta4');
+define('DBIO_CURRENT_UPDATE_DATE', '2020-02-01');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
 
@@ -24,7 +24,7 @@ $configuration = $db->Execute("SELECT configuration_group_id FROM " . TABLE_CONF
 if ($configuration->EOF) {
     $db->Execute("INSERT INTO " . TABLE_CONFIGURATION_GROUP . " 
                  (configuration_group_title, configuration_group_description, sort_order, visible) 
-                 VALUES ('$configurationGroupTitle', '$configurationGroupTitle', '1', '1');");
+                 VALUES ('$configurationGroupTitle', '$configurationGroupTitle', 1, 1);");
     $cgi = $db->Insert_ID(); 
     $db->Execute("UPDATE " . TABLE_CONFIGURATION_GROUP . " SET sort_order = $cgi WHERE configuration_group_id = $cgi;");
 } else {

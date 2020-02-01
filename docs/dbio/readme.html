@@ -593,8 +593,9 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
             <li>BUGFIX: Correct insertion of customized fields, affects <em>Orders</em> and <em>Products</em> handlers.</li>
             <li>CHANGE: Enable 'automatic' download of exports.</li>
             <li>BUGFIX: Correct database tables' integer fields' defaults (they're now numeric values).</li>
-            <li>CHANGE: Update the 'Stats' handler to empty the 'dbio_stats' table on an export.</li>
-            <li>The following files were changed:<ol>
+            <li>CHANGE: Update the <em>Stats</em> handler to empty the <code>dbio_stats</code> table on an export.</li>
+            <li>CHANGE: Include a handler (<em>Specials</em>) to import/export fields from the <code>specials</code> table.</li>
+            <li>The following files were changed or <span class="added">added</span>:<ol>
               <li>/YOUR_ADMIN/dbio_customize.php</li>
               <li>/YOUR_ADMIN/dbio_manager.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
@@ -602,6 +603,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoManufacturersHandler.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsRawHandler.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+              <li><span class="added">/YOUR_ADMIN/includes/classes/dbio/DbIoSpecialsHandler.php</span></li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoStatsHandler.php</li>
               <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
               <li>/YOUR_ADMIN/includes/languages/english/dbio_customize.php</li>
@@ -609,6 +611,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
               <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoManufacturersHandler.php</li>
               <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsAttribsBasicHandler.php</li>
               <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsAttribsRawHandler.php</li>
+              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/DbIoSpecialsHandler.php</span></li>
               <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoStatsHandler.php</li>
             </ol></li>
             </ol></li>
