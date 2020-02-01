@@ -886,7 +886,7 @@ abstract class DbIoHandler extends base
                         if ($data_index > $this->header_columns) {
                             break;
                         }
-                        if ($this->headers[$data_index] != self::DBIO_NO_IMPORT) {                   
+                        if ($this->headers[$data_index] != self::DBIO_NO_IMPORT) {
                             $this->importProcessField($this->table_names[$data_index], $this->headers[$data_index], $this->language_id[$data_index], $current_element);
                         }
                         $data_index++;
@@ -918,7 +918,7 @@ abstract class DbIoHandler extends base
                                         $table_name = $language_tables[0];
                                         $language_id = $language_tables[1];
                                         if ($this->import_is_insert) {
-                                            $table_fields[$this->config['tables'][$table_name]['language_field']] = array( 'value' => $language_id, 'type' => 'integer' );
+                                            $table_fields[$this->config['tables'][$table_name]['language_field']] = array('value' => $language_id, 'type' => 'integer');
                                         } else {
                                             $extra_where_clause = " AND " . $this->config['tables'][$table_name]['alias'] . '.' . $this->config['tables'][$table_name]['language_field'] . " = $language_id";
                                         }
