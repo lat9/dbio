@@ -49,9 +49,9 @@ class DbIoSpecialsHandler extends DbIoHandler
 
         $products_id = $fields['products_id'];
         
-        $fields = $this->insertAtCustomizedPosition($fields, 'products_name', zen_get_products_name($products_id));
-        $fields = $this->insertAtCustomizedPosition($fields, 'products_model', zen_get_products_model($products_id));
-        $fields = $this->insertAtCustomizedPosition($fields, 'products_price', zen_get_products_base_price($products_id));
+        $fields['products_price'] = zen_get_products_base_price($products_id);
+        $fields['products_model'] = zen_get_products_model($products_id);
+        $fields['products_name'] = zen_get_products_name($products_id);
         $fields['v_dbio_command'] = '';
         return $fields;
     }
