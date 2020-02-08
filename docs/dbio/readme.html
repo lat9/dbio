@@ -346,8 +346,8 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td>Import, Export</td>
                   <td>Product Status, Manufacturer, Category</td>
                   <td>Yes</td>
-                  <td>This handler supports import/export of <b>all</b> fields within the <code>products</code> and <code>products_description</code> tables, the basic product information.<ol>
-                    <li>Starting with <em>DbIo</em> v1.1.0, a product's record can be located via either its <code>products_id</code> or <code>products_model</code> (both columns are required in the import file) and an existing product can be <em>removed</em> by creating a <code>v_dbio_command</code> column with a product's entry set to <code>REMOVE</code>.  Starting with v1.4.0, a product's record can be forced to be created when the <code>v_dbio_command</code> column for the product is set to <code>ADD</code>.</li>
+                  <td>This handler supports import/export of <b>all</b> fields within the <code>products</code>, <code>products_description</code> and <code>meta_tags_products_description</code> tables, the basic product information.<ol>
+                    <li>Starting with <em>DbIo</em> v1.1.0, a product's record can be located via either its <code>products_id</code> or <code>products_model</code> (<b>both columns are <em>required</em> in the import file</b>) and an existing product can be <em>removed</em> by creating a <code>v_dbio_command</code> column with a product's entry set to <code>REMOVE</code>.  Starting with v1.4.0, a product's record can be forced to be created when the <code>v_dbio_command</code> column for the product is set to <code>ADD</code>.</li>
                     <li>Starting with v1.3.0, if a non-existent category is specified in a <code>v_categories_name</code> field, you control whether that category is automatically generated; see the <em>Configure</em> tab for more information.  Note that categories cannot be created within categories that currently contain products and that products cannot be added to categories that currently contain sub-categories.</li>
                   </ol></td>
                   <td>Complete Products</td>
@@ -412,7 +412,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td>Export</td>
                   <td>None</td>
                   <td>No</td>
-                  <td>This handler supports export of <b>all</b> fields present in the <code>dbio_stats</code> table, where <em>DbIo</em> records its statistics.  After the table is exported, the table is emptied.</td>
+                  <td>This handler supports export of <b>all</b> fields present in the <code>dbio_stats</code> table, where <em>DbIo</em> records its statistics.  Starting with v1.6.0, once the table is exported, the table is emptied.</td>
                   <td>&mdash;</td>
                 </tr>  
                 
@@ -485,7 +485,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
               <p>This section displays the export options available for the currently-selected handler. Some of the handlers, like <em>Orders</em> shown below, make use of additional filters that enable you to limit the export's output and/or enable export-template customizations.</p>
               <p>Filters, if supported by the selected handler, aren't displayed initially, since the generation of those filters can have a negative impact on the tools's performance for stores with large databases.  When you tick the &quot;show/hide filters&quot; box, that enables/disables the automatic rendering of the filters for <strong>all</strong> handlers (the selection is stored in the currently-logged-in admin's session variables).</p>
               <p>Templates, if supported by the selected handler, enable you to export a subset of the handler's fields.  Refer to the <strong>Manage DbIo Templates</strong> tab for additional information.  When a handler supports templates, like <em>Orders</em>, you can use a previously-customized template or click the &quot;Manage Templates&quot; button to create a new one.</p>
-              <p>Make your choices from the options provided by the current handler and click the <b><em>Export</em></b> button; the exported <code class="no-pad">.csv</code> file will be created in the <code class="no-pad">/YOUR_ADMIN/dbio</code> folder.</p>
+              <p>Make your choices from the options provided by the current handler and click the <b><em>Export</em></b> button; the exported <code class="no-pad">.csv</code> file will be created in the <code class="no-pad">/YOUR_ADMIN/dbio</code> folder.  Starting with v1.6.0, if you tick the checkbox next to the <b><em>Export</em></b> button, the generated .csv file will be immediately downloaded upon export; that setting is &quot;remembered&quot; in the currently-logged-in admin's session.</p>
               <p><strong>Note:</strong> Additional processing time will be required for the <em>DbIo Manager</em> export if you have the plugin's debug-mode enabled.</p>
               <img class="wide" src="export_area.jpg" alt="DbIo Export Area" title="DbIo Export Area" />
             </div>
@@ -510,7 +510,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
               <img src="import_area.jpg" alt="DbIo Import/Action Area" title="DbIo Import/Action Area" />
               <p>This section of the <em>DbIo Manager</em> enables you to manage the .csv files present in your site's <code class="no-pad">/YOUR_ADMIN/dbio</code> folder and the <em>DbIo</em>-generated .log files present in your site's <code class="no-pad">/YOUR_ADMIN/dbio/logs</code> folder.</p>
               <p>You can delete selected files by ticking the associated checkbox(es) in the <b>Delete?</b> column and then clicking the &quot;Delete&quot; button &mdash; you'll receive a confirmation pop-up just to make sure.</p>
-              <p class="clearBoth">You can also use the dropdown selection at the top of the display to perform additional actions on the selected via associated radio-button in the <b>Choose File</b> column:</p>
+              <p class="clearBoth">You can also use the dropdown selection at the top of the display to perform additional actions on the file selected via radio-button in the <b>Choose File</b> column:</p>
               <ol>
                 <li><b>Split</b>. Causes the associated .csv file to be <em>split</em> into multiple (and, thus, smaller) files to enable their download.  Refer to the <em>Split Record Count</em> displayed in the configuration area and change that if needed; the value identifies the number of records (i.e. lines in the .csv) that will be associated with each &quot;split&quot;.</li>
                 <li><b>Import (Full)</b>. Results in the associated .csv file to be <em>imported</em> into your site's database.  Make sure that you've created a database backup, just in case something goes awry!  Note also that a full import should <b>never, ever</b> be run with the <em>DbIo's</em> debug enabled; that will severely reduce the amount of processing that can be performed!</li>
@@ -523,7 +523,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
             
             <div id="dbio_files">
               <noscript><h3>DbIo File Locations</h3></noscript>
-              <p><em>DbIo</em> pre-defines the folder <code class="no-pad">/YOUR_ADMIN/dbio</code> as the location that your comma-separated-value (CSV) files reside.  Whenever <em>DbIo</em> outputs (exports) a datafile, the file is created in this folder; any <code class="no-pad">.csv</code> files found in this folder are displayed within the <em>DbIo</em>'s &quot;Import/File-Action Area&quot;.</p>
+              <p><em>DbIo</em> pre-defines the folder <code class="no-pad">/YOUR_ADMIN/dbio</code> as the location that your comma-separated-value (CSV) files reside.  Whenever <em>DbIo</em> outputs (exports) a datafile, the file is created in this folder; any <code class="no-pad">.csv</code> files <em>associated with the currently-active handler</em> found in this folder are displayed within the <em>DbIo</em>'s &quot;Import/File-Action Area&quot;.</p>
               <p>When you enable <em>DbIo's</em> debug, using <em>Configuration-&gt;DbIo Manager Settings-&gt;Enable Debug?</em>, the log files are created within the folder <code class="no-pad">/YOUR_ADMIN/dbio/logs</code>.</p>
             </div>
             
@@ -588,7 +588,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <noscript><h3>Version History</h3></noscript>
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
         <ul>
-          <li>v1.6.0, 2020-01-30:<ul>
+          <li>v1.6.0, 2020-02-08:<ul>
             <li>BUGFIX: Update <em>ProductsHandler</em> to include the products' meta-tags' language-based settings.</li>
             <li>BUGFIX: <em>ProductsAttribsRawHandler</em><ol type="a">
                 <li>Ensure the export properly outputs possibly not present fields.</li>
