@@ -2,13 +2,13 @@
 
 The `ProductsHandler` supports the import and export of product-related fields for your Zen Cart.
 
-| Feature Name                  | Comments                                                     |
-| ----------------------------- | ------------------------------------------------------------ |
-| Export/Import                 | Both                                                         |
-| Customized Fields for Export  | &check;                                                      |
-| Export Filters                | Product's Status, Product's Manufacturer, Product's Category |
-| Required Columns (aka Fields) | `v_products_id`, `v_products_model`                          |
-| DbIo Commands                 | `REMOVE`, `ADD`                                              |
+| Feature Name                             | Comments                                                     |
+| ---------------------------------------- | ------------------------------------------------------------ |
+| Export/Import                            | Both                                                         |
+| Customized Fields for Export             | &check;                                                      |
+| Export Filters                           | Product's Status, Product's Manufacturer, Product's Category |
+| Required Columns (aka Fields) for Import | `v_products_id`, `v_products_model`                          |
+| DbIo Commands                            | `REMOVE`, `ADD`                                              |
 
 ## Special Fields
 
@@ -26,6 +26,14 @@ This handler supports some additional "special" fields:
 This handler uses a couple of Database I/O Manager configuration settings that control import features:
 
 ![products_configuration_settings](./products_configuration_settings.png)
+
+### Allow Duplicate Models?
+
+This setting, which defaults to **No** on installation, indicates whether (**Yes**) or not to allow duplicate model numbers to be applied to products on an import.  If set to **No**, a csv-line import that would result in a duplicate model-number to be applied is not imported.
+
+### Auto-create Categories on Import?
+
+This setting, which defaults to **No** on installation, indicates whether (**Yes**) or not to automatically create otherwise non-existent categories when importing a product.  If set to **No**, a csv-line import that contains an undefined `v_categories_name` and would result in a product's addition/insert is not imported.
 
 ## Export Features
 
