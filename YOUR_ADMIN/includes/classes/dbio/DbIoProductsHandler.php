@@ -19,7 +19,7 @@ class DbIoProductsHandler extends DbIoHandler
         global $db;
         DbIoHandler::loadHandlerMessageFile('Products'); 
         return array(
-            'version' => '1.6.0',
+            'version' => '1.6.2',
             'handler_version' => '1.6.0',
             'include_header' => true,
             'export_only' => false,
@@ -322,6 +322,31 @@ class DbIoProductsHandler extends DbIoHandler
         $fields[] = '';
 
         return $fields;
+    }
+ 
+    // -----
+    // Since this handler joins to the 'meta_tags_products_description' language-based table, we'll need
+    // to override the 'FROM' clause for the to-be-generated SQL to gather *only* the records for the
+    // first/only selected language.  Otherwise, duplicated (and incorrect) records will be exported.
+    //
+    public function exportGetSql($sql_limit = '') 
+    {
+        if (!isset($this->export_language) || !isset($this->select_clause)) {
+            trigger_error('Export aborted: DbIo export sequence error; not previously initialized.', E_USER_ERROR);
+            exit();
+        }
+        
+        $language_code = ($this->export_language == 'all') ? $this->first_language_code : $this->export_language;
+        $language_id = $this->languages[$language_code];
+        $this->from_clause =
+            TABLE_PRODUCTS . " AS p
+                INNER JOIN " . TABLE_PRODUCTS_DESCRIPTION . " AS pd
+                    ON pd.products_id = p.products_id
+                LEFT JOIN " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . " AS mtpd
+                    ON mtpd.products_id = p.products_id
+                   AND mtpd.language_id = $language_id";
+         
+        return parent::exportGetSql($sql_limit);
     }
 
 // ----------------------------------------------------------------------------------
