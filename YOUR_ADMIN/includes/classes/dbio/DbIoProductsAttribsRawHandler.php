@@ -24,7 +24,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile('ProductsAttribsRaw'); 
         return array(
-            'version' => '1.6.0',
+            'version' => '1.6.2',
             'handler_version' => '1.4.0',
             'include_header' => true,
             'export_only' => false,
@@ -316,7 +316,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     //
     protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
     {
-        if ($table_name == TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
+        if ($this->operation != 'check' && $table_name == TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
             // -----
             // Grab the current 'products_attributes_id', location dependent on whether the base attribute
             // record is an import or update.
