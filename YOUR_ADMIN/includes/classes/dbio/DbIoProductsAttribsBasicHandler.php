@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2019, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2020, Vinos de Frutas Tropicales.
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -21,9 +21,9 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
 {
     public static function getHandlerInformation()
     {
-        DbIoHandler::loadHandlerMessageFile('ProductsAttribsBasic');      
+        DbIoHandler::loadHandlerMessageFile('ProductsAttribsBasic');
         return array(
-            'version' => '1.0.`',
+            'version' => '1.6.2',
             'handler_version' => '1.0.0',
             'include_header' => true,
             'export_only' => false,
@@ -183,7 +183,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
             
             $option_check = $db->Execute(
                 "SELECT products_options_id FROM " . TABLE_PRODUCTS_OPTIONS . "
-                  WHERE products_options_name = '" . $db->prepare_input ($products_options_name) . "'
+                  WHERE products_options_name = '" . $db->prepare_input($products_options_name) . "'
                     AND language_id = $language_id
                     AND products_options_type = " . (int)$products_options_type . " 
                     LIMIT 1", 
@@ -198,11 +198,11 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
                 $products_options_id = $option_check->fields['products_options_id'];
 
                 $options_values_names = explode('^', $this->saved_data['option_values']);
-                $options_values_list = '';
+                $options_values = array();
                 foreach ($options_values_names as $current_value_name) {
-                    $options_values_list .= "'$current_value_name', ";
+                    $options_values[] = $db->prepare_input($current_value_name);
                 }
-                $options_values_list = dbio_substr($options_values_list, 0, -2);
+                $options_values_list = "'" . implode("', '", $options_values) . "'";
                 $options_values_check = $db->Execute(
                     "SELECT pov.products_options_values_id, pov.products_options_values_name
                       FROM " . TABLE_PRODUCTS_OPTIONS_VALUES . " pov, " . TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS . " pov2po
