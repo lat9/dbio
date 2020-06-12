@@ -24,7 +24,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile('ProductsAttribsRaw'); 
         return array(
-            'version' => '1.6.2',
+            'version' => '1.6.3',
             'handler_version' => '1.4.0',
             'include_header' => true,
             'export_only' => false,
@@ -278,14 +278,14 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     // line of the imported CSV receives two 'importBuildSqlQuery' requests.  This function enables the addition of the
     // previous record's 'record_key', i.e. the products_attributes_id, to the to-be-generated SQL for the downloads.
     //
-    // At this time, if products_attributes_download::products_attributes_filename is empty, the record (on a full import)
-    // will be deleted.
+    // At this time, if products_attributes_download::products_attributes_filename is empty and the attribute is pre-existing, 
+    // the products_attributes_download record (on a full import) will be deleted.
     //
     protected function importUpdateRecordKey($table_name, $table_fields, $record_key_value)
     {
         $proceed_with_update = true;
         if ($table_name == TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
-            if (empty($table_fields['products_attributes_filename']['value'])) {
+            if (!$this->import_is_insert && empty($table_fields['products_attributes_filename']['value'])) {
                 $proceed_with_update = false;
 
                 // -----
