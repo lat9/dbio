@@ -82,7 +82,7 @@ abstract class DbIoHandler extends base
         
         $this->languages = array();
         if (!class_exists('language')) {
-            require DIR_WS_CLASSES . 'language.php';
+            require DIR_FS_CATALOG . DIR_WS_CLASSES . 'language.php';
           
         }
         $languages = new language;

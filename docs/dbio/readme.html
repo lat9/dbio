@@ -590,7 +590,9 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <ul>
           <li>v1.6.3-beta1, 2020-06-12:<ul>
             <li>BUGFIX: Correct &quot;ProductsAttribsRaw&quot; full-import MySQL error when inserting a new attribute.</li>
+            <li>BUGFIX: Update needed for Zen Cart 1.5.7 interoperation.</li>
             <li>The following files were changed:<ol>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsRawHandler.php</li>
               <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
             </ol></li>
