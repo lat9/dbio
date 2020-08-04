@@ -19,7 +19,7 @@ class DbIoProductsHandler extends DbIoHandler
         global $db;
         DbIoHandler::loadHandlerMessageFile('Products'); 
         return array(
-            'version' => '1.6.2',
+            'version' => '1.6.4',
             'handler_version' => '1.6.0',
             'include_header' => true,
             'export_only' => false,
@@ -191,11 +191,11 @@ class DbIoProductsHandler extends DbIoHandler
             unset ($fields['products_tax_class_id']);
         }
         
-        $default_language_code = $this->first_language_code;
+        $first_language_code = $this->first_language_code;
         global $db;
 
         if ($this->export_language == 'all') {
-            $this->debugMessage('Products::exportPrepareFields, language = ' . $this->export_language . ', default language = ' . $default_language_code . ', saved data: ' . print_r($this->saved_data, true) . ', languages: ' . print_r($this->languages, true));
+            $this->debugMessage('Products::exportPrepareFields, language = ' . $this->export_language . ', default language = ' . $first_language_code . ', saved data: ' . print_r($this->saved_data, true) . ', languages: ' . print_r($this->languages, true));
             
             // -----
             // Check for, and insert, any additional language fields for the 'products_description' table.  The
@@ -211,7 +211,7 @@ class DbIoProductsHandler extends DbIoHandler
                 $previous_language_code = '';
                 $language_fields = array();
                 foreach ($this->languages as $language_code => $language_id) {
-                    if ($language_code != $default_language_code) {
+                    if ($language_code != $first_language_code) {
                         $description_info = $db->Execute(sprintf($this->saved_data['products_description_sql'], $products_id, $language_id));
                         if (!$description_info->EOF) {
                             $encoded_fields = $this->exportEncodeData($description_info->fields);
@@ -255,7 +255,7 @@ class DbIoProductsHandler extends DbIoHandler
                 // The meta-tags language-related fields are a bit different, since they might not be present!
                 //
                 foreach ($this->languages as $language_code => $language_id) {
-                    if ($language_code != $default_language_code) {
+                    if ($language_code != $first_language_code) {
                         $metatags_info = $db->Execute(sprintf($this->saved_data['products_metatags_sql'], $products_id, $language_id));
                         if (!$metatags_info->EOF) {
                             $metatags_fields = $metatags_info->fields;
@@ -286,36 +286,67 @@ class DbIoProductsHandler extends DbIoHandler
                 }
             }
         }
-      
+        
         // -----
-        // Add the manufacturer's name to the export, if enabled.
+        // Add the programmatically-generated fields, if present for the export (they might be either not
+        // required or in a different order if the export's using a customized template).  These need to
+        // be added to the export **in the order specified by the headers** to ensure that the data-value
+        // columns line up properly to their associated headings, e.g. if the manufacturer's name is to be
+        // included after the categories' name.
         //
-        if (!($this->config['additional_headers']['v_manufacturers_name'] & self::DBIO_FLAG_NO_EXPORT)) {
-            $fields = $this->insertAtCustomizedPosition($fields, 'manufacturers_name', zen_get_products_manufacturers_name($products_id));
+        foreach ($this->headers as $this_column) {
+            switch ($this_column) {
+                case 'v_manufacturers_name':
+                    // -----
+                    // Add the manufacturer's name to the export, if enabled.
+                    //
+                    if (!($this->config['additional_headers']['v_manufacturers_name'] & self::DBIO_FLAG_NO_EXPORT)) {
+                        $fields = $this->insertAtCustomizedPosition($fields, 'manufacturers_name', zen_get_products_manufacturers_name($products_id));
+                    }
+                    break;
+                    
+                case 'v_tax_class_title':
+                    // -----
+                    // Add the tax-class title to the export, if enabled.
+                    //
+                    if (!($this->config['additional_headers']['v_tax_class_title'] & self::DBIO_FLAG_NO_EXPORT)) {
+                        $tax_class_info = $db->Execute(
+                            "SELECT tax_class_title 
+                               FROM " . TABLE_TAX_CLASS . " 
+                              WHERE tax_class_id = $tax_class_id 
+                              LIMIT 1"
+                        );
+                        $fields = $this->insertAtCustomizedPosition($fields, 'tax_class_title', ($tax_class_info->EOF) ? '' : $tax_class_info->fields['tax_class_title']);            
+                    }
+                    break;
+
+                case 'v_categories_name':
+                    // -----
+                    // Add the product's category-path to the export, if enabled.
+                    //
+                    if (!($this->config['additional_headers']['v_categories_name'] & self::DBIO_FLAG_NO_EXPORT)) {
+                        $cPath_array = explode('_', zen_get_product_path($products_id));
+                        $default_language_id = $this->languages[DEFAULT_LANGUAGE];
+                        $categories_name = '';
+                        foreach ($cPath_array as $next_category_id) {
+                            $category_info = $db->Execute(
+                                "SELECT categories_name 
+                                   FROM " . TABLE_CATEGORIES_DESCRIPTION . " 
+                                  WHERE categories_id = $next_category_id 
+                                    AND language_id = $default_language_id 
+                                  LIMIT 1"
+                            );
+                            $categories_name .= (($category_info->EOF) ? self::DBIO_UNKNOWN_VALUE : $category_info->fields['categories_name']) . '^';
+                        }
+                        $fields = $this->insertAtCustomizedPosition($fields, 'categories_name', $this->exportEncodeData(dbio_substr($categories_name, 0, -1)));
+                    }
+                    break;
+
+                default:
+                    break;
+            }
         }
 
-        // -----
-        // Add the tax-class title to the export, if enabled.
-        //
-        if (!($this->config['additional_headers']['v_tax_class_title'] & self::DBIO_FLAG_NO_EXPORT)) {
-            $tax_class_info = $db->Execute("SELECT tax_class_title FROM " . TABLE_TAX_CLASS . " WHERE tax_class_id = $tax_class_id LIMIT 1");
-            $fields = $this->insertAtCustomizedPosition($fields, 'tax_class_title', ($tax_class_info->EOF) ? '' : $tax_class_info->fields['tax_class_title']);            
-        }
-      
-        // -----
-        // Add the product's category-path to the export, if enabled.
-        //
-        if (!($this->config['additional_headers']['v_categories_name'] & self::DBIO_FLAG_NO_EXPORT)) {
-            $cPath_array = explode('_', zen_get_product_path($products_id));
-            $default_language_id = $this->languages[DEFAULT_LANGUAGE];
-            $categories_name = '';
-            foreach ($cPath_array as $next_category_id) {
-                $category_info = $db->Execute("SELECT categories_name FROM " . TABLE_CATEGORIES_DESCRIPTION . " WHERE categories_id = $next_category_id AND language_id = $default_language_id LIMIT 1");
-                $categories_name .= (($category_info->EOF) ? self::DBIO_UNKNOWN_VALUE : $category_info->fields['categories_name']) . '^';
-            }
-            $fields = $this->insertAtCustomizedPosition($fields, 'categories_name', $this->exportEncodeData(dbio_substr($categories_name, 0, -1)));
-        }
-        
         // -----
         // Now, add an empty column at the very end to hold the 'v_dbio_command' when the CSV is imported.
         //
