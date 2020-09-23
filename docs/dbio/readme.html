@@ -259,6 +259,10 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td>Choose whether (<b>Yes</b>) or not (<b>No</b>) any <code class="no-pad">Products</code> import should be allowed to change an existing product's &quot;model number&quot;.  Default: <b>No</b>. <span class="smaller">(Introduced in v1.1.0)</span></td>
                 </tr>
                 <tr>
+                  <td><em>Products</em>: Product Creation Requires Command?</td>
+                  <td>Does a <em>Products</em> import require a DbIo <code>ADD</code> command? Choose <b>No</b> (the default) to allow products to be created if no matching products_id and/or products_model is found.<br><br>Choose <b>Yes</b> to disallow any product-import that results in a new product unless the <code>ADD</code> command is present. <span class="smaller">(Introduced in v1.6.4)</span></td>
+                </tr>
+                <tr>
                   <td><em>Products</em>: Auto-Create Categories on Import?</td>
                   <td>How should the <em>DbIo</em> handle missing categories on a <em>Products</em> import?  Choose <b>Yes</b> to have any missing categories automatially generated; choose <b>No</b> (the default) to disallow any product imports when the categories don't previously exist. <span class="smaller">(Introduced in v1.3.0)</span></td>
                 </tr>
@@ -593,12 +597,14 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
             <li>BUGFIX: Correct multi-lingual, customized-template export might have missing fields or fields in the wrong order.</li>
             <li>BUGFIX: Correct message missing when multiple <code>v_dbio_command</code> columns found in input.</li>
             <li>BUGFIX: Correct valid date detection.</li>
+            <li>BUGFIX: Additional configuration setting to require <code>Products</code> inserts to include a DbIo <em>ADD</em> command.</li>
             <li>The following files were changed:<ol>
               <li>/YOUR_ADMIN/dbio_manager.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
               <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
               <li>/YOUR_ADMIN/includes/languages/english/dbio/dbio_messages.php</li>
+              <li>/YOUR_ADMIN/includes/languages/english/dbio_manager.php</li>
             </ol></li>
           </ul></li>
           <li>v1.6.3, 2020-06-28:<ul>

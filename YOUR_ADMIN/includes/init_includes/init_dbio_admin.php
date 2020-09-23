@@ -151,7 +151,19 @@ if (DBIO_CURRENT_VERSION != $dbio_current_version) {
                 "INSERT IGNORE INTO " . TABLE_CONFIGURATION . " 
                     ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) 
                 VALUES 
-                    ( '<em>Products</em>: Auto-Create Categories on Import?', 'DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES', 'No', 'How should the <em>DbIo</em> handle missing categories on a <em>Products</em> import?  Choose <b>Yes</b> to have any missing categories automatially generated; choose <b>No</b> (the default) to disallow any product imports when the categories don\'t previously exist.', $cgi, 150, now(), NULL, 'zen_cfg_select_option(array(\'Yes\', \'No\'),')");
+                    ( '<em>Products</em>: Auto-Create Categories on Import?', 'DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES', 'No', 'How should the <em>DbIo</em> handle missing categories on a <em>Products</em> import?  Choose <b>Yes</b> to have any missing categories automatially generated; choose <b>No</b> (the default) to disallow any product imports when the categories don\'t previously exist.', $cgi, 150, now(), NULL, 'zen_cfg_select_option(array(\'Yes\', \'No\'),')"
+            );
+        }
+    }
+    
+    if (version_compare($dbio_current_version, '1.6.4', '<')) {
+        if (!defined('DBIO_PRODUCTS_INSERT_REQUIRES_COMMAND')) {
+            $db->Execute(
+                "INSERT IGNORE INTO " . TABLE_CONFIGURATION . " 
+                    ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) 
+                VALUES 
+                    ( '<em>Products</em>: Product Creation Requires Command?', 'DBIO_PRODUCTS_INSERT_REQUIRES_COMMAND', 'No', 'Does a <em>Products</em> import require a DbIo <code>ADD</code> command? Choose <b>No</b> (the default) to allow products to be created if no matching products_id and/or products_model is found.<br><br>Choose <b>Yes</b> to disallow any product-import that results in a new product unless the <code>ADD</code> command is present.', $cgi, 110, now(), NULL, 'zen_cfg_select_option(array(\'Yes\', \'No\'),')"
+            );
         }
     }
 

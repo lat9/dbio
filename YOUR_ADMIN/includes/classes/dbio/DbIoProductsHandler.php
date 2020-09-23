@@ -688,35 +688,48 @@ class DbIoProductsHandler extends DbIoHandler
             //
             } else {
                 // -----
+                // Check to see whether an import is allowed without an associated "ADD" command.  If not and either no
+                // v_dbio_command column is present or that column doesn't contain that command, deny the record import.
+                //
+                if (defined('DBIO_PRODUCTS_INSERT_REQUIRES_COMMAND') && DBIO_PRODUCTS_INSERT_REQUIRES_COMMAND == 'Yes') {
+                    if (!isset($this->dbio_command_index) || $data[$this->dbio_command_index] != self::DBIO_COMMAND_ADD) {
+                        $this->record_status = false;
+                        $this->debugMessage("Record at line#" . $this->stats['record_count'] . " not imported; v_dbio_command must be set to 'ADD' for a product addition.", self::DBIO_WARNING);
+                    }
+                }
+                
+                // -----
                 // To 'insert' (i.e. add) a product, the categories_name field must be non-blank and at least one
                 // of the products_model or products_name, products_url or products description (in at least one of the
                 // store's languages) must also be non-blank.
                 //
-                $categories_name = $this->importGetFieldValue('categories_name', $data);
-                if (empty($categories_name)) {
-                    $this->record_status = false;
-                    $this->debugMessage("Record at line#" . $this->stats['record_count'] . " not imported; 'v_categories_name' must be supplied for a product addition.", self::DBIO_WARNING);
-                } else {
-                    $record_ok = false;
-                    if (!empty($this->importGetFieldValue('products_model', $data))) {
-                        $record_ok = true;
+                if ($this->record_status === true) {
+                    $categories_name = $this->importGetFieldValue('categories_name', $data);
+                    if (empty($categories_name)) {
+                        $this->record_status = false;
+                        $this->debugMessage("Record at line#" . $this->stats['record_count'] . " not imported; 'v_categories_name' must be supplied for a product addition.", self::DBIO_WARNING);
                     } else {
-                        foreach ($this->languages as $id => $language_id) {
-                            if (!empty($this->importGetLanguageFieldValue('products_name', $language_id))) {
-                                $record_ok = true;
-                                break;
-                            }
-                            if (!empty($this->importGetLanguageFieldValue('products_description', $language_id))) {
-                                $record_ok = true;
-                                break;
-                            }
-                            if (!empty($this->importGetLanguageFieldValue('products_url', $language_id))) {
-                                $record_ok = true;
-                                break;
+                        $record_ok = false;
+                        if (!empty($this->importGetFieldValue('products_model', $data))) {
+                            $record_ok = true;
+                        } else {
+                            foreach ($this->languages as $id => $language_id) {
+                                if (!empty($this->importGetLanguageFieldValue('products_name', $language_id))) {
+                                    $record_ok = true;
+                                    break;
+                                }
+                                if (!empty($this->importGetLanguageFieldValue('products_description', $language_id))) {
+                                    $record_ok = true;
+                                    break;
+                                }
+                                if (!empty($this->importGetLanguageFieldValue('products_url', $language_id))) {
+                                    $record_ok = true;
+                                    break;
+                                }
                             }
                         }
+                        $this->record_status = $record_ok;
                     }
-                    $this->record_status = $record_ok;
                 }
             }
         }

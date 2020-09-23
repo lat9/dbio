@@ -22,6 +22,7 @@ define('TEXT_CSV_DATE_FORMAT', 'CSV: Import Date Format');
 define('TEXT_FILE_DEFAULT_SORT_ORDER', 'Default File Sort Order');
 define('TEXT_ALLOW_DUPLICATE_MODELS', 'Products: Allow Duplicate Models');
 define('TEXT_AUTO_CREATE_CATEGORIES', 'Products: Automatically Create Categories');
+define('TEXT_INSERT_REQUIRES_COMMAND', 'Products: Product Creation Requires Command');
 define('TEXT_MAX_EXECUTION', 'Maximum Execution Time');
 define('TEXT_SPLIT_RECORD_COUNT', 'Split Record Count');
 define('TEXT_DEBUG_ENABLED', 'Debug Enabled');
