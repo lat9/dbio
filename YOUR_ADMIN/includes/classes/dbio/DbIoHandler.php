@@ -616,6 +616,7 @@ abstract class DbIoHandler extends base
                     $current_field = self::DBIO_NO_IMPORT;
                     if (isset($this->dbio_command_index)) {
                         $this->debugMessage("importGetHeader, multiple v_dbio_command columns found; import cancelled.", self::DBIO_ERROR);
+                        $this->message = DBIO_ERROR_MULTIPLE_COMMAND_COLUMNS;
                         $initialization_complete = false;
                     } else {
                         $this->dbio_command_index = $key_index;
