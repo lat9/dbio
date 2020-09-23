@@ -588,14 +588,16 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <noscript><h3>Version History</h3></noscript>
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
         <ul>
-          <li>v1.6.4-beta2, 2020-08-04:<ul>
+          <li>v1.6.4-beta3, 2020-09-23:<ul>
             <li>BUGFIX: Correct CSV-split handling; split could occur mid-record.</li>
             <li>BUGFIX: Correct multi-lingual, customized-template export might have missing fields or fields in the wrong order.</li>
+            <li>BUGFIX: Correct message missing when multiple <code>v_dbio_command</code> columns found in input.</li>
             <li>The following files were changed:<ol>
               <li>/YOUR_ADMIN/dbio_manager.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
               <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+              <li>/YOUR_ADMIN/includes/languages/english/dbio/dbio_messages.php</li>
             </ol></li>
           </ul></li>
           <li>v1.6.3, 2020-06-28:<ul>
