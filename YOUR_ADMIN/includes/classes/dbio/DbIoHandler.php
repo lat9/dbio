@@ -259,7 +259,7 @@ abstract class DbIoHandler extends base
             $parsed_date = '';
         } else {
             $date_value = $date_value_in;
-            if (DBIO_IMPORT_DATE_FORMAT != 'm-d-y') {
+            if (DBIO_IMPORT_DATE_FORMAT != 'y-m-d') {
                 $date_time_split = explode(' ', $date_value);
                 $needle = (dbio_strpos($date_time_split[0], '/') !== false) ? '/' : '-';
                 $date_split = explode($needle, $date_time_split[0]);
@@ -267,7 +267,7 @@ abstract class DbIoHandler extends base
                     if (DBIO_IMPORT_DATE_FORMAT == 'd-m-y') {
                         $date_value = sprintf('%u-%02u-%02u', $date_split[2], $date_split[1], $date_split[0]);
                     } else {
-                        $date_value = sprintf('%u-%02u-%02u', $date_split[0], $date_split[1], $date_split[2]);
+                        $date_value = sprintf('%u-%02u-%02u', $date_split[2], $date_split[0], $date_split[1]);
                     }
                     if ($field_type == 'datetime' && isset($date_time_split[1])) {
                         $date_value .= ' ' . $date_time_split[1];
