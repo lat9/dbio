@@ -12,7 +12,8 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 class DbIoProductsHandler extends DbIoHandler 
 {
-    const DBIO_COMMAND_ADD    = 'ADD';   //-Forces the current product to be added, even if the model already exists.
+    const DBIO_COMMAND_ADD    = 'ADD';      //-Forces the current product to be added, even if the model already exists.
+    const DBIO_COMMAND_UNLINK = 'UNLINK';   //-Unlinks the product from the specified v_categories_name, so long as it's not the current master_category_id.
     
     public static function getHandlerInformation()
     {
@@ -405,14 +406,17 @@ class DbIoProductsHandler extends DbIoHandler
     // in the `meta_tags_products_description` table.  If no such fields are supplied, there won't be a need
     // to perform the 'clean-up' to keep that table's records 'in sync' with the main product.
     //
+    // The class variable categories_name_found, on exit, indicates whether/not the v_categories_name column
+    // is present.  This value is used by importHandleDbIoCommand's processing of an 'UNLINK' command.
+    //
     protected function importFinalizeHeader()
     {
-        $categories_name_found = false;
+        $this->categories_name_found = false;
         $required_fields_found = false;
         foreach ($this->headers as $current_header) {
             switch ($current_header) {
                 case 'categories_name':
-                    $categories_name_found = true;
+                    $this->categories_name_found = true;
                     break;
                 case 'products_model':
                 case 'products_name':
@@ -422,7 +426,7 @@ class DbIoProductsHandler extends DbIoHandler
                     break;
             }
         }
-        $this->import_can_insert = ($categories_name_found && $required_fields_found);
+        $this->import_can_insert = ($this->categories_name_found && $required_fields_found);
         
         // -----
         // If the import includes product-specific meta-tags, set an indication for use by
@@ -588,7 +592,11 @@ class DbIoProductsHandler extends DbIoHandler
     
     // -----
     // This function, called by the base DbIoHandler class when a non-blank v_dbio_command field is found in the
-    // current import-record, gives this handler a chance to REMOVE a product's information from the database.
+    // current import-record:
+    //
+    // - ADD:    Forces the current product-record to be inserted.
+    // - REMOVE: Removes a product from the database.
+    // - UNLINK: 'Unlinks' a product from a category **other than** the product's current master-categories-id.
     //
     protected function importHandleDbIoCommand($command, $data)
     {
@@ -596,23 +604,97 @@ class DbIoProductsHandler extends DbIoHandler
         $continue_line_import = false;
         $command = dbio_strtoupper($command);
         
-        if ($command == self::DBIO_COMMAND_ADD) {
-            $continue_line_import = true;
-            $this->import_is_insert = true;
-            $this->debugMessage("Forcing ADD of product at line #" . $this->stats['record_count'] . ', via DbIo command', self::DBIO_STATUS);
-        } elseif ($command == self::DBIO_COMMAND_REMOVE) {
-            if (!function_exists('zen_remove_product')) {
-                $this->debugMessage("Product not removed; missing zen_remove_product function.", self::DBIO_ERROR);
-            } elseif ($this->import_is_insert) {
-                $this->debugMessage("Product not removed at line #" . $this->stats['record_count'] . "; it does not exist.", self::DBIO_WARNING);
-            } else {
-                $this->debugMessage("Removing product ID #" . $this->key_fields['products_id'], self::DBIO_STATUS);
-                if ($this->operation != 'check') {
-                    zen_remove_product($this->key_fields['products_id']);
+        // -----
+        // Operation performed based on the command requested.
+        //
+        switch ($command) {
+            // -----
+            // ADD: The current CSV record's import can continue, forced as an insert operation.
+            //
+            case self::DBIO_COMMAND_ADD:
+                $continue_line_import = true;
+                $this->import_is_insert = true;
+                $this->debugMessage("Forcing ADD of product at line #" . $this->stats['record_count'] . ', via DbIo command', self::DBIO_STATUS);
+                break;
+                
+            // -----
+            // REMOVE: Removes a product from the database.  The function zen_remove_product and the product itself must 
+            // exist for the operation to complete. No additional CSV-record processing required.
+            //
+            case self::DBIO_COMMAND_REMOVE:
+                if (!function_exists('zen_remove_product')) {
+                    $this->debugMessage("Product not removed; missing zen_remove_product function.", self::DBIO_ERROR);
+                } elseif ($this->import_is_insert) {
+                    $this->debugMessage("Product not removed at line #" . $this->stats['record_count'] . "; it does not exist.", self::DBIO_WARNING);
+                } else {
+                    $this->debugMessage("Removing product ID #" . $this->key_fields['products_id'], self::DBIO_STATUS);
+                    if ($this->operation != 'check') {
+                        zen_remove_product($this->key_fields['products_id']);
+                    }
                 }
-            }
-        } else {
-            $this->debugMessage("Unrecognized command ($command) found at line #" . $this->stats['record_count'] . "; the operation was not performed.", self::DBIO_ERROR);
+                break;
+                
+            // -----
+            // UNLINK: Unlinks a product from the specified category-tree.  The product and the specified category must both
+            // exist and the category must not be the product's master_category_id.  No additional CSV-record processing required.
+            //
+            case self::DBIO_COMMAND_UNLINK:
+                if ($this->import_is_insert) {
+                    $this->debugMessage("Product not unlinked at line #" . $this->stats['record_count'] . "; product does not exist.", self::DBIO_ERROR);
+                    break;
+                }
+                if (!$this->categories_name_found) {
+                    $this->debugMessage("Product not unlinked at line #" . $this->stats['record_count'] . "; no 'v_categories_name' column present.", self::DBIO_ERROR);
+                    break;
+                }
+                $parent_category = 0;
+                $categories_name_ok = true;
+                $language_id = $this->languages[DEFAULT_LANGUAGE];
+                $categories = explode('^', $this->importGetFieldValue('categories_name', $data));
+                foreach ($categories as $current_category_name) {
+                    $category_info_sql = 
+                        "SELECT c.categories_id FROM " . TABLE_CATEGORIES . " c
+                                INNER JOIN " . TABLE_CATEGORIES_DESCRIPTION . " cd
+                                    ON cd.categories_id = c.categories_id
+                                   AND cd.language_id = $language_id
+                          WHERE c.parent_id = $parent_category 
+                            AND cd.categories_name = :categories_name: 
+                          LIMIT 1";
+                    $category_info = $db->Execute($db->bindVars($category_info_sql, ':categories_name:', $current_category_name, 'string'), false, false, 0, true);
+                    if ($category_info->EOF) {
+                        $this->debugMessage("Product not unlinked at line #" . $this->stats['record_count'] . "; category '$current_category_name' not present in the specified category-path.", self::DBIO_ERROR);
+                        $categories_name_ok = false;
+                    } else {
+                        $parent_category = $category_info->fields['categories_id'];
+                    }
+                }
+                if (!$categories_name_ok) {
+                    break;
+                }
+                
+                $products_sql = "SELECT master_categories_id FROM " . TABLE_PRODUCTS . " WHERE products_id = :key_value0: LIMIT 1";
+                $products_sql = $this->importBindKeyValues($data, $products_sql);
+                $master_cat_info = $db->Execute($products_sql, false, false, 0, true);
+                if ($master_cat_info->EOF) {
+                    $this->debugMessage("Error retrieving product's master-categories-id ($products_sql).  The UNLINK operation is not performed.", self::DBIO_ERROR);
+                    break;
+                }
+                if ($master_cat_info->fields['master_categories_id'] == $parent_category) {
+                    $this->debugMessage("The product at line #" . $this->stats['record_count'] . " was not unlinked from its master_categories_id.", self::DBIO_ERROR);
+                    break;
+                }
+                
+                $unlink_sql = "DELETE FROM " . TABLE_PRODUCTS_TO_CATEGORIES . " WHERE products_id = :key_value0: AND categories_id = $parent_category LIMIT 1";
+                $unlink_sql = $this->importBindKeyValues($data, $unlink_sql);
+                $log_status = ($this->operation == 'check') ? self::DBIO_WARNING : self::DBIO_INFORMATIONAL;
+                $this->debugMessage("Unlinking product at line #" . $this->stats['record_count'] . " from category #$parent_category.", $log_status);
+                if ($this->operation != 'check') {
+                    $db->Execute($unlink_sql);
+                }
+                break;
+            default:
+                $this->debugMessage("Unrecognized command ($command) found at line #" . $this->stats['record_count'] . "; the operation was not performed.", self::DBIO_ERROR);
+                break;
         }
         return $continue_line_import;
     }

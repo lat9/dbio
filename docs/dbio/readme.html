@@ -353,6 +353,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td>This handler supports import/export of <b>all</b> fields within the <code>products</code>, <code>products_description</code> and <code>meta_tags_products_description</code> tables, the basic product information.<ol>
                     <li>Starting with <em>DbIo</em> v1.1.0, a product's record can be located via either its <code>products_id</code> or <code>products_model</code> (<b>both columns are <em>required</em> in the import file</b>) and an existing product can be <em>removed</em> by creating a <code>v_dbio_command</code> column with a product's entry set to <code>REMOVE</code>.  Starting with v1.4.0, a product's record can be forced to be created when the <code>v_dbio_command</code> column for the product is set to <code>ADD</code>.</li>
                     <li>Starting with v1.3.0, if a non-existent category is specified in a <code>v_categories_name</code> field, you control whether that category is automatically generated; see the <em>Configure</em> tab for more information.  Note that categories cannot be created within categories that currently contain products and that products cannot be added to categories that currently contain sub-categories.</li>
+                    <li>Starting with v1.6.4, you can use the <code>UNLINK</code> command to unlink a product from the category identified by the <code>v_categories_name</code> field.  The product and the category must both exist and the <code>categories_id</code> assocated with that category's name must not be the product's &quot;master_categories_id&quot;.</li>
                   </ol></td>
                   <td>Complete Products</td>
                 </tr> 
@@ -598,6 +599,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
             <li>BUGFIX: Correct message missing when multiple <code>v_dbio_command</code> columns found in input.</li>
             <li>BUGFIX: Correct valid date detection.</li>
             <li>BUGFIX: Additional configuration setting to require <code>Products</code> inserts to include a DbIo <em>ADD</em> command.</li>
+            <li>CHANGE: The <code>UNLINK</code> command is now available to unlink a product from a category other than its <code>master_categories_id</code>.</li>
             <li>The following files were changed:<ol>
               <li>/YOUR_ADMIN/dbio_manager.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
