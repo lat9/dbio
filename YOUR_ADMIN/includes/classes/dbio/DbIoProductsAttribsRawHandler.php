@@ -178,24 +178,24 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     {
         global $db;
         if ($this->import_is_insert) {
-            $products_id = $this->importGetFieldValue('products_id', $data);
-            $check = $db->Execute("SELECT products_id FROM " . TABLE_PRODUCTS . " WHERE products_id = '$products_id' LIMIT 1");
+            $products_id = (int)$this->importGetFieldValue('products_id', $data);
+            $check = $db->Execute("SELECT products_id FROM " . TABLE_PRODUCTS . " WHERE products_id = $products_id LIMIT 1");
             if ($check->EOF) {
                 $this->record_status = false;
                 $this->debugMessage("ProductsAttribsRawHandler::importCheckKeyValue: Unknown products_id ($products_id) at line #" . $this->stats['record_count'] . ', record not inserted.', self::DBIO_WARNING);
             }
             unset ($check);
             
-            $options_id = $this->importGetFieldValue('options_id', $data);
-            $check = $db->Execute("SELECT products_options_id FROM " . TABLE_PRODUCTS_OPTIONS . " WHERE products_options_id = '$options_id' LIMIT 1");
+            $options_id = (int)$this->importGetFieldValue('options_id', $data);
+            $check = $db->Execute("SELECT products_options_id FROM " . TABLE_PRODUCTS_OPTIONS . " WHERE products_options_id = $options_id LIMIT 1");
             if ($check->EOF) {
                 $this->record_status = false;
                 $this->debugMessage("ProductsAttribsRawHandler::importCheckKeyValue: Unknown options_id ($options_id) at line #" . $this->stats['record_count'] . ', record not inserted.', self::DBIO_WARNING);
             }
             unset($check);
             
-            $options_values_id = $this->importGetFieldValue('options_values_id', $data);
-            $check = $db->Execute("SELECT products_options_values_id FROM " . TABLE_PRODUCTS_OPTIONS_VALUES . " WHERE products_options_values_id = '$options_values_id' LIMIT 1");
+            $options_values_id = (int)$this->importGetFieldValue('options_values_id', $data);
+            $check = $db->Execute("SELECT products_options_values_id FROM " . TABLE_PRODUCTS_OPTIONS_VALUES . " WHERE products_options_values_id = $options_values_id LIMIT 1");
             if ($check->EOF) {
                 $this->record_status = false;
                 $this->debugMessage("ProductsAttribsRawHandler::importCheckKeyValue: Unknown options_values_id ($options_values_id) at line #" . $this->stats['record_count'] . ', record not inserted.', self::DBIO_WARNING);
