@@ -24,7 +24,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile('ProductsAttribsRaw'); 
         return array(
-            'version' => '1.6.3',
+            'version' => '1.6.4',
             'handler_version' => '1.4.0',
             'include_header' => true,
             'export_only' => false,
@@ -47,8 +47,10 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
                     ON pa.products_id = p.products_id
                 INNER JOIN " . TABLE_PRODUCTS_OPTIONS . " AS po
                     ON pa.options_id = po.products_options_id
+                   AND po.language_id = " . (int)$_SESSION['languages_id'] . "
                 INNER JOIN " . TABLE_PRODUCTS_OPTIONS_VALUES . " AS pov
                     ON pa.options_values_id = pov.products_options_values_id
+                   AND pov.language_id = " . (int)$_SESSION['languages_id'] . "
                 LEFT JOIN " . TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD . " AS pad 
                     ON pa.products_attributes_id = pad.products_attributes_id
                 LEFT JOIN " . TABLE_MANUFACTURERS . " AS m
@@ -88,13 +90,6 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
         }
         $this->headers = array_values($this->headers);
 
-        // -----
-        // Tie all the tables together via the WHERE/AND clauses.
-        //
-        $this->where_clause = "
-                po.language_id = " . (int)$_SESSION['languages_id'] . "
-            AND pov.language_id = " . (int)$_SESSION['languages_id'];
-            
         $this->order_by_clause = "pa.products_id ASC, pa.options_id ASC, pa.options_values_id ASC";
         
         return parent::exportFinalizeInitialization();
