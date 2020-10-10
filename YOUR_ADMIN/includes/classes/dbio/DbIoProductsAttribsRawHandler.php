@@ -273,51 +273,32 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     // line of the imported CSV receives two 'importBuildSqlQuery' requests.  This function enables the addition of the
     // previous record's 'record_key', i.e. the products_attributes_id, to the to-be-generated SQL for the downloads.
     //
-    // At this time, if products_attributes_download::products_attributes_filename is empty and the attribute is pre-existing, 
-    // the products_attributes_download record (on a full import) will be deleted.
-    //
     protected function importUpdateRecordKey($table_name, $table_fields, $record_key_value)
     {
-        $proceed_with_update = true;
-        if ($table_name == TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
-            if (!$this->import_is_insert && empty($table_fields['products_attributes_filename']['value'])) {
-                $proceed_with_update = false;
-
-                // -----
-                // If the current DbIo operation is an import-check, simply output a debug message containing
-                // the record-deletion SQL.  Otherwise, actually run the SQL, removing that record.
-                //
-                $sql = 
-                    "DELETE FROM " . TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD . " WHERE products_attributes_id = " . $this->key_fields['products_attributes_id'] . " LIMIT 1";
-                if ($this->operation == 'check') {
-                    $this->debugMessage("importUpdateRecordKey, removing record: $sql", self::DBIO_STATUS);
-                } else {
-                    $GLOBALS['db']->Execute($sql);
-                }
-            } elseif ($this->import_is_insert) {
-                $table_fields['products_attributes_id'] = array(
-                    'value' => $record_key_value,
-                    'type' => 'integer',
-                );
-            }
+        if ($table_name == TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD && $this->import_is_insert) {
+            $table_fields['products_attributes_id'] = array(
+                'value' => $record_key_value,
+                'type' => 'integer',
+            );
         }
-        return ($proceed_with_update) ? $table_fields : false;
+        return $table_fields;
     }
     
     // -----
-    // This function, called to create an import-record's associated SQL, checks to see if the current attribute is to have a download-file associated with it.
-    // That's tested by the presence of a value (unchecked) in the 'products_attributes_filename' field.  If the value is present, the associated record in the
-    // 'products_attributes_download' table is created/modified; if that field's value is empty (a null-string), then any existing record will be removed.
+    // This function, called to create an import-record's associated SQL, checks to see if the current attribute is to 
+    // have an associated download-file, tested by the presence of a value in the 'products_attributes_filename' field in the record.
     //
     protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
     {
-        if ($this->operation != 'check' && $table_name == TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
+        $process_record = true;
+        if ($table_name == TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
             // -----
             // Grab the current 'products_attributes_id', location dependent on whether the base attribute
-            // record is an import or update.
+            // record is an import or update and indicate, initially, that the 'products_attributes_table' record
+            // is to be processed.
             //
-            $products_attributes_id = ($this->import_is_insert) ? $table_fields['products_attributes_id']['value'] : $this->key_fields['products_attributes_id'];
-            
+            $products_attributes_id = ($this->import_is_insert) ? (int)$table_fields['products_attributes_id']['value'] : $this->key_fields['products_attributes_id'];
+
             // -----
             // Check to see if we're to insert an attributes' download record for a pre-existing
             // attribute (the base attribute will be updated, but the download information inserted).
@@ -331,16 +312,81 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
             if ($check->EOF) {
                 $is_override = true;
                 $is_insert = true;
-                $table_fields['products_attributes_id'] = array(
-                    'value' => $products_attributes_id,
-                    'type' => 'integer',
-                );
             }
-            if (!$this->import_is_insert || ($is_override && !$is_insert)) {
-                $this->where_clause = "pad.products_attributes_id = " . $this->key_fields['products_attributes_id'];
+            
+            // -----
+            // Check to see if a download filename is supplied and continue based on the action to be
+            // performed.
+            //
+            // - Inserting a totally new attribute or adding a download to an existing attribute:
+            //   - If the 'products_attributes_filename' is either not provided or is an empty string
+            //     - No 'products_attributes_download' record is added.
+            //   - Elseif the field is not a valid filename
+            //     - Disallow the 'products_attributes_download' record insert, noting that the attribute's record might have been previously added!
+            //   - Else
+            //     - Insert the 'products_attributes_download' record.
+            // - Else, updating an existing attribute with an existing download record:
+            //   - If the 'products_attributes_filename' field is not provided in the record
+            //     - No change to the 'products_attributes_download' table.
+            //   - Elseif the field is set to 'REMOVE' (capitalization required)
+            //     - Remove the 'products_attributes_download' record from the pre-existing attribute.
+            //   - Elseif the field is not a valid filename
+            //     - Disallow the 'products_attributes_download' record update.
+            //   - Else
+            //     - Update the 'products_attributes_download' record.
+            //
+            $products_attributes_filename = array_key_exists('products_attributes_filename', $table_fields);
+            if ($products_attributes_filename !== false) {
+                $products_attributes_filename = trim($table_fields['products_attributes_filename']['value']);
+            }
+
+            if ($this->import_is_insert || ($is_override && $is_insert)) {
+                if ($products_attributes_filename === false || $products_attributes_filename === '') {
+                    $process_record = false;
+                    $this->debugMessage("ProductsAttribsRaw::importBuildSqlQuery, no download record added, no filename provided.");
+                } elseif (!$this->checkDownloadFilename($products_attributes_filename)) {
+                    $process_record = false;
+                    $this->debugMessage("Invalid download filename ($products_attributes_filename) found at line #" . $this->stats['record_count'] . "; no 'products_attributes_download' record inserted.", self::DBIO_ERROR);
+                } else {
+                    $table_fields['products_attributes_id'] = array(
+                        'value' => $products_attributes_id,
+                        'type' => 'integer',
+                    );
+                }
+            } else {
+                if ($products_attributes_filename === false) {
+                    $process_record = false;
+                    $this->debugMessage("ProductsAttribsRaw::importBuildSqlQuery, download not updated, no filename provided.");
+                } elseif ($products_attributes_filename === 'REMOVE') {
+                    $process_record = false;
+                    $this->debugMessage("ProductsAttribsRaw::importBuildSqlQuery, download record removed at line #" . $this->stats['record_count'] . " via REMOVE.");
+                    if ($this->operation != 'check') {
+                        $GLOBALS['db']->Execute(
+                            "DELETE FROM " . TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD . " 
+                              WHERE products_attributes_id = " . $this->key_fields['products_attributes_id'] . " 
+                              LIMIT 1"
+                        );
+                    }
+                } elseif (!$this->checkDownloadFilename($products_attributes_filename)) {
+                    $process_record = false;
+                    $this->debugMessage("Invalid download filename ($products_attributes_filename) found at line #" . $this->stats['record_count'] . "; the 'products_attributes_download' record was not updated.", self::DBIO_ERROR);
+                } else {
+                    $this->where_clause = "pad.products_attributes_id = " . $this->key_fields['products_attributes_id'];
+                }
             }
         }
-        return parent::importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause, $is_override, $is_insert);
+        return (!$process_record) ? false : parent::importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause, $is_override, $is_insert);
+    }
+    
+    // -----
+    // Provides a rudimentary check of a to-be-recorded download filename.  A filename is
+    // considered 'not good' if it's an empty string, starts with a '.' character (preventing ../filename.ext) or
+    // if the name contains one or more of the 'usual' invalid characters.
+    //
+    protected function checkDownloadFilename($filename)
+    {
+        $modifier = (DBIO_CHARSET == 'utf8') ? 'u' : '';
+        return !($filename === '' || dbio_substr($filename, 0, 1) == '.' || preg_match('#[<>:"|?*]#' . $modifier, $filename));
     }
     
     // -----

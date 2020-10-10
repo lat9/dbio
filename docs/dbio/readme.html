@@ -600,7 +600,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
             <li>BUGFIX: Correct valid date detection.</li>
             <li>BUGFIX: Additional configuration setting to require <code>Products</code> inserts to include a DbIo <em>ADD</em> command.</li>
             <li>CHANGE: The <code>UNLINK</code> command is now available to unlink a product from a category other than its <code>master_categories_id</code>.</li>
-            <li>BUGFIX: Correct <code>ProductsAttribsRaw</code> adding empty download filenames.</li>
+            <li>BUGFIX: Correct <code>ProductsAttribsRaw</code> handling for 'TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD'.</li>
             <li>The following files were changed:<ol>
               <li>/YOUR_ADMIN/dbio_manager.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
