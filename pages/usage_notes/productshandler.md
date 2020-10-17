@@ -8,7 +8,7 @@ The `ProductsHandler` supports the import and export of product-related fields f
 | Customized Fields for Export             | &check;                                                      |
 | Export Filters                           | Product's Status, Product's Manufacturer, Product's Category |
 | Required Columns (aka Fields) for Import | `v_products_id`, `v_products_model`                          |
-| DbIo Commands                            | `REMOVE`, `ADD`                                              |
+| DbIo Commands                            | `REMOVE`, `ADD`, `UNLINK` (added in v1.6.4)                  |
 
 ## Special Fields
 
@@ -19,7 +19,7 @@ This handler supports some additional "special" fields:
 | v_manufacturers_name | The 'name' associated with the product's `manufacturers_id`. |
 | v_tax_class_title    | The 'name' associated with the product's `products_tax_class_id`. |
 | v_categories_name    | The name(s) associated with the product's `master_categories_id`, using the store's _default language_.  This is represented by `^`-separated names reflecting the product's category path. |
-| v_dbio_command       | Can be either an empty string (no command), `ADD` to force the addition/insertion of a product's definition or `REMOVE` to cause the product to be removed from the database. |
+| v_dbio_command       | Can be either an empty string (no command), `ADD` to force the addition/insertion of a product's definition, `REMOVE` to cause the product to be removed from the database or `UNLINK` to unlink the product from a category other than its master-category. |
 
 ## Configuration Settings
 
@@ -31,9 +31,21 @@ This handler uses a couple of Database I/O Manager configuration settings that c
 
 This setting, which defaults to **No** on installation, indicates whether (**Yes**) or not to allow duplicate model numbers to be applied to products on an import.  If set to **No**, a csv-line import that would result in a duplicate model-number to be applied is not imported.
 
+### Product Creation Requires Command?
+
+This setting, added for v1.6.4, indicates whether (**Yes**) or not (**No**, the default) a *DbIo* `ADD` command is required to create a product if no matching `v_products_id` or `v_products_model` is found.
+
 ### Auto-create Categories on Import?
 
 This setting, which defaults to **No** on installation, indicates whether (**Yes**) or not to automatically create otherwise non-existent categories when importing a product.  If set to **No**, a csv-line import that contains an undefined `v_categories_name` and would result in a product's addition/insert is not imported.
+
+## Controlling a Product's Master and Linked Categories
+
+A product's import can optionally set the product's `master_categories_id` or add a product to a linked category:
+
+1. If the product is _new_, then the `v_categories_name` field must be present so that the product's `master_categories_id` can be determined.
+2. If the product is being updated, then the `v_categories_name` (if included) identifies the product's new `master_categories_id`.  The product's previous `master_categories_id` becomes a linked category.
+3. If the product exists and the `v_dbio_command` is set to `UNLINK`, then the product is removed from  `v_categories_name` if that category is not the product's current master-category.
 
 ## Export Features
 
