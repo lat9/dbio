@@ -7,3 +7,7 @@ The DbIo support-thread on the Zen Cart forums is located [here](https://www.zen
 ## Zen Cart Download Link
 
 The _**Database I/O Manager**_ can also be downloaded from the Zen Cart [support site](https://www.zen-cart.com/downloads.php?do=file&id=2091).
+
+## Handler-Specific Usage Notes
+
+Additional, handler-specific usage notes are documented [here](./pages/handler_specific_usage_notes.md).
