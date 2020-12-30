@@ -701,6 +701,9 @@ abstract class DbIoHandler extends base
                             case 'datetime':
                                 $field_type = $this->tables[$table_name]['fields'][$current_field]['data_type'];
                                 break;
+                            case 'enum':
+                                $field_type = 'enum';
+                                break;
                             case 'char':
                             case 'text':
                             case 'varchar':
@@ -1464,6 +1467,12 @@ abstract class DbIoHandler extends base
                         $field_value = dbio_substr($field_value, 0, $max_field_length);
                     }
                     break;
+                case 'enum':
+                    if (!in_array($field_value, $this->tables[$table_name]['fields'][$field_name]['enum_values'])) {
+                        $field_error = true;
+                        $this->debugMessage("[*] $import_table_name.$field_name, line#" . $this->stats['record_count'] . ": Value ($field_value) is not one of the field's enumerated values (" . implode(',', $this->tables[$table_name]['fields'][$field_name]['enum_values']) . ").", self::DBIO_ERROR);
+                    }
+                    break;
                 default:
                     $field_error = true;
                     $message = "Unknown datatype (" . $field_type . ") for $table_name::$field_name on line #" . $this->stats['record_count'];
@@ -1562,7 +1571,8 @@ abstract class DbIoHandler extends base
         
         $sql_query = "
              SELECT COLUMN_NAME as `column_name`, COLUMN_DEFAULT as `default`, IS_NULLABLE as `nullable`, DATA_TYPE as `data_type`, 
-                    CHARACTER_MAXIMUM_LENGTH as `max_length`, NUMERIC_PRECISION as `precision`, COLUMN_KEY as `key`, EXTRA as `extra`
+                    CHARACTER_MAXIMUM_LENGTH as `max_length`, NUMERIC_PRECISION as `precision`, COLUMN_KEY as `key`, EXTRA as `extra`,
+                    COLUMN_TYPE as `column_type`
                FROM INFORMATION_SCHEMA.COLUMNS 
               WHERE TABLE_SCHEMA = '" . DB_DATABASE . "' 
                 AND TABLE_NAME = '$table_name'
@@ -1582,6 +1592,21 @@ abstract class DbIoHandler extends base
             } else {
                 $table_info->fields['include_in_export'] = ($field_overrides !== false && isset($field_overrides[$column_name])) ? $field_overrides[$column_name] : true;
             }
+
+            // -----
+            // If the field is an 'enum' type, the possible 'enum' (character) values are present in the 'column_type'
+            // element returned.  That value is formatted in a manner similar to:
+            //
+            // enum('lbs','kgs')
+            //
+            // ... and the allowed values will be one of lbs or kgs (without the quotes).
+            //
+            if ($table_info->fields['data_type'] == 'enum') {
+                $enum_values = str_replace(array('enum(', "'"), '', $table_info->fields['column_type']);
+                $table_info->fields['enum_values'] = explode(',', rtrim($enum_values, ')'));
+            }
+            unset($table_info->fields['column_type']);
+
             $table_info->fields['nullable'] = ($table_info->fields['nullable'] === 'YES' || $table_info->fields['nullable'] === 'TRUE');
             $table_info->fields['sort_order'] = 0;
             $this->tables[$table_name]['fields'][$column_name] = $table_info->fields;
