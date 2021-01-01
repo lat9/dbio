@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2020, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2021, Vinos de Frutas Tropicales.
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -13,7 +13,7 @@ abstract class DbIoHandler extends base
 //                                    C O N S T A N T S 
 // ----------------------------------------------------------------------------------
     // ----- Interface Constants -----
-    const DBIO_HANDLER_VERSION   = '1.6.4';
+    const DBIO_HANDLER_VERSION   = '1.6.5';
     // ----- Field-Import Status Values -----
     const DBIO_IMPORT_OK         = '--ok--';
     const DBIO_NO_IMPORT         = '--none--';
@@ -1428,7 +1428,8 @@ abstract class DbIoHandler extends base
             
             switch ($field_type) {
                 case 'integer':
-                    if ($this->tables[$table_name]['fields'][$field_name]['nullable'] && ($field_value == 'null' || $field_value == 'NULL')) {
+                    if ($this->tables[$table_name]['fields'][$field_name]['nullable'] && $field_value === '') {
+                        $field_value = 'null';
                         break;
                     }
                     if (!preg_match('/^-?\d+$/', $field_value)) {
@@ -1437,7 +1438,8 @@ abstract class DbIoHandler extends base
                     }
                     break;
                 case 'float':
-                    if ($this->tables[$table_name]['fields'][$field_name]['nullable'] && ($field_value == 'null' || $field_value == 'NULL')) {
+                    if ($this->tables[$table_name]['fields'][$field_name]['nullable'] && $field_value === '') {
+                        $field_value = 'null';
                         break;
                     }
                     if (!preg_match('/^-?(?:\d+|\d*\.\d+)$/', $field_value)) {
@@ -1468,6 +1470,10 @@ abstract class DbIoHandler extends base
                     }
                     break;
                 case 'enum':
+                    if ($this->tables[$table_name]['fields'][$field_name]['nullable'] && $field_value === '') {
+                        $field_value = 'null';
+                        break;
+                    }
                     if (!in_array($field_value, $this->tables[$table_name]['fields'][$field_name]['enum_values'])) {
                         $field_error = true;
                         $this->debugMessage("[*] $import_table_name.$field_name, line#" . $this->stats['record_count'] . ": Value ($field_value) is not one of the field's enumerated values (" . implode(',', $this->tables[$table_name]['fields'][$field_name]['enum_values']) . ").", self::DBIO_ERROR);
