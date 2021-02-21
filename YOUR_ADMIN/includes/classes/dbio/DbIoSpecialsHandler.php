@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the Database I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2020, Vinos de Frutas Tropicales.
+// Copyright (c) 2020-2021, Vinos de Frutas Tropicales.
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -16,7 +16,7 @@ class DbIoSpecialsHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile('Specials'); 
         return array(
-            'version' => '1.6.0',
+            'version' => '1.6.6',
             'handler_version' => '1.6.0',
             'include_header' => true,
             'export_only' => false,
@@ -159,6 +159,8 @@ class DbIoSpecialsHandler extends DbIoHandler
 
     protected function importProcessField($table_name, $field_name, $language_id, $field_value) 
     {
+        global $db;
+
         $this->debugMessage("Specials::importProcessField($table_name, $field_name, $language_id, $field_value)");
         $valid_fieldname = true;
         $field_error = false;
@@ -167,7 +169,7 @@ class DbIoSpecialsHandler extends DbIoHandler
             // The 'products_id' supplied must be associated with a defined product.
             //
             case 'products_id':
-                $check = $GLOBALS['db']->Execute(
+                $check = $db->Execute(
                     "SELECT products_id, products_model
                        FROM " . TABLE_PRODUCTS . "
                       WHERE products_id = " . (int)$field_value . "
@@ -262,11 +264,13 @@ class DbIoSpecialsHandler extends DbIoHandler
     //
     protected function importHandleDbIoCommand($command, $data)
     {
+        global $db;
+
         $command = dbio_strtoupper($command);
         if ($command == self::DBIO_COMMAND_REMOVE) {
             $this->debugMessage("Removing special for product_id (" . $this->products_id . ")", self::DBIO_STATUS);
             if ($this->operation != 'check') {
-                $GLOBALS['db']->Execute(
+                $db->Execute(
                     "DELETE FROM " . TABLE_SPECIALS . "
                       WHERE products_id = " . $this->products_id . "
                       LIMIT 1"

@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2020, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2021, Vinos de Frutas Tropicales.
 //
 if (!defined('IS_ADMIN_FLAG')) {
   exit('Illegal access');
@@ -16,7 +16,7 @@ class DbIoStatsHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile('Stats'); 
         return array(
-            'version' => '1.6.0',
+            'version' => '1.6.6',
             'handler_version' => '1.0.0',
             'include_header' => true,
             'export_only' => true,
@@ -31,7 +31,9 @@ class DbIoStatsHandler extends DbIoHandler
     //
     public function exportGetHeader() 
     {
-        $check = $GLOBALS['db']->Execute(
+        global $db;
+
+        $check = $db->Execute(
             "SELECT COUNT(*) AS count
                FROM " . TABLE_DBIO_STATS
         );
@@ -47,8 +49,10 @@ class DbIoStatsHandler extends DbIoHandler
     //
     public function exportPrepareFields(array $fields) 
     {
+        global $db;
+
         if ($this->stats_records_count == $this->stats['record_count']) {
-            $GLOBALS['db']->Execute("TRUNCATE TABLE " . TABLE_DBIO_STATS);
+            $db->Execute("TRUNCATE TABLE " . TABLE_DBIO_STATS);
         }
         return parent::exportPrepareFields($fields);
     }

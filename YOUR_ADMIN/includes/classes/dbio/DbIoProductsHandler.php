@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2020, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2021, Vinos de Frutas Tropicales.
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -20,7 +20,7 @@ class DbIoProductsHandler extends DbIoHandler
         global $db;
         DbIoHandler::loadHandlerMessageFile('Products'); 
         return array(
-            'version' => '1.6.4',
+            'version' => '1.6.6',
             'handler_version' => '1.6.0',
             'include_header' => true,
             'export_only' => false,
@@ -827,6 +827,8 @@ class DbIoProductsHandler extends DbIoHandler
     //
     protected function importRecordPostProcess($products_id)
     {
+        global $db;
+
         $this->debugMessage('Products::importRecordPostProcess (' . json_encode($products_id) . '): ' . $this->data_key_sql . "\n" . print_r($this->key_fields, true), self::DBIO_INFORMATIONAL);
         
         // -----
@@ -855,7 +857,7 @@ class DbIoProductsHandler extends DbIoHandler
         // 2) If **all** metatags table-entries are empty, need to remove all such records (no metatags defined).
         //
         if ($this->import_meta_tags_post_process) {
-            $check = $GLOBALS['db']->Execute(
+            $check = $db->Execute(
                 "SELECT *
                    FROM " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . "
                   WHERE products_id = $pID",
@@ -882,7 +884,7 @@ class DbIoProductsHandler extends DbIoHandler
             if ($num_languages === $empty_records_found) {
                 $this->debugMessage("[*] Removing empty meta-tags records for products_id = $pID.", self::DBIO_INFORMATIONAL);
                 if ($this->operation != 'check') {
-                    $GLOBALS['db']->Execute(
+                    $db->Execute(
                         "DELETE FROM " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . " WHERE products_id = $pID"
                     );
                 }
@@ -895,7 +897,7 @@ class DbIoProductsHandler extends DbIoHandler
                     if (!isset($languages_found[$language_id])) {
                         $this->debugMessage("[*] Inserting empty meta-tag record for products_id = $pID, language_code = '$code'.", self::DBIO_INFORMATIONAL);
                         if ($this->operation != 'check') {
-                            $GLOBALS['db']->Execute(
+                            $db->Execute(
                                 "INSERT INTO " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . "
                                     (products_id, language_id, metatags_title, metatags_keywords, metatags_description)
                                  VALUES
@@ -1104,6 +1106,7 @@ class DbIoProductsHandler extends DbIoHandler
     protected function importUpdateRecordKey($table_name, $table_fields, $products_id) 
     {
         global $db;
+
         switch ($table_name) {
             case TABLE_PRODUCTS:
                 if ($this->import_is_insert) {
@@ -1172,7 +1175,7 @@ class DbIoProductsHandler extends DbIoHandler
                         if ($this->operation == 'check') {
                             $this->debugMessage("importUpdateRecordKey, removing record: $sql", self::DBIO_STATUS);
                         } else {
-                            $GLOBALS['db']->Execute($sql);
+                            $db->Execute($sql);
                         }
                     }
                 } elseif ($this->import_is_insert) {
@@ -1202,6 +1205,8 @@ class DbIoProductsHandler extends DbIoHandler
     //
     protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
     {
+        global $db;
+
         if ($table_name == TABLE_PRODUCTS) {
             if (($is_override && $is_insert) || (!$is_override && $this->import_is_insert)) {
                 unset($table_fields['products_last_modified'], $table_fields['products_id']);
@@ -1234,7 +1239,7 @@ class DbIoProductsHandler extends DbIoHandler
                 // we'll do an database action 'override' so that the meta-tag information can be inserted
                 // even though the base product's being updated.
                 //
-                $check = $GLOBALS['db']->Execute(
+                $check = $db->Execute(
                     "SELECT *
                        FROM " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . "
                       WHERE products_id = $products_id

@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2019, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2021, Vinos de Frutas Tropicales.
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -28,7 +28,7 @@ class DbIoProductsOptionsHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile('ProductsOptions'); 
         return array(
-            'version' => '1.0.1',
+            'version' => '1.6.6',
             'handler_version' => '1.0.0',
             'include_header' => true,
             'export_only' => false,
@@ -94,9 +94,11 @@ class DbIoProductsOptionsHandler extends DbIoHandler
     //
     protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
     {
+        global $db;
+
         $record_is_insert = ($is_override) ? $is_insert : $this->import_is_insert;
         if ($record_is_insert && $table_fields['products_options_id']['value'] == 0) {
-            $next_id = $GLOBALS['db']->Execute(
+            $next_id = $db->Execute(
                 "SELECT MAX(products_options_id) + 1 AS next_id
                    FROM " . TABLE_PRODUCTS_OPTIONS
             );

@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2020, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2021, Vinos de Frutas Tropicales.
 //
 if (!defined ('IS_ADMIN_FLAG')) {
     exit ('Illegal access');
@@ -24,7 +24,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile('ProductsAttribsRaw'); 
         return array(
-            'version' => '1.6.4',
+            'version' => '1.6.6',
             'handler_version' => '1.4.0',
             'include_header' => true,
             'export_only' => false,
@@ -210,9 +210,11 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     //
     protected function importHandleDbIoCommand($command, $data)
     {
+        global $db;
+
         $command = dbio_strtoupper($command);
         if ($command == self::DBIO_COMMAND_REMOVE) {
-            $check = $GLOBALS['db']->Execute(
+            $check = $db->Execute(
                 "SELECT products_attributes_id
                    FROM " . TABLE_PRODUCTS_ATTRIBUTES . "
                   WHERE products_id = " . (int)$this->importGetFieldValue('products_id', $data) . "
@@ -226,12 +228,12 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
                 $this->debugMessage("importHandleDbioCommand, removing attribute #" . $check->fields['products_attributes_id'], self::DBIO_STATUS);
             } else {
                 $attributes_id = $check->fields['products_attributes_id'];
-                $GLOBALS['db']->Execute(
+                $db->Execute(
                     "DELETE FROM " . TABLE_PRODUCTS_ATTRIBUTES . "
                       WHERE products_attributes_id = $attributes_id
                       LIMIT 1"
                 );
-                $GLOBALS['db']->Execute(
+                $db->Execute(
                     "DELETE FROM " . TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD . "
                       WHERE products_attributes_id = $attributes_id
                       LIMIT 1"
@@ -290,6 +292,8 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     //
     protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
     {
+        global $db;
+
         $process_record = true;
         if ($table_name == TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
             // -----
@@ -303,7 +307,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
             // Check to see if we're to insert an attributes' download record for a pre-existing
             // attribute (the base attribute will be updated, but the download information inserted).
             //
-            $check = $GLOBALS['db']->Execute(
+            $check = $db->Execute(
                 "SELECT *
                    FROM " . TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD . "
                   WHERE products_attributes_id = $products_attributes_id
@@ -361,7 +365,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
                     $process_record = false;
                     $this->debugMessage("ProductsAttribsRaw::importBuildSqlQuery, download record removed at line #" . $this->stats['record_count'] . " via REMOVE.");
                     if ($this->operation != 'check') {
-                        $GLOBALS['db']->Execute(
+                        $db->Execute(
                             "DELETE FROM " . TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD . " 
                               WHERE products_attributes_id = " . $this->key_fields['products_attributes_id'] . " 
                               LIMIT 1"

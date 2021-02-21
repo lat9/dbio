@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2018-2019, Vinos de Frutas Tropicales.
+// Copyright (c) 2018-2021, Vinos de Frutas Tropicales.
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -25,7 +25,7 @@ class DbIoProductsDiscountQuantityHandler extends DbIoHandler
         global $db;
         DbIoHandler::loadHandlerMessageFile('ProductsDiscountQuantity'); 
         return array(
-            'version' => '1.0.1',
+            'version' => '1.6.6',
             'handler_version' => '1.0.0',
             'include_header' => true,
             'export_only' => false,
@@ -188,6 +188,8 @@ class DbIoProductsDiscountQuantityHandler extends DbIoHandler
     //
     protected function importFinishProcessing()
     {
+        global $db;
+
         $missing_fields = array();
         foreach ($this->config['fixed_headers'] as $field_name => $table_name) {
             if ($table_name == self::DBIO_NO_IMPORT) {
@@ -242,7 +244,7 @@ class DbIoProductsDiscountQuantityHandler extends DbIoHandler
         
         if ($message == '') {
             if ($this->operation != 'check') {
-                $GLOBALS['db']->Execute(
+                $db->Execute(
                     "DELETE FROM " . TABLE_PRODUCTS_DISCOUNT_QUANTITY . "
                       WHERE products_id = $products_id"
                 );
@@ -251,7 +253,7 @@ class DbIoProductsDiscountQuantityHandler extends DbIoHandler
             if ($products_discount_type == self::DISCOUNT_TYPE_NONE) {
                 $this->debugMessage("Removing all discounts for $products_id.");
                 if ($this->operation != 'check') {
-                    $GLOBALS['db']->Execute(
+                    $db->Execute(
                         "UPDATE " . TABLE_PRODUCTS . "
                             SET products_discount_type = " . self::DISCOUNT_TYPE_NONE . "
                           WHERE products_id = $products_id
@@ -260,7 +262,7 @@ class DbIoProductsDiscountQuantityHandler extends DbIoHandler
                 }
             } else {
                 if ($this->operation != 'check') {
-                    $GLOBALS['db']->Execute(
+                    $db->Execute(
                         "UPDATE " . TABLE_PRODUCTS . "
                             SET products_discount_type = $products_discount_type,
                                 products_discount_type_from = " . $this->saved_data['products_discount_type_from'] . ",
