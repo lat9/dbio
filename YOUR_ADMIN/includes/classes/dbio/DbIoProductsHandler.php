@@ -796,15 +796,15 @@ class DbIoProductsHandler extends DbIoHandler
                             $record_ok = true;
                         } else {
                             foreach ($this->languages as $id => $language_id) {
-                                if (!empty($this->importGetLanguageFieldValue('products_name', $language_id))) {
+                                if (!empty($this->importGetLanguageFieldValue('products_name', $language_id, $data))) {
                                     $record_ok = true;
                                     break;
                                 }
-                                if (!empty($this->importGetLanguageFieldValue('products_description', $language_id))) {
+                                if (!empty($this->importGetLanguageFieldValue('products_description', $language_id, $data))) {
                                     $record_ok = true;
                                     break;
                                 }
-                                if (!empty($this->importGetLanguageFieldValue('products_url', $language_id))) {
+                                if (!empty($this->importGetLanguageFieldValue('products_url', $language_id, $data))) {
                                     $record_ok = true;
                                     break;
                                 }
