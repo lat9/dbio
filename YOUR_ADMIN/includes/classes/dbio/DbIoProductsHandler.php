@@ -317,7 +317,7 @@ class DbIoProductsHandler extends DbIoHandler
                               WHERE tax_class_id = $tax_class_id 
                               LIMIT 1"
                         );
-                        $fields = $this->insertAtCustomizedPosition($fields, 'tax_class_title', ($tax_class_info->EOF) ? '' : $tax_class_info->fields['tax_class_title']);            
+                        $fields = $this->insertAtCustomizedPosition($fields, 'tax_class_title', ($tax_class_info->EOF) ? '' : $tax_class_info->fields['tax_class_title']);
                     }
                     break;
 
@@ -340,6 +340,16 @@ class DbIoProductsHandler extends DbIoHandler
                             $categories_name .= (($category_info->EOF) ? self::DBIO_UNKNOWN_VALUE : $category_info->fields['categories_name']) . '^';
                         }
                         $fields = $this->insertAtCustomizedPosition($fields, 'categories_name', $this->exportEncodeData(dbio_substr($categories_name, 0, -1)));
+                    }
+                    break;
+
+                case 'v_products_link':
+                    // -----
+                    // Add the product's storefront link to the export, if enabled.
+                    //
+                    if (!($this->config['additional_headers']['v_products_link'] & self::DBIO_FLAG_NO_EXPORT)) {
+                        $products_type_handler = zen_get_handler_from_type(zen_get_products_type($products_id)) . '_info';
+                        $fields = $this->insertAtCustomizedPosition($fields, 'products_link', zen_catalog_href_link($products_type_handler, 'products_id=' . $products_id));
                     }
                     break;
 
@@ -555,6 +565,7 @@ class DbIoProductsHandler extends DbIoHandler
             'v_manufacturers_name' => self::DBIO_FLAG_NONE,
             'v_tax_class_title' => self::DBIO_FLAG_FIELD_SELECT,
             'v_categories_name' => self::DBIO_FLAG_NONE,
+            'v_products_link' => self::DBIO_FLAG_NONE,
         );
         $this->config['additional_header_select'] = array(
             'v_tax_class_title' => 'p.products_tax_class_id'
