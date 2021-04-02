@@ -29,7 +29,7 @@ define('COLUMN_HEADING_DESCRIPTION', 'Template Description:');
 define('INSTRUCTIONS_DESCRIPTION', 'Use the template\'s description (no HTML allowed!) to remind yourself of the template\'s purpose.  You can customize the description for each language supported by your store.');
 define('COLUMN_HEADING_CHOOSE_FIELDS', 'Choose Template Fields:');
 define('COLUMN_HEADING_COPY_FIELDS', 'Template Fields:');
-define('INSTRUCTIONS_CHOOSE', 'You can move fields from those <em>available</em> (on the left) to those chosen (on the right) for this template.  Multiple fields can be selected at once by holding down the &quot;Ctrl&quot; key while you click additional fields with your mouse.<br /><br />Once you have chosen the fields for this template, use the buttons to move the fields up or down within your customized list.  When the template is used for an <b>export</b> operation, the resulting .CSV file contains columns in the order that you specified.');
+define('INSTRUCTIONS_CHOOSE', 'You can move fields from those <em>available</em> (on the left) to those chosen (on the right) for this template.  Multiple fields can be selected at once by holding down the &quot;Ctrl&quot; key while you click additional fields with your mouse.<br><br>Once you have chosen the fields for this template, use the buttons to move the fields up or down within your customized list.  When the template is used for an <b>export</b> operation, the resulting .CSV file contains columns in the order that you specified.');
 define('INSTRUCTIONS_CHOOSE_COPY', 'When you <em>copy</em> a template, the copied template initially contains the fields previously configured.  Once the template is copied, you can edit that copy to adjust the fields.  If you can\'t view all the fields, use your mouse and drag the drop-down list down until all are visible.');
 
 define('NO_TEMPLATES_EXIST', 'There are currently no templates defined.  Use the &quot;New Template&quot; button to add one!');
@@ -54,9 +54,9 @@ define('BUTTON_RETURN_TITLE', 'Click here to return to the DbIo Manager\'s main 
 define('BUTTON_CANCEL', 'Cancel');
 define('BUTTON_CANCEL_TITLE', 'Click here to cancel the current action');
 
-define('INSTRUCTIONS_MAIN', 
+define('INSTRUCTIONS_MAIN',
     'Use this page to customize an export template for the DbIo\'s <em>%1$s</em> handler.  You can choose a subset of the fields supported by this handler and also customize the order in which those fields are exported into their associated .csv-file columns.' .
-    '<br /><br />' .
+    '<br><br>' .
     'A template\'s <em>scope</em> can be either <b>' . TEXT_SCOPE_PUBLIC . '</b>, available for all admin users, or <b>' . TEXT_SCOPE_PRIVATE . '</b>, available only for your use.  Its <em>name</em> will form a portion of an exported csv-file\'s name if the template is used to customize an export action, e.g. <code>dbio.%1$s.template_name.datetime_string</code>.  The <em>description</em> that you provide is displayed on the main <strong>Database I/O Manager</strong> screen when the template is selected, giving you some confirmation of the template\'s features.'
 );
 

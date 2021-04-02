@@ -7,4 +7,4 @@
 // -----
 // Defines the handler's descriptive text.
 //
-define('DBIO_MANUFACTURERS_DESCRIPTION', 'This report-format supports import/export of <b>all</b> fields within the <code>manufacturers</code> and <code>manufacturers_info</code> tables.<br /><br />If your store uses multiple languages, the <code>manufacturers_info</code> information will be exported for all of your store\'s languages in a single CSV record.');
+define('DBIO_MANUFACTURERS_DESCRIPTION', 'This report-format supports import/export of <b>all</b> fields within the <code>manufacturers</code> and <code>manufacturers_info</code> tables.<br><br>If your store uses multiple languages, the <code>manufacturers_info</code> information will be exported for all of your store\'s languages in a single CSV record.');
