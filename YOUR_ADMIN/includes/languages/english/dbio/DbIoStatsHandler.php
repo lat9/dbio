@@ -7,4 +7,4 @@
 // -----
 // Defines the handler's descriptive text.
 //
-define('DBIO_STATS_DESCRIPTION', 'This report-format supports <em>export-only</em> of all fields within the <code>dbio_stats</code> table.<br /><br /><b>Note:</b> Upon completion of the export, the <code>dbio_stats</code> table will be emptied.');
+define('DBIO_STATS_DESCRIPTION', 'This report-format supports <em>export-only</em> of all fields within the <code>dbio_stats</code> table.<br><br><b>Note:</b> Upon completion of the export, the <code>dbio_stats</code> table will be emptied.');
