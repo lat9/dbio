@@ -593,7 +593,14 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <noscript><h3>Version History</h3></noscript>
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
         <ul>
-          <li>v1.6.6-beta3, 2021-03-27:<ul>
+          <li>v1.6.7, 2021-08-07:<ul>
+            <li>BUGFIX: Adding 'longtext' as a valid MySQL character type.</li>
+            <li>The following files were changed:<ol>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+            </ol></li>
+          </ul></li>
+          <li>v1.6.6, 2021-03-28:<ul>
             <li>INTROP: PHP 8.1, modify usage of <code>$GLOBALS</code>.</li>
             <li>BUGFIX: Correcting PHP Fatal error (Uncaught  ArgumentCountError) for DbIoProductsHandler.</li>
             <li>CHANGE: Add 'v_products_link' (storefront link) to the DbIoProductsHandler.</li>

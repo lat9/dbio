@@ -13,7 +13,7 @@ abstract class DbIoHandler extends base
 //                                    C O N S T A N T S 
 // ----------------------------------------------------------------------------------
     // ----- Interface Constants -----
-    const DBIO_HANDLER_VERSION   = '1.6.5';
+    const DBIO_HANDLER_VERSION   = '1.6.7';
     // ----- Field-Import Status Values -----
     const DBIO_IMPORT_OK         = '--ok--';
     const DBIO_NO_IMPORT         = '--none--';
@@ -708,6 +708,7 @@ abstract class DbIoHandler extends base
                             case 'text':
                             case 'varchar':
                             case 'mediumtext':
+                            case 'longtext':
                                 $valid_string_field = true;  //-Indicate that a value string-type field was found and fall through to common processing
                             default:
                                 $field_type = 'string';
