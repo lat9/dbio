@@ -14,7 +14,7 @@ if (empty($_SESSION['admin_id'])) {
     return;
 }
 
-define('DBIO_CURRENT_VERSION', '1.6.7-beta1');
+define('DBIO_CURRENT_VERSION', '1.6.7-beta2');
 define('DBIO_CURRENT_UPDATE_DATE', '2021-08-07');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
@@ -81,7 +81,7 @@ if (DBIO_CURRENT_VERSION != $dbio_current_version) {
             $db->Execute(
                 "CREATE TABLE " . TABLE_DBIO_REPORTS . " (
                     dbio_reports_id int(11) NOT NULL auto_increment,
-                    handler_name varchar(255) NOT NULL,
+                    handler_name varchar(250) NOT NULL,
                     report_name varchar(32) NOT NULL,
                     admin_id int(11) NOT NULL default 0,
                     last_updated_by int(11) NOT NULL default 0,
@@ -101,7 +101,7 @@ if (DBIO_CURRENT_VERSION != $dbio_current_version) {
                  ) ENGINE=MyISAM"
             );
         }
-        
+
         // -----
         // If not already present, insert a couple of system-generated examples into the dbio_reports tables.
         //
@@ -125,7 +125,7 @@ if (DBIO_CURRENT_VERSION != $dbio_current_version) {
                         ($dbio_reports_id, $current_language_id, 'This template supports products'' quantity updates, creating an exported file that contains a product''s ID, model-number and current quantity.')"
                 );
             }
-            
+
             $db->Execute(
                 "INSERT INTO " . TABLE_DBIO_REPORTS . "
                     (handler_name, report_name, admin_id, last_updated_by, last_updated, field_info) 
@@ -144,7 +144,7 @@ if (DBIO_CURRENT_VERSION != $dbio_current_version) {
             }
         }
     }
-    
+
     if (version_compare($dbio_current_version, '1.3.0', '<')) {
         if (!defined('DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES')) {
             $db->Execute(
@@ -155,7 +155,7 @@ if (DBIO_CURRENT_VERSION != $dbio_current_version) {
             );
         }
     }
-    
+
     if (version_compare($dbio_current_version, '1.6.4', '<')) {
         if (!defined('DBIO_PRODUCTS_INSERT_REQUIRES_COMMAND')) {
             $db->Execute(
@@ -163,6 +163,14 @@ if (DBIO_CURRENT_VERSION != $dbio_current_version) {
                     ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) 
                 VALUES 
                     ( '<em>Products</em>: Product Creation Requires Command?', 'DBIO_PRODUCTS_INSERT_REQUIRES_COMMAND', 'No', 'Does a <em>Products</em> import require a DbIo <code>ADD</code> command? Choose <b>No</b> (the default) to allow products to be created if no matching products_id and/or products_model is found.<br><br>Choose <b>Yes</b> to disallow any product-import that results in a new product unless the <code>ADD</code> command is present.', $cgi, 110, now(), NULL, 'zen_cfg_select_option(array(\'Yes\', \'No\'),')"
+            );
+        }
+    }
+
+    if (version_compare($dbio_current_version, '1.6.7', '<')) {
+        if ($sniffer->field_type(TABLE_DBIO_REPORTS, 'handler_name', 'varchar(255)')) {
+            $db->Execute(
+                "ALTER TABLE " . TABLE_DBIO_REPORTS . " MODIFY handler_name varchar(250) NOT NULL"
             );
         }
     }
