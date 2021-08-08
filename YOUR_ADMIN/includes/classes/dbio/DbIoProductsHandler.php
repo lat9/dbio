@@ -20,7 +20,7 @@ class DbIoProductsHandler extends DbIoHandler
         global $db;
         DbIoHandler::loadHandlerMessageFile('Products'); 
         return array(
-            'version' => '1.6.6',
+            'version' => '1.6.7',
             'handler_version' => '1.6.0',
             'include_header' => true,
             'export_only' => false,
@@ -942,15 +942,12 @@ class DbIoProductsHandler extends DbIoHandler
             case self::DBIO_SPECIAL_IMPORT:
                 switch ($field_name) {
                     case 'manufacturers_name':
-                        if (empty ($field_value)) {
-                            $manufacturers_id = 0;
-
-                        } else {
+                        $manufacturers_id = 0;
+                        if (!empty ($field_value)) {
                             $manufacturer_check_sql = "SELECT manufacturers_id FROM " . TABLE_MANUFACTURERS . " WHERE manufacturers_name = :manufacturer_name: LIMIT 1";
-                            $manufacturer_check = $db->Execute($db->bindVars ($manufacturer_check_sql, ':manufacturer_name:', $field_value, 'string'), false, false, 0, true);
+                            $manufacturer_check = $db->Execute($db->bindVars($manufacturer_check_sql, ':manufacturer_name:', $field_value, 'string'), false, false, 0, true);
                             if (!$manufacturer_check->EOF) {
                                 $manufacturers_id = $manufacturer_check->fields['manufacturers_id'];
-                          
                             } else {
                                 $this->debugMessage("[*] Import, creating database entry for manufacturer named \"$field_value\"", self::DBIO_ACTIVITY | self::DBIO_STATUS);
                                 if ($this->operation != 'check') {
@@ -959,7 +956,7 @@ class DbIoProductsHandler extends DbIoHandler
                                     $sql_data_array[] = array('fieldName' => 'date_added', 'value' => 'now()', 'type' => 'noquotestring');
                                     $db->perform(TABLE_MANUFACTURERS, $sql_data_array);
                                     $manufacturers_id = $db->Insert_ID();
-                              
+
                                     foreach ($this->languages as $language_code => $language_id) {
                                         $sql_data_array = array();
                                         $sql_data_array[] = array('fieldName' => 'manufacturers_id', 'value' => $manufacturers_id, 'type' => 'integer');
