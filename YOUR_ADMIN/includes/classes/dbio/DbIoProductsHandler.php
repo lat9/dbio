@@ -149,8 +149,8 @@ class DbIoProductsHandler extends DbIoHandler
     //
     public function exportFinalizeInitialization()
     {
-        $this->debugMessage('Products::exportFinalizeInitialization. POST variables:' . print_r ($_POST, true));
-        
+        $this->debugMessage('Products::exportFinalizeInitialization. POST variables:' . print_r($_POST, true));
+
         // -----
         // Check to see if any of this handler's filter variables have been set.  If set, check the values and then
         // update the where_clause for the to-be-issued SQL query for the export.
@@ -162,13 +162,37 @@ class DbIoProductsHandler extends DbIoHandler
             $manufacturers_list = implode(',', $_POST['products_manufacturers']);
             $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "p.manufacturers_id IN ($manufacturers_list)";
         }
+
+        // -----
+        // If the admin has requested a category-filter on the export, we'll return all products in the selected
+        // category-list and any of those categories' sub-categories.
+        //
         if (isset($_POST['products_categories']) && is_array($_POST['products_categories'])) {
-            $categories_list = implode(',', $_POST['products_categories']);
+            $products_categories = array();
+            foreach ($_POST['products_categories'] as $categories_id) {
+                $products_categories = $this->getSubCategories($categories_id, $products_categories);
+            }
+            $categories_list = implode(',', array_unique($products_categories));
             $this->where_clause .= (($this->where_clause == '') ? '' : ' AND ') . "p.master_categories_id IN ($categories_list)";
         }
         return true;
     }
-    
+    protected function getSubCategories($categories_id, $products_categories)
+    {
+        global $db;
+        $subcats = $db->Execute(
+            "SELECT categories_id
+               FROM " . TABLE_CATEGORIES . "
+              WHERE parent_id = $categories_id"
+        );
+        $products_categories[] = $categories_id;
+        while (!$subcats->EOF) {
+            $products_categories = $this->getSubCategories($subcats->fields['categories_id'], $products_categories);
+            $subcats->MoveNext();
+        }
+        return $products_categories;
+    }
+
     public function exportPrepareFields(array $fields) 
     {
         $fields = parent::exportPrepareFields($fields);
