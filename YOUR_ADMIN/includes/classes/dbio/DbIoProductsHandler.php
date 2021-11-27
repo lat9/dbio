@@ -1033,6 +1033,12 @@ class DbIoProductsHandler extends DbIoHandler
                         $language_id = $this->languages[DEFAULT_LANGUAGE];
                         $categories = explode('^', $field_value);
                         foreach ($categories as $current_category_name) {
+                            if ($current_category_name === '') {
+                                $categories_name_ok = false;
+                                $this->debugMessage('[*] Product not inserted at line number ' . $this->stats['record_count'] . ", blank sub-category name found ($field_value).", self::DBIO_WARNING);
+                                break;
+                            }
+
                             $category_info_sql = 
                                 "SELECT c.categories_id FROM " . TABLE_CATEGORIES . " c
                                         INNER JOIN " . TABLE_CATEGORIES_DESCRIPTION . " cd
@@ -1044,7 +1050,6 @@ class DbIoProductsHandler extends DbIoHandler
                             $category_info = $db->Execute($db->bindVars($category_info_sql, ':categories_name:', $current_category_name, 'string'), false, false, 0, true);
                             if (!$category_info->EOF) {
                                 $parent_category = $category_info->fields['categories_id'];
-                              
                             } elseif ($this->import_is_insert) {
                                 if (DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES != 'Yes') {
                                     $categories_name_ok = false;

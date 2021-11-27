@@ -600,6 +600,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
             <li>CHANGE: Update language files to use HTML5 <b>&lt;br&gt;</b>'s.</li>
             <li>CHANGE: Products' category-filter now returns products in all sub-categories of selected categories.</li>
             <li>BUGFIX: Disallow <code>DbIoProductsHandler</code> 'ADD' for missing/duplicate (if configured) model numbers.</li>
+            <li>BUGFIX: <code>DbIoProductsHandler</code>, correcting potential creation of category with an 'empty' name.</li>
             <li>The following files were changed:<ol>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
