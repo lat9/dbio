@@ -84,7 +84,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
 
 <body>
   <h1 id="title">Database I/O Manager (DbIo) for Zen Cart&reg;</h1>
-  <p>Version 1.6.6 Copyright &copy; 2015-2021, <a href="https://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
+  <p>Version 1.6.7 Copyright &copy; 2015-2021, <a href="https://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
   <p>Current Support Thread on the Zen Cart forums: <a href="https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread</a></p>
   
   <div class="tab-container" id="outer-container">
@@ -593,22 +593,23 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <noscript><h3>Version History</h3></noscript>
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
         <ul>
-          <li>v1.6.7, 2021-08-08:<ul>
+          <li>v1.6.7, 2021-11-27:<ul>
             <li>BUGFIX: Adding 'longtext' as a valid MySQL character type.</li>
             <li>BUGFIX: Correcting length of <code>dbio_reports::handler_name</code> for utf8mb4 database collations.</li>
             <li>BUGFIX: Correcting PHP notice on unknown manufacturers' name during 'check' operation.</li>
             <li>CHANGE: Update language files to use HTML5 <b>&lt;br&gt;</b>'s.</li>
             <li>CHANGE: Products' category-filter now returns products in all sub-categories of selected categories.</li>
+            <li>BUGFIX: Disallow <code>DbIoProductsHandler</code> 'ADD' for missing/duplicate (if configured) model numbers.</li>
             <li>The following files were changed:<ol>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
               <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
-              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbioManufacturersHandler.php</li>
-              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbioProductsAttribsBasicHandler.php</li>
-              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbioProductsAttribsRawHandler.php</li>
-              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbioProductsDiscountQuantityHandler.php</li>
-              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbioSpecialsHandler.php</li>
-              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbioStatsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoManufacturersHandler.php</li>
+              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsAttribsBasicHandler.php</li>
+              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsAttribsRawHandler.php</li>
+              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsDiscountQuantityHandler.php</li>
+              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoSpecialsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoStatsHandler.php</li>
             </ol></li>
           </ul></li>
           <li>v1.6.6, 2021-03-28:<ul>

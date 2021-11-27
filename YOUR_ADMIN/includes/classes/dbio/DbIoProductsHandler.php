@@ -643,12 +643,37 @@ class DbIoProductsHandler extends DbIoHandler
         //
         switch ($command) {
             // -----
-            // ADD: The current CSV record's import can continue, forced as an insert operation.
+            // ADD: The current CSV record's import can continue, forced as an insert operation ... so long as
+            // a valid 'products_model' value is included in the record.
             //
             case self::DBIO_COMMAND_ADD:
                 $continue_line_import = true;
                 $this->import_is_insert = true;
                 $this->debugMessage("Forcing ADD of product at line #" . $this->stats['record_count'] . ', via DbIo command', self::DBIO_STATUS);
+
+                // -----
+                // Retrieve the products-model for the current record; it must be supplied and non-blank.
+                //
+                $products_model = $this->importGetFieldValue('products_model', $data);
+                if ($products_model === false || $products_model === '') {
+                    $continue_line_import = false;
+                    $this->debugMessage("Product ADD disallowed at line #" . $this->stats['record_count'] . "; products_model either not supplied or empty.", self::DBIO_ERROR);
+                // -----
+                // If the products-model **is** supplied and, by configuration, models cannot be duplicated, check to see that the current
+                // model doesn't already exist.
+                //
+                } elseif (!defined('DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS') || DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS === 'No') {
+                    $model_check = $db->Execute(
+                        "SELECT products_id
+                           FROM " . TABLE_PRODUCTS . "
+                          WHERE products_model = '" . $db->prepareInput($products_model) . "'
+                          LIMIT 1"
+                    );
+                    if (!$model_check->EOF) {
+                        $continue_line_import = false;
+                        $this->debugMessage("Product ADD disallowed at line #" . $this->stats['record_count'] . "; products_model ($products_model) already exists.", self::DBIO_ERROR);
+                    }
+                }
                 break;
 
             // -----
