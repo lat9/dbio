@@ -26,7 +26,7 @@ if ($configuration->EOF) {
                  (configuration_group_title, configuration_group_description, sort_order, visible) 
                  VALUES ('$configurationGroupTitle', '$configurationGroupTitle', 1, 1);");
     $cgi = $db->Insert_ID(); 
-    $db->Execute("UPDATE " . TABLE_CONFIGURATION_GROUP . " SET sort_order = $cgi WHERE configuration_group_id = $cgi;");
+    $db->Execute("UPDATE " . TABLE_CONFIGURATION_GROUP . " SET sort_order = $cgi WHERE configuration_group_id = $cgi");
 } else {
     $cgi = $configuration->fields['configuration_group_id'];
 }
@@ -39,7 +39,7 @@ if (defined('DBIO_MODULE_VERSION')) {
     $dbio_current_version = $dbio_versions[0];
 } else {
     $dbio_current_version = '0.0.0';
-    $db->Execute("INSERT INTO " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, set_function) VALUES ('Version/Release Date', 'DBIO_MODULE_VERSION', '" . $version_release_date . "', 'The Database I/O Manager (DbIo) version number and release date.', $cgi, 1, now(), 'trim(')");
+    $db->Execute("INSERT INTO " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, set_function) VALUES ('Version/Release Date', 'DBIO_MODULE_VERSION', '" . $version_release_date . "', 'The Database I/O Manager (DbIo) version number and release date.', $cgi, 1, now(),  'zen_cfg_read_only(')");
  
     $db->Execute("INSERT INTO " . TABLE_CONFIGURATION . " ( configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function ) VALUES ( 'CSV: Delimiter', 'DBIO_CSV_DELIMITER', ',', 'Enter the single character that is used to separate columns within any DbIo CSV file.  To use the tab-character as the delimiter value, enter the word <b>TAB</b>.  (Default: <b>,</b>)', $cgi, 5, now(), NULL, NULL)");
 
@@ -65,7 +65,7 @@ if (defined('DBIO_MODULE_VERSION')) {
 // -----
 // If the plugin's version has changed, see if there's any additional configuration settings to be set.
 //
-if (DBIO_CURRENT_VERSION != $dbio_current_version) {
+if (DBIO_CURRENT_VERSION !== $dbio_current_version) {
     // -----
     // Plugin version-specific updates ...
     //
@@ -175,6 +175,14 @@ if (DBIO_CURRENT_VERSION != $dbio_current_version) {
         }
     }
 
+    if (version_compare($dbio_current_version, '1.6.8', '<')) {
+        $db->Execute(
+            "UPDATE " . TABLE_CONFIGURATION . "
+                SET set_function = 'zen_cfg_read_only('
+              WHERE configuration_key = 'DBIO_MODULE_VERSION'"
+        );
+    }
+
     // ----
     // Create the database tables for the I/O processing.
     //
@@ -216,7 +224,7 @@ if (DBIO_CURRENT_VERSION != $dbio_current_version) {
     // -----
     // Versions prior to v1.6.0 had character defaults for numeric database fields, fix them up on any upgrade.
     //
-    if ($dbio_current_version != '0.0.0' && version_compare($dbio_current_version, '1.6.0', '<')) {
+    if ($dbio_current_version !== '0.0.0' && version_compare($dbio_current_version, '1.6.0', '<')) {
         $db->Execute(
             "ALTER TABLE " . TABLE_DBIO_REPORTS . "
                 ALTER admin_id SET DEFAULT 0,
