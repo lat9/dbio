@@ -1,7 +1,9 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2020, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2022, Vinos de Frutas Tropicales.
+//
+// Last updated: DbIo v1.6.8.
 //
 if (!defined('IS_ADMIN_FLAG')) { 
     exit('Illegal access');
@@ -33,7 +35,6 @@ class DbIo extends base
             dbio_string_initialize();
             $this->using_mbstring = true;
         }
-        ini_set("auto_detect_line_endings", true);
         $this->initializeConfig($dbio_type);
     }
     
