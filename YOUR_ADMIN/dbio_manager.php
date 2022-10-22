@@ -1,7 +1,9 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2020, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2022, Vinos de Frutas Tropicales.
+//
+// Last updated: DbIo v2.0.0
 //
 require 'includes/application_top.php';
 require DIR_FS_ADMIN . 'includes/functions/dbio_manager_functions.php';
@@ -472,6 +474,7 @@ div.export-only span { color: red; font-weight: bold; }
     <h1><?php echo HEADING_TITLE; ?> <span class="smaller">v<?php echo DBIO_MODULE_VERSION; ?></span></h1>
     <p id="top-instructions"><?php echo TEXT_INSTRUCTIONS; ?></p>
 <?php
+$customization_choices = [];
 if (!$ok_to_proceed || $error_message !== '') {
 ?>
     <div id="message" class="error"><?php echo $error_message; ?></div>
@@ -612,7 +615,6 @@ if (!$ok_to_proceed || $error_message !== '') {
     //
     unset($dbio);
     $dbio = new DbIo($handler_name);
-    $customization_choices = array();
     $customizable_fields = $dbio->handler->getCustomizableFields();
     if (count ($customizable_fields) != 0) {
         $customizations = $db->Execute(
