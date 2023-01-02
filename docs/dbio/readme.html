@@ -84,7 +84,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
 
 <body>
   <h1 id="title">Database I/O Manager (DbIo) for Zen Cart&reg;</h1>
-  <p>Version 2.0.0 Copyright &copy; 2015-2022, <a href="https://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
+  <p>Version 2.0.0 Copyright &copy; 2015-2023, <a href="https://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
   <p>Current Support Thread on the Zen Cart forums: <a href="https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread</a></p>
   
   <div class="tab-container" id="outer-container">
@@ -593,13 +593,30 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <noscript><h3>Version History</h3></noscript>
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
         <ul>
-          <li>v2.0.0-beta1, 2022-10-22 (lat9/torvista):<ul>
+          <li>v2.0.0-beta2, 2023-01-02 (lat9/torvista):<ul>
             <li>BUGFIX: PHP 8.1+ compatibility, removing use of 'auto_detect_line_endings'.</li>
             <li>BUGFIX: Use 'zen_cfg_read_only' to prevent the plugin's version settings from being reset.</li>
             <li>BUGFIX: Correct PHP notice/warning issued if the tool detects an error.</li>
-            <li>The following files were changed or <span class="added">added</span>:<ol>
+            <li>CHANGE: Correcting 'dynamic properties' deprecations issued by PHP 8.2.</li>
+            <li>The following files were changed:<ol>
               <li>/YOUR_ADMIN/dbio_manager.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoCustomersHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoFeaturedHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoManufacturersHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersBase.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersProductsAttribsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersProductsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsBasicHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsRawHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsDiscountQuantityHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsOptionsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsOptionsValuesHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoSpecialsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoStatsHandler.php</li>
               <li>/YOUR_ADMIN/includes/functions/extra_functions/zen_cfg_read_only.php</li>
               <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
             </ol></li>

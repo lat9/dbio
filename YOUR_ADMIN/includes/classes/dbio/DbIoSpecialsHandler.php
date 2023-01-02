@@ -1,7 +1,9 @@
 <?php
 // -----
 // Part of the Database I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2020-2021, Vinos de Frutas Tropicales.
+// Copyright (c) 2020-2023, Vinos de Frutas Tropicales.
+//
+// Last updated: DbIo v2.0.0.
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -10,24 +12,28 @@ if (!defined('IS_ADMIN_FLAG')) {
 // -----
 // This DbIo class handles the customizations required for a basic Zen Cart "Specials Products" import/export.
 //
-class DbIoSpecialsHandler extends DbIoHandler 
+class DbIoSpecialsHandler extends DbIoHandler
 {
-    public static function getHandlerInformation ()
+    protected
+        $enable_specials_gv,
+        $products_id;
+
+    public static function getHandlerInformation()
     {
-        DbIoHandler::loadHandlerMessageFile('Specials'); 
-        return array(
-            'version' => '1.6.6',
+        DbIoHandler::loadHandlerMessageFile('Specials');
+        return [
+            'version' => '2.0.0',
             'handler_version' => '1.6.0',
             'include_header' => true,
             'export_only' => false,
             'description' => DBIO_SPECIALS_DESCRIPTION,
-        );
+        ];
     }
-    
-    public function exportInitialize($language = 'all') 
+
+    public function exportInitialize($language = 'all')
     {
         $initialized = parent::exportInitialize($language);
-        if ($initialized) {
+        if ($initialized === true) {
             $this->order_by_clause .= 's.products_id ASC';
         }
         return $initialized;
@@ -41,7 +47,7 @@ class DbIoSpecialsHandler extends DbIoHandler
     // column as the last field to hold a potential command (this handler supports REMOVE).  Need to remove that
     // column's data from the fields prior to inserting the 'helper' columns and then add it back.
     //
-    public function exportPrepareFields(array $fields) 
+    public function exportPrepareFields(array $fields)
     {
         $fields = parent::exportPrepareFields($fields);
         array_pop($fields);
@@ -55,7 +61,7 @@ class DbIoSpecialsHandler extends DbIoHandler
         $fields['v_dbio_command'] = '';
         return $fields;
     }
-    
+
     // -----
     // When an import is started, set a processing flag to indicate whether or not the store
     // has enabled gift-certificates to be placed on special (saves processing time for each
@@ -71,41 +77,41 @@ class DbIoSpecialsHandler extends DbIoHandler
     }
 
 // ----------------------------------------------------------------------------------
-//             I N T E R N A L / P R O T E C T E D   F U N C T I O N S 
+//             I N T E R N A L / P R O T E C T E D   F U N C T I O N S
 // ----------------------------------------------------------------------------------
-    
+
     // -----
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the DbIo operations.
     //
-    protected function setHandlerConfiguration() 
+    protected function setHandlerConfiguration()
     {
         $this->stats['report_name'] = 'Specials';
         $this->config = self::getHandlerInformation();
         $this->config['supports_dbio_commands'] = true;
-        $this->config['keys'] = array (
-            TABLE_SPECIALS => array (
+        $this->config['keys'] = [
+            TABLE_SPECIALS => [
                 'alias' => 's',
-                'products_id' => array(
+                'products_id' => [
                     'type' => self::DBIO_KEY_IS_VARIABLE | self::DBIO_KEY_SELECTED,
-                ),
-            ),
-        );
-        $this->config['tables'] = array (
-            TABLE_SPECIALS => array ( 
+                ],
+            ],
+        ];
+        $this->config['tables'] = [
+            TABLE_SPECIALS => [
                 'alias' => 's',
-                'io_field_overrides' => array (
+                'io_field_overrides' => [
                     'specials_id' => 'no-header',
-                ),
-            ), 
-        );
-        $this->config['additional_headers'] = array(
+                ],
+            ], 
+        ];
+        $this->config['additional_headers'] = [
             'v_products_price' => self::DBIO_FLAG_NONE,
             'v_products_model' => self::DBIO_FLAG_NONE,
             'v_products_name' => self::DBIO_FLAG_NONE,
-        );
+        ];
     }
-    
+
     // -----
     // This function, called for header-element being imported, can return one of three values:
     //
@@ -114,7 +120,7 @@ class DbIoSpecialsHandler extends DbIoHandler
     //                           that the field is calculated separately by the handler's processing.
     // - DBIO_SPECIAL_IMPORT ... The field requires special-handling by the handler to create the associated database elements.
     //
-    protected function importHeaderFieldCheck($field_name) 
+    protected function importHeaderFieldCheck($field_name)
     {
         switch ($field_name) {
             case 'products_id':
@@ -134,7 +140,7 @@ class DbIoSpecialsHandler extends DbIoHandler
         }
         return $field_status;
     }
-    
+
     // -----
     // This function, called at the start of each record's import, gives the handler the opportunity to validate the
     // fields for the import.  The base DbIoHandler processing (based on this handler's configuration) has attempted to
@@ -156,8 +162,7 @@ class DbIoSpecialsHandler extends DbIoHandler
         return $this->record_status;
     }
 
-
-    protected function importProcessField($table_name, $field_name, $language_id, $field_value) 
+    protected function importProcessField($table_name, $field_name, $language_id, $field_value)
     {
         global $db;
 
@@ -178,15 +183,15 @@ class DbIoSpecialsHandler extends DbIoHandler
                 if ($check->EOF) {
                     $field_error = true;
                     $this->debugMessage("[*] $table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is a not valid 'products_id'.", self::DBIO_ERROR);
-                } elseif (!$this->enable_specials_gv && strpos($check->fields['products_model'], 'GIFT') === 0) {
+                } elseif ($this->enable_specials_gv === false && strpos($check->fields['products_model'], 'GIFT') === 0) {
                     $field_error = true;
                     $this->debugMessage("[*] $table_name.$field_name, line #" . $this->stats['record_count'] . ": Gift certificates (pID#$field_value) cannot be placed on special.", self::DBIO_ERROR);
                 }
                 break;
-                
+
             // -----
             // If the 'specials_new_products_price' is specified as a percent-off (i.e. the last character
-            // of the value is a '%', check that the value preceding that character is numeric with 1-3 leading
+            // of the value is a '%'), check that the value preceding that character is numeric with 1-3 leading
             // digits, with an optional decimal separator ('.') followed by up to 4 decimal digits.  If that check 
             // passes, ensure that the value is not more than 100.
             //
@@ -194,7 +199,7 @@ class DbIoSpecialsHandler extends DbIoHandler
             // a fraction of its current base price.
             //
             case 'specials_new_products_price':
-                if (strpos(strrev($field_value), '%') !== 0) {
+                if (substr($field_value, -1) !== '%') {
                     break;
                 }
                 $percent_off = substr($field_value, 0, -1);
@@ -227,7 +232,7 @@ class DbIoSpecialsHandler extends DbIoHandler
                 break;
 
             case 'status':
-                if ($field_value !== false && $field_value != '0' && $field_value != '1') {
+                if ($field_value !== false && $field_value !== '0' && $field_value !== '1') {
                     $field_error = true;
                     $this->debugMessage("[*] $table_name.$field_name, line #" . $this->stats['record_count'] . ": The value ($field_value), if supplied, must be either '0' or '1'.", self::DBIO_ERROR);
                 }
@@ -237,27 +242,27 @@ class DbIoSpecialsHandler extends DbIoHandler
                 $valid_fieldname = false;
                 break;
         }
-        
-        if ($valid_fieldname) {
-            if ($field_error) {
+
+        if ($valid_fieldname === true) {
+            if ($field_error === true) {
                 $this->record_status = false;
             } else {
                 parent::importProcessField($table_name, $field_name, $language_id, $field_value);
             }
         }
     }
-     
+
     // -----
     // This function handles any overall record post-processing required for the Specials import, specifically
     // making sure that the products' price sorter is run for the just inserted/updated product.
     //
     protected function importRecordPostProcess($products_id)
     {
-        if ($this->operation != 'check') {
+        if ($this->operation !== 'check') {
             zen_update_products_price_sorter($this->products_id);
         }
     }
-    
+
     // -----
     // This function, called by the base DbIoHandler class when a non-blank v_dbio_command field is found in the
     // current import-record, gives this handler a chance to REMOVE a special's information from the database.
@@ -267,9 +272,9 @@ class DbIoSpecialsHandler extends DbIoHandler
         global $db;
 
         $command = dbio_strtoupper($command);
-        if ($command == self::DBIO_COMMAND_REMOVE) {
+        if ($command === self::DBIO_COMMAND_REMOVE) {
             $this->debugMessage("Removing special for product_id (" . $this->products_id . ")", self::DBIO_STATUS);
-            if ($this->operation != 'check') {
+            if ($this->operation !== 'check') {
                 $db->Execute(
                     "DELETE FROM " . TABLE_SPECIALS . "
                       WHERE products_id = " . $this->products_id . "

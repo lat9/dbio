@@ -1,7 +1,9 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2021, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2022, Vinos de Frutas Tropicales.
+//
+// Last updated: DbIo v2.0.0.
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -22,51 +24,51 @@ if (!defined('IS_ADMIN_FLAG')) {
 // 1) When importing new records for a multi-language store, the import should be run once per language value.
 //    Otherwise, the products_options_id will get "out-of-sync" between the multiple languages.
 //
-class DbIoProductsOptionsHandler extends DbIoHandler 
+class DbIoProductsOptionsHandler extends DbIoHandler
 {
     public static function getHandlerInformation()
     {
         DbIoHandler::loadHandlerMessageFile('ProductsOptions'); 
-        return array(
-            'version' => '1.6.6',
+        return [
+            'version' => '2.0.0',
             'handler_version' => '1.0.0',
             'include_header' => true,
             'export_only' => false,
             'description' => DBIO_PRODUCTSOPTIONS_DESCRIPTION,
-        );
+        ];
     }
 
 // ----------------------------------------------------------------------------------
-//             I N T E R N A L / P R O T E C T E D   F U N C T I O N S 
+//             I N T E R N A L / P R O T E C T E D   F U N C T I O N S
 // ----------------------------------------------------------------------------------
     
     // -----
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the dbIO operations.
     //
-    protected function setHandlerConfiguration() 
+    protected function setHandlerConfiguration()
     {
         $this->stats['report_name'] = 'ProductsOptions';
         $this->config = self::getHandlerInformation();
-        $this->config['keys'] = array(
-            TABLE_PRODUCTS_OPTIONS => array(
+        $this->config['keys'] = [
+            TABLE_PRODUCTS_OPTIONS => [
                 'alias' => 'po',
-                'products_options_id' => array(
+                'products_options_id' => [
                     'type' => self::DBIO_KEY_IS_VARIABLE | self::DBIO_KEY_SELECTED,
-                ),
-                'language_id' => array(
+                ],
+                'language_id' => [
                     'type' => self::DBIO_KEY_IS_VARIABLE | self::DBIO_KEY_SELECTED,
-                ),
-            ),
-        );
-        $this->config['tables'] = array(
-            TABLE_PRODUCTS_OPTIONS => array(
+                ],
+            ],
+        ];
+        $this->config['tables'] = [
+            TABLE_PRODUCTS_OPTIONS => [
                 'alias' => 'po',
                 'language_override' => self::DBIO_OVERRIDE_ALL,
-            ),
-        );
+            ],
+        ];
     }
-    
+
     // -----
     // Called by the DbIoHandler class, just prior to each record's import.  Gives us a
     // chance to:
@@ -77,7 +79,7 @@ class DbIoProductsOptionsHandler extends DbIoHandler
     //
     protected function importCheckKeyValue($data)
     {
-        if ($this->importGetFieldValue('products_options_id', $data) == 0) {
+        if ($this->importGetFieldValue('products_options_id', $data) === '0') {
             $this->import_is_insert = true;
         }
         $language_id = $this->importGetFieldValue('language_id', $data);
@@ -87,7 +89,7 @@ class DbIoProductsOptionsHandler extends DbIoHandler
         }
         return parent::importCheckKeyValue($data);
     }
-    
+
     // -----
     // Overriding the base import processing, to ensure that the v_products_options_id value is updated to
     // the next-available value if the import specifies the value as 0.
@@ -96,8 +98,8 @@ class DbIoProductsOptionsHandler extends DbIoHandler
     {
         global $db;
 
-        $record_is_insert = ($is_override) ? $is_insert : $this->import_is_insert;
-        if ($record_is_insert && $table_fields['products_options_id']['value'] == 0) {
+        $record_is_insert = ($is_override === true) ? $is_insert : $this->import_is_insert;
+        if ($record_is_insert === true && $table_fields['products_options_id']['value'] === '0') {
             $next_id = $db->Execute(
                 "SELECT MAX(products_options_id) + 1 AS next_id
                    FROM " . TABLE_PRODUCTS_OPTIONS
@@ -106,5 +108,4 @@ class DbIoProductsOptionsHandler extends DbIoHandler
         }
         return parent::importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause, $is_override, $is_insert);
     }
-
 }  //-END class DbIoProductsOptionsHandler
