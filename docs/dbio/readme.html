@@ -86,6 +86,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
   <h1 id="title">Database I/O Manager (DbIo) for Zen Cart&reg;</h1>
   <p>Version 2.0.0 Copyright &copy; 2015-2023, <a href="https://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
   <p>Current Support Thread on the Zen Cart forums: <a href="https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread</a></p>
+  <p>Current Zen Cart Download is <a href="https://www.zen-cart.com/downloads.php?do=file&id=2091" target="_blank">here</a>.</p>
   
   <div class="tab-container" id="outer-container">
     <ul class="etabs">
@@ -323,7 +324,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
                   <td>Export</td>
                   <td>Orders Status, ID Range, Date Range</td>
                   <td>Yes</td>
-                  <td>This handler supports <em>export-only</em> of all fields within the <code>orders</code> table.  The information <em>does not</em> include the associated products or their attributes.</td>
+                  <td>This handler supports <em>export-only</em> of all fields within the <code>orders</code> table.  The information <em>does not</em> include the associated products or their attributes. Starting with v2.0.0, the values of all <code>orders_totals</code> (other than 'ot_tax' and 'ot_total') are also included.</td>
                   <td>&mdash;</td>
                 </tr> 
                 
@@ -598,6 +599,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
             <li>BUGFIX: Use 'zen_cfg_read_only' to prevent the plugin's version settings from being reset.</li>
             <li>BUGFIX: Correct PHP notice/warning issued if the tool detects an error.</li>
             <li>CHANGE: Correcting 'dynamic properties' deprecations issued by PHP 8.2.</li>
+            <li>CHANGE: The <em>DbioOrdersHandler</em> now includes <b>all</b> orders_total values (other than 'ot_tax' and 'ot_total').</li>
             <li>The following files were changed:<ol>
               <li>/YOUR_ADMIN/dbio_manager.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
