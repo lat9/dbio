@@ -3,6 +3,8 @@
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2017-2023, Vinos de Frutas Tropicales.
 //
+// Last updated: DbIo v2.2.0
+//
 require 'includes/application_top.php';
 require DIR_FS_ADMIN . 'includes/functions/dbio_manager_functions.php';
 
@@ -437,16 +439,27 @@ if ($ok_to_proceed === false) {
                                 <td class="dbio-field" id="move-fields">
 <?php
         if ($action !== 'copy') {
+            // -----
+            // Making iOS "happy", hopefully.
+            //
+            $available_fields_select = zen_draw_pull_down_menu('available_fields', $available_fields, '', 'id="available" multiple="multiple"');
+            $available_fields_select = preg_replace('/<option /', '<optgroup disabled hidden></optgroup><option ', $available_fields_select, 1);
 ?>
-                                    <div><?php echo zen_draw_pull_down_menu('available_fields', $available_fields, '', 'id="available" multiple="multiple"'); ?></div>
+                                    <div><?php echo $available_fields_select; ?></div>
                                     <div id="move-left-right" class="move-buttons">
                                         <div id="move-left"><i class="fa fa-arrow-circle-o-left fa-2x"></i></div>
                                         <div id="move-right"><i class="fa fa-arrow-circle-o-right fa-2x"></i></div>
                                     </div>
 <?php
         }
+
+        // -----
+        // Making iOS "happy", hopefully.
+        //
+        $customized_fields_select = zen_draw_pull_down_menu('customized[]', $current_fields, '', 'id="customized" multiple="multiple"');
+        $customized_fields_select = preg_replace('/<option /', '<optgroup disabled hidden></optgroup><option ', $customized_fields_select, 1);
 ?>
-                                    <div><?php echo zen_draw_pull_down_menu('customized[]', $current_fields, '', 'id="customized" multiple="multiple"'); ?></div>
+                                    <div><?php echo $customized_fields_select; ?></div>
 <?php
         if ($action !== 'copy') {
 ?>
@@ -458,7 +471,7 @@ if ($ok_to_proceed === false) {
         }
 ?>
                                 </td>
-                                <td class="dbio-desc"><?php echo ($action == 'copy') ? INSTRUCTIONS_CHOOSE_COPY : INSTRUCTIONS_CHOOSE; ?></td>
+                                <td class="dbio-desc"><?php echo ($action === 'copy') ? INSTRUCTIONS_CHOOSE_COPY : INSTRUCTIONS_CHOOSE; ?></td>
                             </tr>
 <?php
         if ($next_action === 'update') {
