@@ -46,7 +46,7 @@ class DbIoProductsHandler extends DbIoHandler
                FROM " . TABLE_MANUFACTURERS . "
               ORDER BY manufacturers_name ASC"
         );
-        foreach ($manufacturer_info as $next_manufacturer) {
+        foreach ($manufacturers_info as $next_manufacturer) {
             $manufacturers_options[] = $next_manufacturer;
         }
         unset($manufacturers_info);
