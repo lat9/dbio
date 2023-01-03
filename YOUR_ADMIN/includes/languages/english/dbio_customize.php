@@ -1,7 +1,10 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2017-2020, Vinos de Frutas Tropicales.
+//
+// Last updated: DbIo v2.2.0
+//
+// Copyright (c) 2017-2023, Vinos de Frutas Tropicales.
 //
 define('HEADING_TITLE', 'Configure DbIo%s Templates');
 
@@ -43,8 +46,7 @@ define('BUTTON_REMOVE', 'Remove');
 define('BUTTON_REMOVE_TITLE', 'Click here to permanently remove this template');
 define('BUTTON_NEW', 'New Template');
 define('BUTTON_NEW_TITLE', 'Click here to create a new DbIo template for the current handler');
-define('BUTTON_EDIT', 'Edit');
-define('BUTTON_EDIT_TITLE', 'Click here to edit this DbIo template');
+
 define('BUTTON_INSERT', 'Insert');
 define('BUTTON_INSERT_TITLE', 'Click here to create a new DbIo template');
 define('BUTTON_UPDATE', 'Update');
