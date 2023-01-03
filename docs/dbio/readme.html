@@ -596,12 +596,14 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <ul>
           <li>v2.0.0-beta2, 2023-01-02 (lat9/torvista):<ul>
             <li>BUGFIX: PHP 8.1+ compatibility, removing use of 'auto_detect_line_endings'.</li>
+            <li>CHANGE: Drop support for Zen Cart versions prior to zc157, now using admin_html_head.php.</li>
             <li>BUGFIX: Use 'zen_cfg_read_only' to prevent the plugin's version settings from being reset.</li>
             <li>BUGFIX: Correct PHP notice/warning issued if the tool detects an error.</li>
             <li>CHANGE: Correcting 'dynamic properties' deprecations issued by PHP 8.2.</li>
             <li>CHANGE: The <em>DbioOrdersHandler</em> now includes <b>all</b> orders_total values (other than 'ot_tax' and 'ot_total').</li>
             <li>BUGFIX: Remove duplicate language constant for the <code>dbio_customize</code> tool.</li>
             <li>The following files were changed:<ol>
+              <li>/YOUR_ADMIN/dbio_customize.php</li>
               <li>/YOUR_ADMIN/dbio_manager.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
