@@ -324,7 +324,7 @@ class DbIoProductsHandler extends DbIoHandler
                             foreach ($this->tables[TABLE_META_TAGS_PRODUCTS_DESCRIPTION]['fields'] as $key => $values) {
                                 if ($include_all_fields === true || in_array($key, $this->saved_data['products_metatags_fields'])) {
                                     $default_value = $values['default'];
-                                    $metatags_fields[$key] = ($default_value === 'NULL') ? null : trim($values['default'], "'");
+                                    $metatags_fields[$key] = ($default_value === null) ? null : trim($default_value, "'");
                                 }
                             }
                         }
