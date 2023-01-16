@@ -453,6 +453,8 @@ div.export-only span { color: red; font-weight: bold; }
 .flii-item { font-weight: bold; }
 .flii-warning .flii-item { color: #cccc00; }
 .flii-info .flii-item { color: green; }
+
+select[multiple] { resize: vertical; }
     </style>
 </head>
 <body>
@@ -940,7 +942,6 @@ if ($ok_to_proceed === false || $error_message !== '') {
 
 <script src="includes/javascript/dbio/jquery.colorbox-min.js"></script>
 <script>
-<!--
     $(document).ready(function() {
         $(".import-info").colorbox({inline:true, width:"auto"});
 
@@ -1005,9 +1006,6 @@ foreach ($customization_choices as $index => $info) {
             $('#file-action option').prop('disabled', false);
         }
     });
-
-    $('select[multiple]').css('resize', 'vertical');
-  // -->
 </script>
 </body>
 </html>

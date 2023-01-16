@@ -219,6 +219,18 @@ legend { background-color: #fff8dc; padding: 0.3em; border: 1px solid #e5e5e5; }
 .file-row:hover { background-color: #ebebeb; }
 .smaller { font-size: smaller; }
 .instructions { font-size: 12px; padding: 0.5em 1em; }
+<?php
+if ($action === 'new' || $action === 'edit' || $action === 'copy') {
+    if ($action !== 'copy') {
+?>
+#available { resize: vertical; }
+<?php
+    }
+?>
+#customized { resize: vertical; }
+<?php
+}
+?>
     </style>
 </head>
 <body>
@@ -516,7 +528,6 @@ if (isset($handler_fields['keys'])) {
 $keys_list = ($keys_list == '') ? '' : substr($keys_list, 0, -2);
 ?>
 <script>
-<!--
 function confirmRemove(tID)
 {
     var removeIt = confirm( '<?php echo JS_MESSAGE_CONFIRM_REMOVE; ?>' );
@@ -586,19 +597,6 @@ $(function () {
         }
     });
 });
-<?php
-if ($action === 'new' || $action === 'edit' || $action === 'copy') {
-    if ($action !== 'copy') {
-?>
-document.getElementById( 'available' ).style.resize = 'vertical';
-<?php
-    }
-?>
-document.getElementById( 'customized' ).style.resize = 'vertical';
-<?php
-}
-?>
-  // -->
 </script>
 </body>
 </html>
