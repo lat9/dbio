@@ -52,21 +52,21 @@ if (!$ok_to_proceed) {
         $ok_to_proceed = false;
         $error_message = DBIO_MESSAGE_NO_HANDLERS_FOUND;
     } else {
-        $available_handlers = array();
+        $available_handlers = [];
         $handler_name = (isset($_POST['handler'])) ? $_POST['handler'] : ((isset($_SESSION['dbio_vars']) && isset($_SESSION['dbio_vars']['handler'])) ? $_SESSION['dbio_vars']['handler'] : false);
         foreach ($dbio_handlers as $current_handler => $handler_info) {
             if ($handler_name === false) {
                 $handler_name = $current_handler;
             }
-            $available_handlers[] = array(
+            $available_handlers[] = [
                 'id' => $current_handler,
                 'text' => $current_handler
-            );
+            ];
         }
         $handler_info = $dbio_handlers[$handler_name];
 
         if (!isset($_SESSION['dbio_vars'])) {
-            $_SESSION['dbio_vars'] = array();
+            $_SESSION['dbio_vars'] = [];
             $_SESSION['dbio_vars']['handler'] = $handler_name;
         }
         if ($_SESSION['dbio_vars']['handler'] != $handler_name) {
@@ -79,8 +79,8 @@ if (!$ok_to_proceed) {
         // action or a simple page-display.  No sense in gathering the information for the other actions,
         // since the information isn't used.
         //
-        $dbio_files = array();
-        if ($action == 'file' || $action == '') {
+        $dbio_files = [];
+        if ($action === 'file' || $action === '') {
             $files_check = false;
             $csv_check = glob(DIR_FS_DBIO . "dbio.$handler_name.*.csv");
             if (is_array($csv_check)) {
@@ -105,7 +105,7 @@ if (!$ok_to_proceed) {
                         $_SESSION['dbio_active_filename'] = $current_csv_filename;
                     }
                     $filename_hash = md5($current_csv_file);
-                    $dbio_files[$filename_hash] = array(
+                    $dbio_files[$filename_hash] = [
                         'full_filepath' => $current_csv_file,
                         'filename_only' => $current_csv_filename,
                         'selected' => ($_SESSION['dbio_active_filename'] == $current_csv_filename),
@@ -114,7 +114,7 @@ if (!$ok_to_proceed) {
                         'handler_name' => $handler_name,
                         'is_export_only' => (isset($dbio_handlers[$handler_name]) && isset($dbio_handlers[$handler_name]['export_only'])) ? $dbio_handlers[$handler_name]['export_only'] : false,
                         'is_header_included' => (isset($dbio_handlers[$handler_name]) && isset($dbio_handlers[$handler_name]['include_header'])) ? $dbio_handlers[$handler_name]['include_header'] : false,
-                    );
+                    ];
                 }
             }
             unset($files_check, $current_csv_file, $file_stats, $dbio_handlers, $filename_hash);
@@ -122,7 +122,7 @@ if (!$ok_to_proceed) {
 
         switch ($action) {
             case 'choose':
-                zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action'))));
+                zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action'])));
                 break;
 
             case 'export':
@@ -130,7 +130,7 @@ if (!$ok_to_proceed) {
                 if (isset($_POST['export_button'])) {
                     $report_suffix = '';
                     $customized_fields = false;
-                    if (isset($_POST['custom']) && $_POST['custom'] != 0) {
+                    if (isset($_POST['custom']) && $_POST['custom'] !== '0') {
                         $custom_info = $db->Execute(
                             "SELECT report_name, field_info
                               FROM " . TABLE_DBIO_REPORTS . "
@@ -139,7 +139,7 @@ if (!$ok_to_proceed) {
                         );
                         if ($custom_info->EOF) {
                             $messageStack->add_session(ERROR_UNKNOWN_TEMPLATE, 'error');
-                            zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(array ('action'))));
+                            zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action'])));
                         }
                         $report_suffix = $custom_info->fields['report_name'];
                         $customized_fields = $custom_info->fields['field_info'];
@@ -150,7 +150,7 @@ if (!$ok_to_proceed) {
                     $dbio = new DbIo($handler_name, $report_suffix);
 
                     if ($customized_fields !== false) {
-                        $dbio->handler->exportCustomizeFields(json_decode ($customized_fields));
+                        $dbio->handler->exportCustomizeFields(json_decode($customized_fields));
                     }
 
                     $_SESSION['dbio_auto_download'] = (isset($_POST['auto_download']));
@@ -168,16 +168,16 @@ if (!$ok_to_proceed) {
                         $download_active_filename = (!empty($_SESSION['dbio_auto_download']));
                         if ($download_active_filename) {
                             $download_filename = $export_info['export_filename'];
-                            $download_info = array(
+                            $download_info = [
                                 'name' => $download_filename,
                                 'bytes' => filesize(DIR_FS_DBIO . $download_filename),
-                            );
+                            ];
                         }
                     }
                 }
 
                 if (empty($download_active_filename)) {
-                    zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action'))));
+                    zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action'])));
                 }
                 break;
 
@@ -189,14 +189,14 @@ if (!$ok_to_proceed) {
                         $messageStack->add_session(sprintf(ERROR_FILENAME_MISMATCH, $handler_name), 'error');
                     } else {
                         $upload = new upload('upload_filename');
-                        $upload->set_extensions(explode (',', DBIO_SUPPORTED_FILE_EXTENSIONS));
+                        $upload->set_extensions(explode(',', DBIO_SUPPORTED_FILE_EXTENSIONS));
                         $upload->set_destination(DIR_FS_DBIO);
                         if ($upload->parse()) {
                             $upload->save();
                         }
                         $_SESSION['dbio_active_filename'] = $_FILES['upload_filename']['name'];
                     }
-                    zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action'))));
+                    zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action'])));
                 }
                 break;
 
@@ -220,7 +220,7 @@ if (!$ok_to_proceed) {
                             }
                         }
                     }
-                    zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action'))));
+                    zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action'])));
                 } else {
                     $action_filename = $dbio_files[$_POST['filename_hash']]['full_filepath'];
                     $active_filename = $dbio_files[$_POST['filename_hash']]['filename_only'];
@@ -249,9 +249,9 @@ if (!$ok_to_proceed) {
                                 } else {
                                     $messageStack->add_session($import_result['message']);
                                 }
-                                $_SESSION['dbio_import_result'] = array_merge($import_result, array('import_filename' => $action_filename));
+                                $_SESSION['dbio_import_result'] = array_merge($import_result, ['import_filename' => $action_filename]);
                             }
-                            zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action'))));
+                            zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action'])));
                             break;
 
                         case 'split':
@@ -263,7 +263,7 @@ if (!$ok_to_proceed) {
                                 $record_count = 0;
                                 $header_record = false;
                                 $split_error = false;
-                                $files_created = array();
+                                $files_created = [];
                                 $header_included = $dbio_files[$_POST['filename_hash']]['is_header_included'];
 
                                 $split_file_info = pathinfo($action_filename);
@@ -333,15 +333,15 @@ if (!$ok_to_proceed) {
                                     }
                                 }
                             }
-                            zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action'))));
+                            zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action'])));
                             break;
 
                         case 'download':
                             $_SESSION['dbio_active_filename'] = $active_filename;
-                            $download_info = array(
+                            $download_info = [
                                 'name' => $dbio_files[$_POST['filename_hash']]['filename_only'],
                                 'bytes' => $dbio_files[$_POST['filename_hash']]['bytes'],
-                            );
+                            ];
                             break;
 
                         default:
@@ -364,7 +364,7 @@ if (!$ok_to_proceed) {
             $fp = fopen(DIR_FS_DBIO . $action_filename, 'r');
             if ($fp === false) {
                 $messageStack->add_session(sprintf(DBIO_CANT_OPEN_FILE, $action_filename), 'error');
-                zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action'))));
+                zen_redirect(zen_href_link(FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action'])));
             } else {
                 if (dbio_strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false) {
                     header('Content-Type: "application/octet-stream"');
@@ -478,14 +478,14 @@ if ($ok_to_proceed === false || $error_message !== '') {
     <table id="main-contents">
         <tr>
             <td id="dbio-choose" colspan="2" class="text-left">
-                <?php echo TEXT_CHOOSE_HANDLER . ' ' . zen_draw_form('dbio-select', FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action')) . 'action=choose', 'post'); ?>
+                <?php echo TEXT_CHOOSE_HANDLER . ' ' . zen_draw_form('dbio-select', FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action']) . 'action=choose', 'post'); ?>
                     <?php echo zen_draw_pull_down_menu('handler', $available_handlers, $handler_name, 'onchange="this.form.submit();"'); ?>
                 <?php echo '</form>'; ?>
             </td>
         </tr>
 
         <tr>
-            <td id="export-form"><?php echo zen_draw_form('dbio', FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action')) . 'action=export', 'post', 'enctype="multipart/form-data"'); ?>
+            <td id="export-form"><?php echo zen_draw_form('dbio', FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action']) . 'action=export', 'post', 'enctype="multipart/form-data"'); ?>
                 <fieldset id="reports-export" class="text-left">
                     <legend><?php echo LEGEND_EXPORT; ?></legend>
                     <p><?php echo $handler_info['description']; ?></p>
@@ -506,7 +506,7 @@ if ($ok_to_proceed === false || $error_message !== '') {
                     <div class="reports-details-row">
 <?php
             $handler_filters = $handler_class::getHandlerExportFilters();
-            if (is_array ($handler_filters)) {
+            if (is_array($handler_filters)) {
 ?>
                         <div class="reports-export-filters">
 <?php
@@ -525,7 +525,7 @@ if ($ok_to_proceed === false || $error_message !== '') {
                                 $dropdown_options = 'multiple';
                                 $dropdown_field_suffix = '[]';      //-Fall-through to dropdown handling
                             case 'dropdown':
-                                if (!isset($field_parms['dropdown_options']) || !is_array ($field_parms['dropdown_options'])) {
+                                if (!isset($field_parms['dropdown_options']) || !is_array($field_parms['dropdown_options'])) {
                                     $form_field = false;
                                     trigger_error("DbIo: Missing dropdown_options for $handler_name::$field_name export filter:\n" . print_r($field_parms, true), E_USER_WARNING);
                                 } else {
@@ -657,7 +657,7 @@ if ($ok_to_proceed === false || $error_message !== '') {
                 </div>
             </form></td>
 
-            <td id="upload-form"><?php echo zen_draw_form('dbio', FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action')) . 'action=upload', 'post', 'enctype="multipart/form-data"'); ?>
+            <td id="upload-form"><?php echo zen_draw_form('dbio', FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action']) . 'action=upload', 'post', 'enctype="multipart/form-data"'); ?>
                 <fieldset>
                     <legend><?php echo LEGEND_FILE_UPLOADS; ?></legend>
 <?php
@@ -681,7 +681,7 @@ if ($ok_to_proceed === false || $error_message !== '') {
         </tr>
 
         <tr>
-            <td id="file-list"><?php echo zen_draw_form('file_form', FILENAME_DBIO_MANAGER, zen_get_all_get_params(array('action')) . 'action=file'); ?>
+            <td id="file-list"><?php echo zen_draw_form('file_form', FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action']) . 'action=file'); ?>
                 <fieldset>
                     <legend><?php echo LEGEND_FILE_ACTIONS; ?></legend>
 <?php
@@ -839,7 +839,7 @@ if ($ok_to_proceed === false || $error_message !== '') {
             TEXT_DATE_FORMAT => DBIO_DEBUG_DATE_FORMAT,
         ],
         TEXT_DBIO_SYSTEM_SETTINGS => [
-           TEXT_MAX_UPLOAD_FILE_SIZE => ini_get ('upload_max_filesize'),
+           TEXT_MAX_UPLOAD_FILE_SIZE => ini_get('upload_max_filesize'),
            TEXT_CHARSET => CHARSET,
            TEXT_DB_CHARSET => DB_CHARSET,
            TEXT_DEFAULT_LANGUAGE => DEFAULT_LANGUAGE,
