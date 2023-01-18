@@ -114,7 +114,7 @@ if ($ok_to_proceed === false) {
                               LIMIT 1"
                         );
                         if ($copy_info->EOF) {
-                            zen_redirect(zen_href_link(FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params(array('action', 'tID'))));
+                            zen_redirect(zen_href_link(FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params(['action', 'tID'])));
                         }
                         $field_info = $copy_info->fields['field_info'];
 
@@ -171,7 +171,7 @@ if ($ok_to_proceed === false) {
                         }
                         $messageStack->add_session(sprintf(SUCCESS_TEMPLATE_UPDATED, $report_name), 'success');
                     }
-                    zen_redirect(zen_href_link(FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params(array ('action'))));
+                    zen_redirect(zen_href_link(FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params(['action'])));
                 }
                 break;
             case 'remove':
@@ -184,7 +184,7 @@ if ($ok_to_proceed === false) {
                       WHERE dbio_reports_id = $tID"
                 );
                 $messageStack->add_session(sprintf(SUCCESS_TEMPLATE_REMOVED, $report_name), 'success');
-                zen_redirect(zen_href_link(FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params(array ('action'))));
+                zen_redirect(zen_href_link(FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params(['action'])));
                 break;
             case 'copy':
             case 'edit':        //-Fall-through ...
@@ -223,11 +223,11 @@ legend { background-color: #fff8dc; padding: 0.3em; border: 1px solid #e5e5e5; }
 if ($action === 'new' || $action === 'edit' || $action === 'copy') {
     if ($action !== 'copy') {
 ?>
-#available { resize: vertical; }
+#available { resize: vertical; overflow: hidden; padding: 1px; }
 <?php
     }
 ?>
-#customized { resize: vertical; }
+#customized { resize: vertical; overflow: hidden; padding: 1px; }
 <?php
 }
 ?>
@@ -419,7 +419,7 @@ if ($ok_to_proceed === false) {
             $languages_description = '&nbsp;';
         }
         unset($dbio_languages, $languages_description);
- 
+
         unset($dbio);
         $dbio = new DbIo($handler_name);
         $handler_fields = $dbio->handler->getCustomizableFields();
@@ -434,7 +434,7 @@ if ($ok_to_proceed === false) {
                 'text' => $next_field
             ];
         }
-        
+
         $available_fields = [];
         foreach ($handler_fields['fields'] as $db_field) {
             if (in_array($db_field, $customized)) {
@@ -447,7 +447,7 @@ if ($ok_to_proceed === false) {
         }
 ?>
                             <tr>
-                                <td class="dbio-label"><?php echo ($action == 'copy') ? COLUMN_HEADING_COPY_FIELDS : COLUMN_HEADING_CHOOSE_FIELDS; ?></td>
+                                <td class="dbio-label"><?php echo ($action === 'copy') ? COLUMN_HEADING_COPY_FIELDS : COLUMN_HEADING_CHOOSE_FIELDS; ?></td>
                                 <td class="dbio-field" id="move-fields">
 <?php
         if ($action !== 'copy') {

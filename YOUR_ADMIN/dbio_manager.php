@@ -454,7 +454,7 @@ div.export-only span { color: red; font-weight: bold; }
 .flii-warning .flii-item { color: #cccc00; }
 .flii-info .flii-item { color: green; }
 
-select[multiple] { resize: vertical; }
+select[multiple] { resize: vertical; overflow: hidden; padding: 1px; }
     </style>
 </head>
 <body>
