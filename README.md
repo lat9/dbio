@@ -1,5 +1,7 @@
 The Database I/O Manager provides functionality similar to EZ-Populate, but has been totally redesigned from the ground up.
 
+Currently supporting Zen Cart versions 1.5.7 and later.
+
 ## Zen Cart Support Thread
 
 The DbIo support-thread on the Zen Cart forums is located [here](https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Plugin-Support-Thread).

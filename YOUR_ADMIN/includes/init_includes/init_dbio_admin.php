@@ -14,8 +14,8 @@ if (empty($_SESSION['admin_id'])) {
     return;
 }
 
-define('DBIO_CURRENT_VERSION', '2.0.0-beta3');
-define('DBIO_CURRENT_UPDATE_DATE', '2023-01-02');
+define('DBIO_CURRENT_VERSION', '2.0.0');
+define('DBIO_CURRENT_UPDATE_DATE', '2023-01-19');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
 
