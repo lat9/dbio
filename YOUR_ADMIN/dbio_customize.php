@@ -223,11 +223,11 @@ legend { background-color: #fff8dc; padding: 0.3em; border: 1px solid #e5e5e5; }
 if ($action === 'new' || $action === 'edit' || $action === 'copy') {
     if ($action !== 'copy') {
 ?>
-#available { resize: vertical; overflow: hidden; padding: 1px; }
+#available { resize: vertical; overflow: hidden; padding: 2px; }
 <?php
     }
 ?>
-#customized { resize: vertical; overflow: hidden; padding: 1px; }
+#customized { resize: vertical; overflow: hidden; padding: 2px; }
 <?php
 }
 ?>
