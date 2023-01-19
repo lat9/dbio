@@ -399,6 +399,7 @@ if (!$ok_to_proceed) {
     <style>
 input[type="submit"] { cursor: pointer; }
 select { padding: 0.1em; margin: 0.5em; }
+select[multiple] { resize: vertical; overflow: hidden; padding: 2px; }
 td, th { padding: 0.5em; }
 legend { background-color: #fff8dc; padding: 0.3em; border: 1px solid #e5e5e5; }
 #main-wrapper { text-align: center; padding: 1em; }
@@ -453,8 +454,6 @@ div.export-only span { color: red; font-weight: bold; }
 .flii-item { font-weight: bold; }
 .flii-warning .flii-item { color: #cccc00; }
 .flii-info .flii-item { color: green; }
-
-select[multiple] { resize: vertical; overflow: hidden; padding: 1px; }
     </style>
 </head>
 <body>
