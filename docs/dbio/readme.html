@@ -594,6 +594,13 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <noscript><h3>Version History</h3></noscript>
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
         <ul>
+          <li>v2.0.1-beta1, 2023-02-15 (lat9/torvista):<ul>
+            <li>BUGFIX: Correct sprintf parameter declaration used when files are split.</li>
+            <li>The following files were changed:<ol>
+              <li>/YOUR_ADMIN/includes/languages/english/dbio_manager.php</li>
+              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+            </ol></li>
+          </ul></li>
           <li>v2.0.0, 2023-01-19 (lat9/torvista):<ul>
             <li>BUGFIX: PHP 8.1+ compatibility, removing use of 'auto_detect_line_endings'.</li>
             <li>CHANGE: Drop support for Zen Cart versions prior to zc157, now using admin_html_head.php.</li>
