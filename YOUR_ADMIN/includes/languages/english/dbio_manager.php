@@ -75,7 +75,7 @@ define('DBIO_ACTION_FULL_IMPORT', 'Import (Full)');
 define('DBIO_ACTION_CHECK_IMPORT', 'Import (Check-only)');
 define('DBIO_ACTION_DOWNLOAD', 'Download');
 
-define('TEXT_FILE_ACTION_INSTRUCTIONS', 
+define('TEXT_FILE_ACTION_INSTRUCTIONS',
     'The following file-related actions are supported, but might be limited by the current <em>handler</em>:' . PHP_EOL .
     '<ol>' . PHP_EOL .
     '   <li><strong>' . DBIO_ACTION_SPLIT . '</strong>: Splits a .CSV file into multiple files, using your store\'s current setting for the <b>Split Record Count</b>, enabling you to download large exports in sections.</li>' . PHP_EOL .
@@ -112,10 +112,10 @@ define('SUCCESS_FILE_DELETED', 'The requested file (%s) was successfully deleted
 
 define('ERROR_CANT_SPLIT_FILE_OPEN_ERROR', 'The requested file (%s) was not split; it could not be opened.');
 define('ERROR_CREATING_SPLIT_FILE', 'An error occurred during the split operation.  The file (%s) could not be created.');
-define('ERROR_WRITING_SPLIT_FILE', 'An error occurred writing record #%$2u of the split file (%$1s).');
+define('ERROR_WRITING_SPLIT_FILE', 'An error occurred writing record #%2$u of the split file (%1$s).');
 define('ERROR_SPLIT_INPUT_NOT_AT_EOF', 'An unknown error occurred reading the split input file (%s).  The operation was cancelled.');
 define('WARNING_FILE_TOO_SMALL_TO_SPLIT', 'The file (%1$s) contains too few records (%2$u) to split.');
-define('FILE_SUCCESSFULLY_SPLIT', 'The file (%1$s) was successfully split into %2$u chunks.'); 
+define('FILE_SUCCESSFULLY_SPLIT', 'The file (%1$s) was successfully split into %2$u chunks.');
 
 define('ERROR_FILE_IS_EXPORT_ONLY', 'The file (%s) was not imported.  It is associated with an <em>export-only</em> report.');
 define('ERROR_UNKNOWN_TEMPLATE', 'The DbIo template you requested could not be found; please try again.');
