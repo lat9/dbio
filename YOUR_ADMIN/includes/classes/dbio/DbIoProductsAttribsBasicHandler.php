@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2022, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2024, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.0.
+// Last updated: DbIo v2.0.1.
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -213,7 +213,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
                 if (count($options_values_names) !== $options_values_check->RecordCount()) {
                     $values_found = [];
                     foreach ($options_values_check as $next_value) {
-                        $values_found = $next_value['products_options_values_name'];
+                        $values_found[] = $next_value['products_options_values_name'];
                     }
                     $values_not_found = implode(', ', array_diff($options_values_names, $values_found));
                     $message = " one or more option-values ($values_not_found) were either not present in the default language or are not associated with the products_options_id of $products_options_id.";

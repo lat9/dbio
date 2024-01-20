@@ -2,9 +2,9 @@
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Database I/O Manager (DbIo)</title>
-<link rel="icon" href="../vinos_favicon.ico" type="image/x-icon" />
+<link rel="icon" href="../vinos_favicon.ico" type="image/x-icon">
 <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
 <style>
 <!--
@@ -72,7 +72,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
 #dbio_layout2 tr:first-child td { border-bottom: 1px solid black; }
 -->
 </style>
-<link rel="stylesheet" type="text/css" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" />
+<link rel="stylesheet" type="text/css" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
 <script src="../jquery-3.5.1.min.js"></script> 
 <script src="../jquery.easytabs.min.js"></script>
 <script type="text/javascript">
@@ -84,7 +84,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
 
 <body>
   <h1 id="title">Database I/O Manager (DbIo) for Zen Cart&reg;</h1>
-  <p>Version 2.0.0 Copyright &copy; 2015-2023, <a href="https://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
+  <p>Version 2.0.1 Copyright &copy; 2015-2024, <a href="https://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a>.</p>
   <p>Current Support Thread on the Zen Cart forums: <a href="https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread</a></p>
   <p>Current Zen Cart Download is <a href="https://www.zen-cart.com/downloads.php?do=file&id=2091" target="_blank">here</a>.</p>
   
@@ -594,9 +594,11 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
         <noscript><h3>Version History</h3></noscript>
         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
         <ul>
-          <li>v2.0.1-beta1, 2023-02-15 (lat9/torvista):<ul>
+          <li>v2.0.1-beta2, 2024-01-20 (lat9/torvista):<ul>
             <li>BUGFIX: Correct sprintf parameter declaration used when files are split.</li>
+            <li>BUGFIX: Correct PHP Fatal error when exporting via <var>DbIoProductsAttribsBasicHandler</var>.</li>
             <li>The following files were changed:<ol>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsBasicHandler.php</li>
               <li>/YOUR_ADMIN/includes/languages/english/dbio_manager.php</li>
               <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
             </ol></li>
