@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2023, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2024, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.0
+// Last updated: DbIo v2.0.1
 //
 require 'includes/application_top.php';
 require DIR_FS_ADMIN . 'includes/functions/dbio_manager_functions.php';
@@ -53,7 +53,7 @@ if (!$ok_to_proceed) {
         $error_message = DBIO_MESSAGE_NO_HANDLERS_FOUND;
     } else {
         $available_handlers = [];
-        $handler_name = (isset($_POST['handler'])) ? $_POST['handler'] : ((isset($_SESSION['dbio_vars']) && isset($_SESSION['dbio_vars']['handler'])) ? $_SESSION['dbio_vars']['handler'] : false);
+        $handler_name = (isset($_POST['handler'])) ? $_POST['handler'] : ((isset($_SESSION['dbio_vars'], $_SESSION['dbio_vars']['handler'])) ? $_SESSION['dbio_vars']['handler'] : false);
         foreach ($dbio_handlers as $current_handler => $handler_info) {
             if ($handler_name === false) {
                 $handler_name = $current_handler;
@@ -112,8 +112,8 @@ if (!$ok_to_proceed) {
                         'last_modified' => $file_stats[9],
                         'bytes' => $file_stats[7],
                         'handler_name' => $handler_name,
-                        'is_export_only' => (isset($dbio_handlers[$handler_name]) && isset($dbio_handlers[$handler_name]['export_only'])) ? $dbio_handlers[$handler_name]['export_only'] : false,
-                        'is_header_included' => (isset($dbio_handlers[$handler_name]) && isset($dbio_handlers[$handler_name]['include_header'])) ? $dbio_handlers[$handler_name]['include_header'] : false,
+                        'is_export_only' => (isset($dbio_handlers[$handler_name], $dbio_handlers[$handler_name]['export_only'])) ? $dbio_handlers[$handler_name]['export_only'] : false,
+                        'is_header_included' => (isset($dbio_handlers[$handler_name], $dbio_handlers[$handler_name]['include_header'])) ? $dbio_handlers[$handler_name]['include_header'] : false,
                     ];
                 }
             }
@@ -201,8 +201,8 @@ if (!$ok_to_proceed) {
                 break;
 
             case 'file':
-                if (!((isset($_POST['file_action']) && isset($_POST['filename_hash']) && isset($dbio_files[$_POST['filename_hash']])) ||
-                      (isset($_POST['delete_button']) && isset($_POST['delete_hash'])))) {
+                if (!((isset($_POST['file_action'], $_POST['filename_hash'], $dbio_files[$_POST['filename_hash']])) ||
+                      (isset($_POST['delete_button'], $_POST['delete_hash'])))) {
                     $messageStack->add_session(DBIO_FORM_SUBMISSION_ERROR);
                 } elseif (isset($_POST['delete_button'])) {
                     if (is_array($_POST['delete_hash'])) {
@@ -484,7 +484,7 @@ if ($ok_to_proceed === false || $error_message !== '') {
         </tr>
 
         <tr>
-            <td id="export-form"><?php echo zen_draw_form('dbio', FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action']) . 'action=export', 'post', 'enctype="multipart/form-data"'); ?>
+            <td id="export-form"><?php echo zen_draw_form('dbio-export', FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action']) . 'action=export', 'post', 'enctype="multipart/form-data"'); ?>
                 <fieldset id="reports-export" class="text-left">
                     <legend><?php echo LEGEND_EXPORT; ?></legend>
                     <p><?php echo $handler_info['description']; ?></p>
@@ -510,7 +510,7 @@ if ($ok_to_proceed === false || $error_message !== '') {
                         <div class="reports-export-filters">
 <?php
                 foreach ($handler_filters as $field_name => $field_parms) {
-                    if (!isset($field_parms['type']) || !isset ($field_parms['label'])) {
+                    if (!isset($field_parms['type'], $field_parms['label'])) {
                         trigger_error("DbIo: Missing type and/or label for $handler_name::$field_name export filters:\n" . print_r($field_parms, true), E_USER_WARNING);
                     } else {
                         $extra_field_class = '';
@@ -656,7 +656,7 @@ if ($ok_to_proceed === false || $error_message !== '') {
                 </div>
             </form></td>
 
-            <td id="upload-form"><?php echo zen_draw_form('dbio', FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action']) . 'action=upload', 'post', 'enctype="multipart/form-data"'); ?>
+            <td id="upload-form"><?php echo zen_draw_form('dbio-upload', FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action']) . 'action=upload', 'post', 'enctype="multipart/form-data"'); ?>
                 <fieldset>
                     <legend><?php echo LEGEND_FILE_UPLOADS; ?></legend>
 <?php
