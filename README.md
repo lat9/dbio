@@ -12,4 +12,4 @@ The _**Database I/O Manager**_ can also be downloaded from the Zen Cart [support
 
 ## Handler-Specific Usage Notes
 
-Additional, handler-specific usage notes are documented [here](./pages/handler_specific_usage_notes.md).
+Additional, handler-specific usage notes are documented [here](https://github.com/lat9/dbio/wiki).
