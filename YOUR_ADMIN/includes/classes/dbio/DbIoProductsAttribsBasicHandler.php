@@ -3,7 +3,7 @@
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2015-2024, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.1.
+// Last updated: DbIo v2.0.1
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -18,6 +18,7 @@ if (!defined('IS_ADMIN_FLAG')) {
 // - The v_products_model field identifies the (presumed) single product associated with the (possibly) multiple imports.
 // - The combination of v_products_options_type and v_products_options_name are used to find existing option/option-value pairs in the
 //   store's DEFAULT LANGUAGE.  All combinations must pre-exist in the database or the associated record's information is not imported.
+// - Only **new** option/option-value pairs are successfully imported!
 //
 class DbIoProductsAttribsBasicHandler extends DbIoHandler
 {
@@ -25,7 +26,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile('ProductsAttribsBasic');
         return [
-            'version' => '2.0.0',
+            'version' => '2.0.1',
             'handler_version' => '1.0.0',
             'include_header' => true,
             'export_only' => false,
@@ -175,7 +176,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
         global $db;
 
         $message = '';
-        if (!isset($this->saved_data['option']) || !isset($this->saved_data['option']['products_options_type']) || !isset($this->saved_data['option']['products_options_name'])) {
+        if (!isset($this->saved_data['option'], $this->saved_data['option']['products_options_type'], $this->saved_data['option']['products_options_name'])) {
             $message = " product's option fields do not exist.";
         } elseif (!isset($this->saved_data['option_values'])) {
             $message = " product's option value field(s) do not exist.";
@@ -196,27 +197,49 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
             } else {
                 $products_options_id = $option_check->fields['products_options_id'];
 
-                $options_values_names = explode('^', $this->saved_data['option_values']);
-                $options_values = [];
-                foreach ($options_values_names as $current_value_name) {
-                    $options_values[] = $db->prepare_input($current_value_name);
-                }
-                $options_values_list = "'" . implode("', '", $options_values) . "'";
+                // -----
+                // Check to see that the submitted option values' names are present in
+                // the database and associated with the option named.  If so, add the
+                // option-value's options_values_id to the list of combinations to be
+                // added for the product and remove that entry from the options' values'
+                // names-array.
+                //
+                // If the array of option-value-names submitted still has entries when
+                // this loop completes, that implies that at least one option-value named
+                // is not valid for the supplied option name.
+                //
                 $options_values_check = $db->ExecuteNoCache(
                     "SELECT pov.products_options_values_id, pov.products_options_values_name
                        FROM " . TABLE_PRODUCTS_OPTIONS_VALUES . " pov, " . TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS . " pov2po
-                      WHERE pov.products_options_values_name IN ($options_values_list)
+                      WHERE pov2po.products_options_id = $products_options_id
                         AND pov.language_id = $language_id
-                        AND pov.products_options_values_id = pov2po.products_options_values_id
-                        AND pov2po.products_options_id = $products_options_id"
+                        AND pov.products_options_values_id = pov2po.products_options_values_id"
                 );
-                if (count($options_values_names) !== $options_values_check->RecordCount()) {
-                    $values_found = [];
-                    foreach ($options_values_check as $next_value) {
-                        $values_found[] = $next_value['products_options_values_name'];
+                $options_values_names = explode('^', $this->saved_data['option_values']);
+                $options_values_ids = [];
+                foreach ($options_values_check as $next_value) {
+                    $value_index = array_search($next_value['products_options_values_name'], $options_values_names);
+                    if ($value_index !== false) {
+                        $options_values_ids[] = $next_value['products_options_values_id'];
+                        unset($options_values_names[$value_index]);
                     }
-                    $values_not_found = implode(', ', array_diff($options_values_names, $values_found));
+                    if (count($options_values_names) === 0) {
+                        break;
+                    }
+                }
+
+                // -----
+                // If there were options' values' names that are not currently present in the
+                // database and associated with the selected option, the record cannot be imported.
+                //
+                if (count($options_values_names) !== 0) {
+                    $values_not_found = implode(', ', $options_values_names);
                     $message = " one or more option-values ($values_not_found) were either not present in the default language or are not associated with the products_options_id of $products_options_id.";
+                // -----
+                // Otherwise, loop through each of the options_values_id's associated
+                // with the current import record.  If any are not currently recorded
+                // for the current product, add them.
+                //
                 } else {
                     $products_id = $this->key_fields['products_id'];
                     $attributes_insert_sql = [
@@ -233,17 +256,17 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
                             'type' => 'integer'
                         ],
                     ];
-                    foreach ($options_values_check as $next_value) {
+                    foreach ($options_values_ids as $next_values_id) {
                         $check = $db->ExecuteNoCache(
                             "SELECT products_attributes_id
                                FROM " . TABLE_PRODUCTS_ATTRIBUTES . "
                               WHERE products_id = $products_id
                                 AND options_id = $products_options_id
-                                AND options_values_id = " . $options_values_check->fields['products_options_values_id'] . "
+                                AND options_values_id = $next_values_id
                               LIMIT 1"
                         );
                         if ($check->EOF) {
-                            $attributes_insert_sql['options_values_id']['value'] = $options_values_check->fields['products_options_values_id'];
+                            $attributes_insert_sql['options_values_id']['value'] = $next_values_id;
                             $attrib_insert_query = $this->importBuildSqlQuery(TABLE_PRODUCTS_ATTRIBUTES, '', $attributes_insert_sql, '', true, true);
                             if ($this->operation !== 'check') {
                                 $db->Execute($attrib_insert_query);
