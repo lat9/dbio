@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2017-2023, Vinos de Frutas Tropicales.
+// Copyright (c) 2017-2025, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.2.0
+// Last updated: DbIo v2.0.2
 //
 require 'includes/application_top.php';
 require DIR_FS_ADMIN . 'includes/functions/dbio_manager_functions.php';
@@ -175,6 +175,13 @@ if ($ok_to_proceed === false) {
                 }
                 break;
             case 'remove':
+                $name = $db->Execute(
+                    "SELECT report_name
+                       FROM " . TABLE_DBIO_REPORTS . "
+                      WHERE dbio_reports_id = $tID
+                      LIMIT 1"
+                );
+                $report_name = ($name->EOF) ? '--none--' : $name->fields['report_name'];
                 $db->Execute(
                     "DELETE FROM " . TABLE_DBIO_REPORTS . "
                       WHERE dbio_reports_id = $tID"
@@ -530,9 +537,9 @@ $keys_list = ($keys_list == '') ? '' : substr($keys_list, 0, -2);
 <script>
 function confirmRemove(tID)
 {
-    var removeIt = confirm( '<?php echo JS_MESSAGE_CONFIRM_REMOVE; ?>' );
+    var removeIt = confirm('<?php echo JS_MESSAGE_CONFIRM_REMOVE; ?>');
     if (removeIt) {
-        var theLocation = '<?php echo zen_href_link(FILENAME_DBIO_CUSTOMIZE, "action=remove&handler=$handler_name&tID=%u"); ?>';
+        var theLocation = '<?php echo str_replace('&amp;', '&', zen_href_link(FILENAME_DBIO_CUSTOMIZE, "action=remove&handler=$handler_name&tID=%u")); ?>';
         theLocation = theLocation.replace('%u', tID);
         window.location.href = theLocation;
     }
