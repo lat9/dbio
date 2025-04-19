@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2017-2023, Vinos de Frutas Tropicales.
+// Copyright (c) 2017-2025, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.2.0
+// Last updated: DbIo v2.0.2
 //
 require 'includes/application_top.php';
 require DIR_FS_ADMIN . 'includes/functions/dbio_manager_functions.php';
@@ -175,6 +175,13 @@ if ($ok_to_proceed === false) {
                 }
                 break;
             case 'remove':
+                $name = $db->Execute(
+                    "SELECT report_name
+                       FROM " . TABLE_DBIO_REPORTS . "
+                      WHERE dbio_reports_id = $tID
+                      LIMIT 1"
+                );
+                $report_name = ($name->EOF) ? '--none--' : $name->fields['report_name'];
                 $db->Execute(
                     "DELETE FROM " . TABLE_DBIO_REPORTS . "
                       WHERE dbio_reports_id = $tID"
@@ -198,7 +205,7 @@ if ($ok_to_proceed === false) {
 }  //-END configuration OK, proceeding ...
 ?>
 <!doctype html>
-<html <?php echo HTML_PARAMS; ?>>
+<html <?= HTML_PARAMS ?>>
 <head>
     <?php require DIR_WS_INCLUDES . 'admin_html_head.php'; ?>
     <link rel="stylesheet" href="includes/javascript/dbio/colorbox.css">
@@ -236,11 +243,11 @@ if ($action === 'new' || $action === 'edit' || $action === 'copy') {
 <body>
 <?php require DIR_WS_INCLUDES . 'header.php'; ?>
 <div id="main-wrapper">
-    <h1><?php echo sprintf(HEADING_TITLE, $handler_name); ?> <span class="smaller">v<?php echo DBIO_MODULE_VERSION; ?></span></h1>
+    <h1><?= sprintf(HEADING_TITLE, $handler_name) ?> <span class="smaller">v<?= DBIO_MODULE_VERSION ?></span></h1>
 <?php
 if ($ok_to_proceed === false) {
 ?>
-    <div id="message" class="error"><?php echo $error_message; ?></div>
+    <div id="message" class="error"><?= $error_message ?></div>
 <?php
 } else {
 ?>
@@ -254,12 +261,12 @@ if ($ok_to_proceed === false) {
 ?>
         <tr>
             <td class="text-right">
-                <?php echo zen_draw_input_field('return', BUTTON_RETURN, ' title="' . BUTTON_RETURN_TITLE . '" onclick="window.location.href=\'' . zen_href_link(FILENAME_DBIO_MANAGER) . '\'"', false, 'button'); ?>
+                <?= zen_draw_input_field('return', BUTTON_RETURN, ' title="' . BUTTON_RETURN_TITLE . '" onclick="window.location.href=\'' . zen_href_link(FILENAME_DBIO_MANAGER) . '\'"', false, 'button') ?>
             </td>
         </tr>
         
         <tr>
-            <td class="instructions"><?php echo sprintf(INSTRUCTIONS_MAIN, $handler_name); ?></td>
+            <td class="instructions"><?= sprintf(INSTRUCTIONS_MAIN, $handler_name) ?></td>
         </tr>
         
         <tr>
@@ -274,12 +281,12 @@ if ($ok_to_proceed === false) {
         $remove_action = zen_draw_input_field('return', BUTTON_REMOVE, ' title="' . BUTTON_REMOVE_TITLE . '" onclick="confirmRemove(%u);"', false, 'button');
 ?>               
                 <tr id="file-row-header">
-                    <th><?php echo HEADING_SCOPE; ?></th>
-                    <th><?php echo HEADING_TEMPLATE_NAME; ?></th>
-                    <th><?php echo HEADING_DESCRIPTION; ?></th>
-                    <th><?php echo HEADING_UPDATED_BY; ?></th>
-                    <th><?php echo HEADING_LAST_UPDATE; ?></th>
-                    <th class="text-right"><?php echo HEADING_ACTION; ?></th>
+                    <th><?= HEADING_SCOPE ?></th>
+                    <th><?= HEADING_TEMPLATE_NAME ?></th>
+                    <th><?= HEADING_DESCRIPTION ?></th>
+                    <th><?= HEADING_UPDATED_BY ?></th>
+                    <th><?= HEADING_LAST_UPDATE ?></th>
+                    <th class="text-right"><?= HEADING_ACTION ?></th>
                 </tr>
 <?php
         $active_templates = $db->Execute(
@@ -294,7 +301,7 @@ if ($ok_to_proceed === false) {
         if ($active_templates->EOF) {
 ?>
                 <tr>
-                    <td colspan="6" class="text-center"><?php echo NO_TEMPLATES_EXIST; ?></td>
+                    <td colspan="6" class="text-center"><?= NO_TEMPLATES_EXIST ?></td>
                 </tr>
 <?php
         } else {
@@ -307,12 +314,12 @@ if ($ok_to_proceed === false) {
                 $reports_id = $next_template['dbio_reports_id'];
 ?>
                 <tr class="file-row">
-                    <td><?php echo ($next_template['admin_id'] == 0) ? TEXT_SCOPE_PUBLIC : TEXT_SCOPE_PRIVATE; ?></td>
-                    <td><?php echo $next_template['report_name']; ?></td>
-                    <td><?php echo $next_template['report_description']; ?></td>
-                    <td><?php echo $last_updated_by; ?></td>
-                    <td><?php echo zen_date_long($next_template['last_updated']); ?></td>
-                    <td class="text-right"><?php echo sprintf($edit_action, $reports_id) . '&nbsp;' . sprintf($copy_action, $reports_id) . '&nbsp;' . sprintf($remove_action, $reports_id); ?></td>
+                    <td><?= ($next_template['admin_id'] == 0) ? TEXT_SCOPE_PUBLIC : TEXT_SCOPE_PRIVATE ?></td>
+                    <td><?= $next_template['report_name'] ?></td>
+                    <td><?= $next_template['report_description'] ?></td>
+                    <td><?= $last_updated_by ?></td>
+                    <td><?= zen_date_long($next_template['last_updated']) ?></td>
+                    <td class="text-right"><?= sprintf($edit_action, $reports_id) . '&nbsp;' . sprintf($copy_action, $reports_id) . '&nbsp;' . sprintf($remove_action, $reports_id) ?></td>
                 </tr>
 <?php
             }
@@ -320,8 +327,8 @@ if ($ok_to_proceed === false) {
 ?>
                 <tr class="file-row">
                     <td colspan="6" class="text-right">
-                        <button type="button" onclick="window.location.href='<?php echo zen_href_link(FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params(['action', 'handler']) . "action=new&handler=$handler_name"); ?>'">
-                            <?php echo BUTTON_NEW; ?>
+                        <button type="button" onclick="window.location.href='<?= zen_href_link(FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params(['action', 'handler']) . "action=new&handler=$handler_name") ?>'">
+                            <?= BUTTON_NEW ?>
                         </button>
                     </td>
                 </tr>
@@ -367,12 +374,12 @@ if ($ok_to_proceed === false) {
         $heading_format_string = ($action === 'copy') ? HEADING_TITLE_COPY : (($action === 'edit') ? HEADING_TITLE_EDIT : HEADING_TITLE_NEW);
 ?>
                 <tr>
-                    <td><?php echo sprintf($heading_format_string, $handler_name); ?></td>
+                    <td><?= sprintf($heading_format_string, $handler_name) ?></td>
                 </tr>
 
                 <tr>
                     <td>
-                        <?php echo zen_draw_form('template', FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params(array('action', 'handler')) . "action=$next_action&amp;handler=$handler_name", 'post', 'id="main-form"'); ?>
+                        <?= zen_draw_form('template', FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params(array('action', 'handler')) . "action=$next_action&amp;handler=$handler_name", 'post', 'id="main-form"') ?>
                         <table id="template" class="table">
 <?php
         $scope_choices = [
@@ -387,15 +394,15 @@ if ($ok_to_proceed === false) {
         ];
 ?>
                             <tr>
-                                <td class="dbio-label"><?php echo COLUMN_HEADING_SCOPE; ?></td>
-                                <td class="dbio-field"><?php echo zen_draw_pull_down_menu('template_scope', $scope_choices, $template_scope); ?></td>
-                                <td class="dbio-desc"><?php echo INSTRUCTIONS_SCOPE; ?></td>
+                                <td class="dbio-label"><?= COLUMN_HEADING_SCOPE ?></td>
+                                <td class="dbio-field"><?= zen_draw_pull_down_menu('template_scope', $scope_choices, $template_scope) ?></td>
+                                <td class="dbio-desc"><?= INSTRUCTIONS_SCOPE ?></td>
                             </tr>
 
                             <tr>
-                                <td class="dbio-label"><?php echo COLUMN_HEADING_NAME; ?></td>
-                                <td class="dbio-field"><?php echo zen_draw_input_field('report_name', $report_name, 'id="report-name"'); ?></td>
-                                <td class="dbio-desc"><?php echo INSTRUCTIONS_NAME; ?></td>
+                                <td class="dbio-label"><?= COLUMN_HEADING_NAME ?></td>
+                                <td class="dbio-field"><?= zen_draw_input_field('report_name', $report_name, 'id="report-name"') ?></td>
+                                <td class="dbio-desc"><?= INSTRUCTIONS_NAME ?></td>
                             </tr>
                         
 <?php
@@ -411,9 +418,9 @@ if ($ok_to_proceed === false) {
             $description = htmlspecialchars(stripslashes($description), ENT_COMPAT, CHARSET, TRUE);
 ?>
                             <tr>
-                                <td class="dbio-label"><?php echo $language_image . '&nbsp;' . COLUMN_HEADING_DESCRIPTION; ?></td>
-                                <td class="dbio-field"><?php echo zen_draw_textarea_field('report_description[' . $current_language['id'] . ']', 'soft', '100%', '5', $description, $disabled); ?></td>
-                                <td class="dbio-desc"><?php echo $language_instructions; ?></td>
+                                <td class="dbio-label"><?= $language_image . '&nbsp;' . COLUMN_HEADING_DESCRIPTION ?></td>
+                                <td class="dbio-field"><?= zen_draw_textarea_field('report_description[' . $current_language['id'] . ']', 'soft', '100%', '5', $description, $disabled) ?></td>
+                                <td class="dbio-desc"><?= $language_instructions ?></td>
                             </tr>
 <?php
             $languages_description = '&nbsp;';
@@ -447,7 +454,7 @@ if ($ok_to_proceed === false) {
         }
 ?>
                             <tr>
-                                <td class="dbio-label"><?php echo ($action === 'copy') ? COLUMN_HEADING_COPY_FIELDS : COLUMN_HEADING_CHOOSE_FIELDS; ?></td>
+                                <td class="dbio-label"><?= ($action === 'copy') ? COLUMN_HEADING_COPY_FIELDS : COLUMN_HEADING_CHOOSE_FIELDS ?></td>
                                 <td class="dbio-field" id="move-fields">
 <?php
         if ($action !== 'copy') {
@@ -457,7 +464,7 @@ if ($ok_to_proceed === false) {
             $available_fields_select = zen_draw_pull_down_menu('available_fields', $available_fields, '', 'id="available" multiple="multiple"');
             $available_fields_select = preg_replace('/<option /', '<optgroup disabled hidden></optgroup><option ', $available_fields_select, 1);
 ?>
-                                    <div><?php echo $available_fields_select; ?></div>
+                                    <div><?= $available_fields_select ?></div>
                                     <div id="move-left-right" class="move-buttons">
                                         <div id="move-left"><i class="fa fa-arrow-circle-o-left fa-2x"></i></div>
                                         <div id="move-right"><i class="fa fa-arrow-circle-o-right fa-2x"></i></div>
@@ -471,7 +478,7 @@ if ($ok_to_proceed === false) {
         $customized_fields_select = zen_draw_pull_down_menu('customized[]', $current_fields, '', 'id="customized" multiple="multiple"');
         $customized_fields_select = preg_replace('/<option /', '<optgroup disabled hidden></optgroup><option ', $customized_fields_select, 1);
 ?>
-                                    <div><?php echo $customized_fields_select; ?></div>
+                                    <div><?= $customized_fields_select ?></div>
 <?php
         if ($action !== 'copy') {
 ?>
@@ -483,7 +490,7 @@ if ($ok_to_proceed === false) {
         }
 ?>
                                 </td>
-                                <td class="dbio-desc"><?php echo ($action === 'copy') ? INSTRUCTIONS_CHOOSE_COPY : INSTRUCTIONS_CHOOSE; ?></td>
+                                <td class="dbio-desc"><?= ($action === 'copy') ? INSTRUCTIONS_CHOOSE_COPY : INSTRUCTIONS_CHOOSE ?></td>
                             </tr>
 <?php
         if ($next_action === 'update') {
@@ -496,14 +503,14 @@ if ($ok_to_proceed === false) {
 ?>      
                             <tr>
                                 <td>
-                                    <?php echo zen_draw_input_field('cancel', BUTTON_CANCEL, ' title="' . BUTTON_CANCEL_TITLE . '" onclick="window.location.href=\'' . zen_href_link(FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params(['action', 'tID'])) . '\'"', false, 'button'); ?>
+                                    <?= zen_draw_input_field('cancel', BUTTON_CANCEL, ' title="' . BUTTON_CANCEL_TITLE . '" onclick="window.location.href=\'' . zen_href_link(FILENAME_DBIO_CUSTOMIZE, zen_get_all_get_params(['action', 'tID'])) . '\'"', false, 'button') ?>
                                 </td>
                                 <td colspan="2" class="text-right">
-                                    <?php echo zen_draw_input_field('go_button', $button_name, 'title="' . $button_title . '" id="go-button"', false, 'submit'); ?>
+                                    <?= zen_draw_input_field('go_button', $button_name, 'title="' . $button_title . '" id="go-button"', false, 'submit') ?>
                                 </td>
                             </tr>
                         </table>
-                        <?php echo '</form>'; ?>
+                        <?= '</form>' ?>
                     </td>
                 </tr>
 <?php   
@@ -530,16 +537,16 @@ $keys_list = ($keys_list == '') ? '' : substr($keys_list, 0, -2);
 <script>
 function confirmRemove(tID)
 {
-    var removeIt = confirm( '<?php echo JS_MESSAGE_CONFIRM_REMOVE; ?>' );
+    var removeIt = confirm('<?= JS_MESSAGE_CONFIRM_REMOVE ?>');
     if (removeIt) {
-        var theLocation = '<?php echo zen_href_link(FILENAME_DBIO_CUSTOMIZE, "action=remove&handler=$handler_name&tID=%u"); ?>';
+        var theLocation = '<?= str_replace('&amp;', '&', zen_href_link(FILENAME_DBIO_CUSTOMIZE, "action=remove&handler=$handler_name&tID=%u")) ?>';
         theLocation = theLocation.replace('%u', tID);
         window.location.href = theLocation;
     }
 }
 
 $(document).ready(function(){
-    var dbioKeys = [<?php echo $keys_list; ?>];
+    var dbioKeys = [<?= $keys_list ?>];
     for (var i = 0, n = dbioKeys.length; i < n; i++) {
         $('#customized option[value="'+dbioKeys[i]+'"').prop('disabled', true);
     }
@@ -578,17 +585,17 @@ $(function () {
 
     $('#main-form').on('submit', function(event){
         var message = '';
-        var reportNameLength = $( '#report-name' ).val().length;
+        var reportNameLength = $('#report-name').val().length;
         if (reportNameLength == 0) {
-            message = '[*] <?php echo JS_MESSAGE_NAME_CANT_BE_EMPTY; ?>' + '\n';
-        } else if (reportNameLength > <?php echo $report_name_length; ?>) {
-            message = '[*] <?php echo sprintf (JS_MESSAGE_NAME_TOO_LONG, $report_name_length); ?>' + '\n';
+            message = '[*] <?= JS_MESSAGE_NAME_CANT_BE_EMPTY ?>' + '\n';
+        } else if (reportNameLength > <?= $report_name_length ?>) {
+            message = '[*] <?= sprintf(JS_MESSAGE_NAME_TOO_LONG, $report_name_length) ?>' + '\n';
         }
         if ($('#customized option').length == 0) {
-            message += '[*] <?php echo JS_MESSAGE_AT_LEAST_ONE_FIELD; ?>' + '\n';
+            message += '[*] <?= JS_MESSAGE_AT_LEAST_ONE_FIELD ?>' + '\n';
         }
         if (message != '') {
-            alert( '<?php echo JS_MESSAGE_ERRORS_EXIST; ?>' + '\n\n' + message + '\n' + '<?php echo JS_MESSAGE_TRY_AGAIN; ?>' );
+            alert('<?= JS_MESSAGE_ERRORS_EXIST ?>' + '\n\n' + message + '\n' + '<?= JS_MESSAGE_TRY_AGAIN ?>');
             event.preventDefault();
         } else {
             $('#customized option').prop('disabled', false);
