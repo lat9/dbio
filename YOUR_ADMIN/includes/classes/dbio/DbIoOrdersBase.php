@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2017-2022, Vinos de Frutas Tropicales.
+// Copyright (c) 2017-2025, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.0.
+// Last updated: DbIo v2.0.2
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -97,7 +97,6 @@ class DbIoOrdersBase extends DbIoHandler
     //
     protected function setHandlerConfiguration()
     {
-        trigger_error ('The real handler needs to supply this function!', E_USER_ERROR);
-        exit();
+        dbioLogError('The real handler needs to supply this function!');
     }
 }  //-END class DbIoOrdersBase
