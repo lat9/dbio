@@ -1,7 +1,7 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2025, Vinos de Frutas Tropicales.
 //
 if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
@@ -23,4 +23,10 @@ function dbioDrawOrdersStatusDropdown ($field_name)
         $status_info->MoveNext ();
     }
     return zen_draw_pull_down_menu ($field_name, $status_array, dbioGetFieldValue ($field_name));
+}
+
+function dbioLogError(string $message): void
+{
+    trigger_error("FATAL error: $message", E_USER_WARNING);
+    zen_exit();
 }
