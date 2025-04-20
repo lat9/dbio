@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2023, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2025, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.0.
+// Last updated: DbIo v2.0.2
 //
 if (!defined('IS_ADMIN_FLAG')) { 
     exit('Illegal access');
@@ -128,8 +128,7 @@ class DbIo extends base
                 $this->initialized = true;
                 $this->handler = new $handler_classname($this->file_suffix);
                 if (!method_exists($this->handler, 'debugMessage')) {
-                    trigger_error("DbIo handler ($handler_classname) missing the \"debugMessage\" method; terminating.", E_USER_ERROR);
-                    exit();
+                    dbioLogError("DbIo handler ($handler_classname) missing the \"debugMessage\" method; terminating.");
                 }
             }
         }

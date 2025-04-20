@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2023, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2025, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.0.
+// Last updated: DbIo v2.0.2
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -433,8 +433,7 @@ class DbIoProductsHandler extends DbIoHandler
     public function exportGetSql($sql_limit = '')
     {
         if (!isset($this->export_language) || !isset($this->select_clause)) {
-            trigger_error('Export aborted: DbIo export sequence error; not previously initialized.', E_USER_ERROR);
-            exit();
+            dbioLogError('Export aborted: DbIo export sequence error; not previously initialized.');
         }
 
         $language_code = ($this->export_language === 'all') ? $this->first_language_code : $this->export_language;
@@ -1281,8 +1280,7 @@ class DbIoProductsHandler extends DbIoHandler
             //
             case TABLE_META_TAGS_PRODUCTS_DESCRIPTION:
                 if (empty($this->import_language_id)) {
-                    trigger_error("importUpdateRecordKey, missing 'import_language_id'.", E_USER_ERROR);
-                    exit();
+                    dbioLogError("importUpdateRecordKey, missing 'import_language_id'.");
                 }
                 $this->debugMessage("importUpdateRecordKey: " . print_r($table_fields, true) . PHP_EOL . 'key_fields: ' . print_r($this->key_fields, true));
                 $table_data = '';
