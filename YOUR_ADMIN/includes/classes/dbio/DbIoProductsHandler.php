@@ -12,7 +12,7 @@ if (!defined('IS_ADMIN_FLAG')) {
 // -----
 // This DbIo class handles the customizations required for a basic Zen Cart product import/export.
 //
-class DbIoProductsHandler extends DbIoHandler 
+class DbIoProductsHandler extends DbIoHandler
 {
     const DBIO_COMMAND_ADD    = 'ADD';      //-Forces the current product to be added, even if the model already exists.
     const DBIO_COMMAND_UNLINK = 'UNLINK';   //-Unlinks the product from the specified v_categories_name, so long as it's not the current master_category_id.
@@ -27,7 +27,7 @@ class DbIoProductsHandler extends DbIoHandler
         global $db;
         DbIoHandler::loadHandlerMessageFile('Products'); 
         return [
-            'version' => '2.0.0',
+            'version' => '2.0.2',
             'handler_version' => '1.6.0',
             'include_header' => true,
             'export_only' => false,
@@ -153,7 +153,7 @@ class DbIoProductsHandler extends DbIoHandler
                           LIMIT 1";
                 }
             } else {
-                $this->saved_data['products_description_sql'] = 
+                $this->saved_data['products_description_sql'] =
                     "SELECT *
                        FROM " . TABLE_PRODUCTS_DESCRIPTION . "
                       WHERE products_id = %u
@@ -161,7 +161,7 @@ class DbIoProductsHandler extends DbIoHandler
                       LIMIT 1";
                 $this->saved_data['products_description_last_field'] = $this->getTableLastFieldName(TABLE_PRODUCTS_DESCRIPTION);
                 
-                $this->saved_data['products_metatags_sql'] = 
+                $this->saved_data['products_metatags_sql'] =
                     "SELECT *
                        FROM " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . "
                       WHERE products_id = %u
@@ -391,9 +391,9 @@ class DbIoProductsHandler extends DbIoHandler
                         foreach ($cPath_array as $next_category_id) {
                             $category_info = $db->Execute(
                                 "SELECT categories_name 
-                                   FROM " . TABLE_CATEGORIES_DESCRIPTION . " 
-                                  WHERE categories_id = $next_category_id 
-                                    AND language_id = $default_language_id 
+                                   FROM " . TABLE_CATEGORIES_DESCRIPTION . "
+                                  WHERE categories_id = $next_category_id
+                                    AND language_id = $default_language_id
                                   LIMIT 1"
                             );
                             $categories_name .= (($category_info->EOF) ? self::DBIO_UNKNOWN_VALUE : $category_info->fields['categories_name']) . '^';
@@ -752,8 +752,8 @@ class DbIoProductsHandler extends DbIoHandler
                                 INNER JOIN " . TABLE_CATEGORIES_DESCRIPTION . " cd
                                     ON cd.categories_id = c.categories_id
                                    AND cd.language_id = $language_id
-                          WHERE c.parent_id = $parent_category 
-                            AND cd.categories_name = :categories_name: 
+                          WHERE c.parent_id = $parent_category
+                            AND cd.categories_name = :categories_name:
                           LIMIT 1";
                     $category_info = $db->Execute($db->bindVars($category_info_sql, ':categories_name:', $current_category_name, 'string'), false, false, 0, true);
                     if ($category_info->EOF) {
@@ -1176,29 +1176,34 @@ class DbIoProductsHandler extends DbIoHandler
             if ($this->operation !== 'check') {
                 $sql_data_array = [
                     [
-                        'fieldName' => 'parent_id', 
-                        'value' => $parent_category_id, 
-                        'type' => 'integer' 
+                        'fieldName' => 'parent_id',
+                        'value' => $parent_category_id,
+                        'type' => 'integer'
                     ],
                     [
-                        'fieldName' => 'date_added', 
-                        'value' => 'now()', 
-                        'type' => 'noquotestring' 
+                        'fieldName' => 'date_added',
+                        'value' => 'now()',
+                        'type' => 'noquotestring'
+                    ],
+                    [
+                        'fieldName' => 'sort_order',
+                        'value' => 0,
+                        'type' => 'integer'
                     ],
                 ];
                 $db->perform(TABLE_CATEGORIES, $sql_data_array);
                 $created_category_id = zen_db_insert_id();
-                
+
                 $description_array = [
                     [
-                        'fieldName' => 'categories_id', 
-                        'value' => $created_category_id, 
-                        'type' => 'integer' 
+                        'fieldName' => 'categories_id',
+                        'value' => $created_category_id,
+                        'type' => 'integer'
                     ],
                     [
-                        'fieldName' => 'categories_name', 
-                        'value' => $categories_name, 
-                        'type' => 'string' 
+                        'fieldName' => 'categories_name',
+                        'value' => $categories_name,
+                        'type' => 'string'
                     ],
                     [
                         'fieldName' => 'categories_description',
@@ -1209,9 +1214,9 @@ class DbIoProductsHandler extends DbIoHandler
                 foreach ($this->languages as $language_code => $language_id) {
                     $sql_data_array = $description_array;
                     $sql_data_array[] = [
-                        'fieldName' => 'language_id', 
-                        'value' => $language_id, 
-                        'type' => 'integer' 
+                        'fieldName' => 'language_id',
+                        'value' => $language_id,
+                        'type' => 'integer'
                     ];
                     $db->perform(TABLE_CATEGORIES_DESCRIPTION, $sql_data_array);
                 }
