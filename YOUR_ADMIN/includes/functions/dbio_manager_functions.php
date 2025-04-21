@@ -7,7 +7,7 @@ if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
 }
 
-function dbioGetFieldValue(string $field_name): string
+function dbioGetFieldValue(string $field_name): array|string
 {
     return $_POST[$field_name] ?? $_SESSION['dbio_vars'][$field_name] ?? '';
 }
