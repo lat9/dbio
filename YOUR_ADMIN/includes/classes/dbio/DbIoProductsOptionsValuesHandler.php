@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2022, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2025, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.0.
+// Last updated: DbIo v2.0.2
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -12,7 +12,7 @@ if (!defined('IS_ADMIN_FLAG')) {
 // -----
 // This DbIo class handles the import and export of information in the Zen Cart 'products_options_values' table.
 //
-// Each table-record is exported as a single CSV record; all currently-defined fields are exported.  
+// Each table-record is exported as a single CSV record; all currently-defined fields are exported.
 //
 // For the import, the CSV **must** contain both the products_options_values_id and language_id fields, since those are
 // used as the table's key-pair.  An entry is updated if a database record is found that matches both fields; otherwise,
@@ -26,16 +26,38 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 class DbIoProductsOptionsValuesHandler extends DbIoHandler
 {
+    protected int $optionValueNameLength;
+    protected array $optionsByLanguage;
+
     public static function getHandlerInformation()
     {
         DbIoHandler::loadHandlerMessageFile('ProductsOptionsValues'); 
         return [
-            'version' => '2.0.0',
+            'version' => '2.0.2',
             'handler_version' => '1.0.0',
             'include_header' => true,
             'export_only' => false,
             'description' => DBIO_PRODUCTSOPTIONSVALUES_DESCRIPTION,
         ];
+    }
+
+    // -----
+    // Generate and return the SQL query used to export the products' options' values.
+    //
+    public function exportGetSql($sql_limit = '')
+    {
+        $export_sql =
+            "SELECT pov.products_options_values_id, pov.language_id, pov.products_options_values_name, po.products_options_id, po.products_options_name, pov.products_options_values_sort_order
+               FROM " . TABLE_PRODUCTS_OPTIONS_VALUES . " pov
+                    LEFT JOIN " . TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS . " pov2po
+                        ON pov2po.products_options_values_id = pov.products_options_values_id
+                    LEFT JOIN " . TABLE_PRODUCTS_OPTIONS . " po
+                        ON po.products_options_id = pov2po.products_options_id
+                       AND po.language_id = pov.language_id
+              ORDER BY po.language_id, po.products_options_name, po.products_options_id, pov.products_options_values_name, pov.products_options_values_sort_order";
+        $export_sql .= " $sql_limit";
+        $this->debugMessage("exportGetSql:\n$export_sql");
+        return $export_sql;
     }
 
 // ----------------------------------------------------------------------------------
@@ -44,12 +66,13 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
 
     // -----
     // This function, called during the overall class construction, is used to set this handler's database
-    // configuration for the dbIO operations.
+    // configuration for the dbIo operations.
     //
     protected function setHandlerConfiguration()
     {
         $this->stats['report_name'] = 'ProductsOptionsValues';
         $this->config = self::getHandlerInformation();
+        $this->config['handler_does_import'] = true;  //-Indicate that **all** the import-based database manipulations are performed by this handler
         $this->config['keys'] = [
             TABLE_PRODUCTS_OPTIONS_VALUES => [
                 'alias' => 'pov',
@@ -66,7 +89,36 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
                 'alias' => 'pov',
                 'language_override' => self::DBIO_OVERRIDE_ALL,
             ],
+            TABLE_PRODUCTS_OPTIONS => [
+                'alias' => 'po',
+            ],
         ];
+
+        $this->config['fixed_headers'] = [
+            'products_options_values_id' => TABLE_PRODUCTS_OPTIONS_VALUES,
+            'language_id' => TABLE_PRODUCTS_OPTIONS_VALUES,
+            'products_options_values_name' => TABLE_PRODUCTS_OPTIONS_VALUES,
+            'products_options_id' => TABLE_PRODUCTS_OPTIONS,
+            'products_options_name' => TABLE_PRODUCTS_OPTIONS,
+            'products_options_values_sort_order' => TABLE_PRODUCTS_OPTIONS_VALUES,
+        ];
+        $this->export_where_clause = '';
+        $this->export_order_by_clause = '';
+
+        $this->optionValueNameLength = (int)zen_field_length(TABLE_PRODUCTS_OPTIONS_VALUES, 'products_options_values_name');
+
+        global $db;
+        $option_names = $db->Execute(
+            "SELECT products_options_id, language_id
+               FROM " . TABLE_PRODUCTS_OPTIONS
+        );
+        $this->optionsByLanguage = [];
+        foreach ($option_names as $next_option) {
+            if (!isset($this->optionsByLanguage[$next_option['language_id']])) {
+                $this->optionsByLanguage[$next_option['language_id']] = [];
+            }
+            $this->optionsByLanguage[$next_option['language_id']][] = $next_option['products_options_id'];
+        }
     }
 
     // -----
@@ -79,33 +131,128 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
     //
     protected function importCheckKeyValue($data)
     {
-        if ($this->importGetFieldValue('products_options_values_id', $data) === '0') {
+        $products_options_values_id = $this->importGetFieldValue('products_options_values_id', $data);
+        if ($products_options_values_id === '0') {
             $this->import_is_insert = true;
+        } else {
+            global $db;
+            $check = $db->Execute(
+                "SELECT products_options_values_id
+                   FROM " . TABLE_PRODUCTS_OPTIONS_VALUES . "
+                  WHERE products_options_values_id = " . (int)$products_options_values_id . "
+                  LIMIT 1"
+            );
+            if ($check->EOF) {
+                $this->record_status = false;
+                $this->debugMessage("[*] products_options_values_id, line #" . $this->stats['record_count'] . ": Value ($products_options_values_id) is not associated with an existing options-value.", self::DBIO_ERROR);
+            }
         }
+
         $language_id = $this->importGetFieldValue('language_id', $data);
         if (!in_array($language_id, array_values($this->languages))) {
             $this->record_status = false;
-            $this->debugMessage("[*] products_options_values.language_id, line #" . $this->stats['record_count'] . ": Value ($language_id) is not valid language id.", self::DBIO_ERROR);
+            $this->debugMessage("[*] products_options_values.language_id, line #" . $this->stats['record_count'] . ": Value ($language_id) is not a valid language id.", self::DBIO_ERROR);
         }
+
         return parent::importCheckKeyValue($data);
     }
 
-    // -----
-    // Overriding the base import processing, to ensure that the v_products_options_id value is updated to
-    // the next-available value if the import specifies the value as 0.
-    //
-    protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
+    protected function importProcessField($table_name, $field_name, $language_id, $field_value)
     {
-        global $db;
+        switch ($field_name) {
+            case 'products_options_values_id':
+            case 'products_options_values_sort_order':
+            case 'language_id':
+            case 'products_options_id':
+                if (!ctype_digit($field_value)) {
+                    $this->record_status = false;
+                    $this->debugMessage("[*] $table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) must contain only digits.", self::DBIO_ERROR);
+                }
+                $this->saved_data[$field_name] = $field_value;
+                break;
 
-        $record_is_insert = ($is_override === true) ? $is_insert : $this->import_is_insert;
-        if ($record_is_insert === true && $table_fields['products_options_values_id']['value'] === '0') {
+            case 'products_options_values_name':
+                if (dbio_strlen($field_value) > $this->optionValueNameLength) {
+                    $this->record_status = false;
+                    $this->debugMessage("[*] products_options_values_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is too long; max length is {$this->optionValueNameLength}.", self::DBIO_ERROR);
+                }
+                $this->saved_data[$field_name] = $field_value;
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    protected function importFinishProcessing()
+    {
+        if (count($this->saved_data) !== 5) {
+            $this->record_status = false;
+            $this->debugMessage("[*] importFinishProcessing, line #" . $this->stats['record_count'] . ": Missing one or more required data columns.", self::DBIO_ERROR);
+            return;
+        }
+
+        $language_id = $this->saved_data['language_id'];
+        if (!isset($this->optionsByLanguage[$language_id])) {
+            $this->record_status = false;
+            $this->debugMessage("[*] importFinishProcessing, line #" . $this->stats['record_count'] . ": No option names are available for language id $language_id.", self::DBIO_ERROR);
+            return;
+        }
+
+        $option_id = $this->saved_data['products_options_id'];
+        if (!isset($this->optionsByLanguage[$language_id][$option_id])) {
+            $this->record_status = false;
+            $this->debugMessage("[*] importFinishProcessing, line #" . $this->stats['record_count'] . ": Unknown option id ($option_id) for language_id $language_id.", self::DBIO_ERROR);
+        }
+
+        $sql_data_array = [];
+        foreach ($this->saved_data as $field_name => $value) {
+            if ($field_name === 'products_options_id' || ($this->import_is_insert && $field_name === 'products_options_values_id')) {
+                continue;
+            }
+            $sql_data_array[] = ['fieldName' => $field_name, 'value' => $value, 'type' => ($field_name === 'products_options_values_name') ? 'stringIgnoreNull' : 'integer'];
+        }
+
+        global $db;
+        if ($this->import_is_insert) {
             $next_id = $db->Execute(
                 "SELECT MAX(products_options_values_id) + 1 AS next_id
                    FROM " . TABLE_PRODUCTS_OPTIONS_VALUES
             );
-            $table_fields['products_options_values_id']['value'] = $next_id->fields['next_id'];
+            $products_options_values_id = $next_id->fields['next_id'];
+            $sql_data_array[] = ['fieldName' => 'products_options_values_id', 'value' => $products_options_values_id, 'type' => 'integer'];
+
+            $this->debugMessage("Inserting record into products_options_values at line #" . $this->stats['record_count'] . ": " . json_encode($sql_data_array));
+            if ($this->operation !== 'check') {
+                $db->perform(TABLE_PRODUCTS_OPTIONS_VALUES, $sql_data_array);
+
+                $sql_data_array = [
+                    ['fieldName' => 'products_options_id', 'value' => $this->saved_data['products_options_id'], 'type' => 'integer'],
+                    ['fieldName' => 'products_options_values_id', 'value' => $products_options_values_id, 'type' => 'integer'],
+                ];
+                $db->perform(TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS, $sql_data_array);
+            }
+        } else {
+            $this->debugMessage("Updating record in products_options_values at line #" . $this->stats['record_count'] . ": " . json_encode($sql_data_array));
+            if ($this->operation !== 'check') {
+                $products_options_values_id = (int)$this->saved_data['products_options_values_id'];
+                $db->perform(TABLE_PRODUCTS_OPTIONS_VALUES, $sql_data_array, 'update', "products_options_values_id = $products_options_values_id LIMIT 1");
+
+                $check = $db->Execute(
+                    "SELECT products_options_values_to_products_options_id
+                       FROM " . TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS . "
+                      WHERE products_options_id = " . (int)$this->saved_data['products_options_id'] . "
+                        AND products_options_values_id = $products_options_values_id
+                      LIMIT 1"
+                );
+                if ($check->EOF) {
+                    $sql_data_array = [
+                        ['fieldName' => 'products_options_id', 'value' => $this->saved_data['products_options_id'], 'type' => 'integer'],
+                        ['fieldName' => 'products_options_values_id', 'value' => $products_options_values_id, 'type' => 'integer'],
+                    ];
+                    $db->perform(TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS, $sql_data_array);
+                }
+            }
         }
-        return parent::importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause, $is_override, $is_insert);
     }
 }  //-END class DbIoProductsOptionsValuesHandler

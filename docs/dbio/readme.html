@@ -600,6 +600,7 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
             <li>INTROP: PHP 8.4+ deprecates the use of <var>E_USER_ERROR</var>.</li>
             <li>BUGFIX: Remove zc1.3.x-era <var>/boxes</var> subdirectory and files.</li>
             <li>BUGFIX: Set <var>sort_order</var> to 0 for categories created on a product-import.</li>
+            <li>BUGFIX: <var>DbIoProductsOptionsValuesHandler</var> was creating unusable option values.</li>
             <li>The following files were changed or <span class="removed">removed</span>:<ol>
               <li>/YOUR_ADMIN/dbio_customize.php</li>
               <li><span class="removed">/YOUR_ADMIN/includes/boxes/extra_boxes/dbio_tools_dhtml.php</span></li>
@@ -607,8 +608,10 @@ ul.simple, ul.simple li { list-style-type: none; padding: 0 0 0 0.5em; margin: 0
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrderBase.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsOptionsValuesHandler.php</li>
               <li>/YOUR_ADMIN/includes/functions/dbio_manager_functions.php</li>
               <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsOptionsValuesHandler.php</li>
             </ol></li>
           </ul></li>
           <li>v2.0.1, 2024-01-21 (lat9/torvista):<ul>
