@@ -1,5 +1,3 @@
 characters.txt
-*.html
-!readme.html
 *.htm
 *.php~
