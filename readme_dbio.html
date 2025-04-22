@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Database I/O Manager (DbIo)</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="vinos_favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+  <style>
+.nav-pills-custom .nav-link {
+    color: #aaa;
+    background: #fff;
+    position: relative;
+}
+.nav-pills-custom .nav-link.active {
+    color: #306eff;
+    background: #fff;
+}
+/* Add indicator arrow for the active tab */
+@media (min-width: 992px) {
+    .nav-pills-custom .nav-link::before {
+        content: '';
+        display: block;
+        border-top: 8px solid transparent;
+        border-left: 10px solid #fff;
+        border-bottom: 8px solid transparent;
+        position: absolute;
+        top: 50%;
+        right: -10px;
+        transform: translateY(-50%);
+        opacity: 0;
+    }
+}
+.nav-pills-custom .nav-link.active::before {
+    opacity: 1;
+}
+body {
+    min-height: 100vh;
+    background: radial-gradient(ellipse at center, rgba(240,249,255,1) 0%,rgba(203,235,255,1) 47%,rgba(161,219,255,1) 100%);
+}
+.smaller { font-size: smaller; }
+.added { color: blue; }
+.removed { text-decoration: line-through; }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
+</head>
+<body>
+<section class="py-5 header">
+    <div class="container py-4">
+        <header class="pb-2">
+            <h1 class="display-4 text-center">Database I/O Manager (DbIo) for Zen Cart&reg;</h1>
+            <ul>
+                <li>Zen Cart download link: <a href="https://www.zen-cart.com/downloads.php?do=file&id=2091" target="_blank">https://www.zen-cart.com/downloads.php?do=file&id=2091</a></li>
+                <li>Zen Cart support thread: <a href="https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread</a></li>
+                <li>GitHub repository: <a href="https://github.com/lat9/dbio" target="_blank">https://github.com/lat9/dbio</a></li>
+            </ul>
+        </header>
+
+        <div class="row">
+            <div class="col-md-3">
+                <!-- Tabs nav -->
+                <div class="nav flex-column nav-pills nav-pills-custom" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                    <a class="nav-link mb-3 p-3 shadow active" id="v-pills-1-tab" data-toggle="pill" href="#v-pills-1" role="tab" aria-controls="v-pills-1" aria-selected="true">
+                        <span class="font-weight-bold small text-uppercase">Overview</span></a>
+                    <a class="nav-link mb-3 p-3 shadow" id="v-pills-2-tab" data-toggle="pill" href="#v-pills-2" role="tab" aria-controls="v-pills-2" aria-selected="false">
+                        <span class="font-weight-bold small text-uppercase">Install or Uninstall</span></a>
+                    <a class="nav-link mb-3 p-3 shadow" id="v-pills-3-tab" data-toggle="pill" href="#v-pills-3" role="tab" aria-controls="v-pills-3" aria-selected="false">
+                        <span class="font-weight-bold small text-uppercase">How to Use</span></a>
+                    <a class="nav-link mb-3 p-3 shadow" id="v-pills-4-tab" data-toggle="pill" href="#v-pills-4" role="tab" aria-controls="v-pills-4" aria-selected="false">
+                        <span class="font-weight-bold small text-uppercase">Change History</span></a>
+                    <a class="nav-link mb-3 p-3 shadow" id="v-pills-6-tab" data-toggle="pill" href="#v-pills-6" role="tab" aria-controls="v-pills-6" aria-selected="false">
+                        <span class="font-weight-bold small text-uppercase">License</span></a>
+                </div>
+            </div>
+
+            <div class="col-md-9">
+                <!-- Tabs content -->
+                <div class="tab-content" id="v-pills-tabContent">
+                    <div class="tab-pane fade shadow rounded bg-white show active p-4" id="v-pills-1" role="tabpanel" aria-labelledby="v-pills-1-tab">
+                        <h4 class="font-italic mb-4">Overview</h4>
+                        <p><em>DbIo</em> emulates one of the more popular Zen Cart plugins &mdash; <em>Easy Populate</em> &mdash; providing &quot;handlers&quot; to easily input (import) data to your cart's database and output (export) that data via a comma-separated-value (CSV) or tab-delimited file.  In the <em>DbIo</em>, a &quot;handler&quot; is responsible for all I/O actions required to support a specific operation &hellip; like importing a set of product specifications or exporting a list of customer orders.</p>
+                        <hr>
+                        <p>Why <em>emulate</em> rather than <em>contribute to</em> the <em>EP-4</em> plugin's development?  Given the principles which guided <em>DbIo</em>'s development:</p>
+                        <ol>
+                          <li>Use Zen Cart's built-in processing, especially the database interfaces.</li>
+                          <li>Use a class-based approach, enabling a higher degree of code reuse.</li>
+                          <li>Let the database drive the data; use the database settings to guide &quot;proper&quot; input processing.</li>
+                          <li>Keep the data-pool consistent; broadly define the character-encoding of the .CSV repositories.</li>
+                          <li>Keep to, where possible, the <em>EP-4</em> interface described in its <a href="https://www.zen-cart.com/wiki/index.php/Easy_Populate" target="_blank">wiki</a>.</li>
+                          <li>Multi-language awareness.</li>
+                          <li>Be <em>data-driven</em>.  If you've installed a plugin that simply adds a field to an existing table (like products or orders), that field is a candidate for any I/O operation on that database table without additional coding.</li>
+                        </ol>
+                        <p>&hellip; the <em>DbIo</em> processing is a <span class="red"><em>revolutionary</em></span> spin-off of <em>Easy Populate</em>; any differences between the <em>EP-4</em> and <em>DbIo</em> handling will be identified in this readme.</p> 
+                    </div>
+
+                    <div class="tab-pane fade shadow rounded bg-white p-4" id="v-pills-2" role="tabpanel" aria-labelledby="v-pills-2-tab">
+                        <h4 class="font-italic mb-4">Install or Uninstall</h4>
+                        <h5>Installation</h5>
+                        <p>There are neither <span class="corefile">core-file overwrites</span> nor <span class="template">template-overrides</span> used by this plugin; you should <strong>always</strong> backup your cart's database and files prior to making any changes. Unzip the plugin's package file and then:</p>
+                        <ol type="A">
+                            <li>Rename the YOUR_ADMIN folder to match your custom admin folder's name.</li>
+                            <li>Sign into your Zen Cart's admin panel.</li>
+                            <li>Copy the plugin's files to your store's folder structure:<ol>
+                                <li>/YOUR_ADMIN/dbio_manager.php</li>
+                                <li>/YOUR_ADMIN/dbio_customize.php <span class="smaller">(Added in v1.2.0)</span></li>
+                                <li>/YOUR_ADMIN/dbio/*.*</li>
+                                <li><span class="removed">/YOUR_ADMIN/images/icons/dbio_information.png</span> <span class="smaller">(Removed in v1.2.0)</span></li>
+                                <li>/YOUR_ADMIN/includes/auto_loaders/config.dbio_admin.php</li>
+                                <li><span class="removed">/YOUR_ADMIN/includes/boxes/extra_boxes/dbio_tools_dhtml.php</span> <span class="smaller">(Removed in v2.0.2)</span></li>
+                                <li>/YOUR_ADMIN/includes/classes/dbio/*.*</li>
+                                <li>/YOUR_ADMIN/includes/extra_datafiles/dbio_file_database_names_admin.php</li>
+                                <li>/YOUR_ADMIN/includes/functions/dbio_manager_functions.php</li>
+                                <li>/YOUR_ADMIN/includes/functions/dbio_mb_string_functions.php <span class="smaller">(Added in v1.4.1)</span></li>
+                                <li>/YOUR_ADMIN/includes/functions/dbio_string_functions.php <span class="smaller">(Added in v1.4.1)</span></li>
+                                <li>/YOUR_ADMIN/includes/functions/extra_functions/dbio_functions.php</li>
+                                <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                                <li>/YOUR_ADMIN/includes/javascript/dbio/*.*</li>
+                                <li>/YOUR_ADMIN/includes/languages/english/dbio_manager.php</li>
+                                <li>/YOUR_ADMIN/includes/languages/english/dbio_customize.php <span class="smaller">(Added in v1.2.0)</span></li>
+                                <li>/YOUR_ADMIN/includes/languages/english/dbio/*.*</li>
+                                <li>/YOUR_ADMIN/includes/languages/english/extra_definitions/dbio_admin_extra_definitions.php</li>
+                            </ol></li>
+                            <li>Click the &quot;Admin Home&quot; link in your Zen Cart's top admin menu.  This action will cause the plugin's installation script to run.</li>
+                        </ol>
+                        <div class="card mt-3">
+                            <div class="card-header text-center bg-secondary text-white">Uninstalling the Plugin</div>
+                            <div class="card-body">
+                                <p>First, delete the files that were copied to your Zen Cart's file-system, then copy the contents of the plugin's <code>/uninstall_dbio.sql</code> to your clipboard and paste into your admin's <em>Tools :: Install SQL Patches</em> to complete the uninstall process.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade shadow rounded bg-white p-4" id="v-pills-3" role="tabpanel" aria-labelledby="v-pills-3-tab">
+                        <h4 class="font-italic mb-4">How to Use</h4>
+                        <p>Refer to the plugin's <a href="https://github.com/lat9/dbio/wiki" target="_blank">GitHub Wiki articles</a> for additional information.</p>
+                    </div>
+
+                    <div class="tab-pane fade shadow rounded bg-white p-4" id="v-pills-4" role="tabpanel" aria-labelledby="v-pills-4-tab">
+                        <h4 class="font-italic mb-4">Change History</h4>
+                        <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
+                        <ul>
+                          <li>v2.0.2-beta2, 2025-04-20 (lat9):<ul>
+                            <li>BUGFIX: Additional <var>DbIoHandler</var> properties require definition.</li>
+                            <li>BUGFIX: Can't remove DbIo customized report, once created.</li>
+                            <li>INTROP: PHP 8.4+ deprecates the use of <var>E_USER_ERROR</var>.</li>
+                            <li>BUGFIX: Remove zc1.3.x-era <var>/boxes</var> subdirectory and files.</li>
+                            <li>BUGFIX: Set <var>sort_order</var> to 0 for categories created on a product-import.</li>
+                            <li>BUGFIX: <var>DbIoProductsOptionsValuesHandler</var> was creating unusable option values.</li>
+                            <li>The following files were changed or <span class="removed">removed</span>:<ol>
+                              <li>/YOUR_ADMIN/dbio_customize.php</li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/boxes/extra_boxes/dbio_tools_dhtml.php</span></li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrderBase.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsOptionsValuesHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/functions/dbio_manager_functions.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsOptionsValuesHandler.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v2.0.1, 2024-01-21 (lat9/torvista):<ul>
+                            <li>BUGFIX: Correct sprintf parameter declaration used when files are split.</li>
+                            <li>BUGFIX: Correct PHP Fatal error when exporting via <var>DbIoProductsAttribsBasicHandler</var>.</li>
+                            <li>BUGFIX: Correct duplicate form names in <strong>Tools :: Database I/O Manager</strong>.</li>
+                            <li>BUGFIX: Correct <var>DbIoProductAttribsBasicHander</var> import processing.</li>
+                            <li>The following files were changed:<ol>
+                              <li>/YOUR_ADMIN/dbio_manager.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsBasicHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio_manager.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsAttribsBasicHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v2.0.0, 2023-01-19 (lat9/torvista):<ul>
+                            <li>BUGFIX: PHP 8.1+ compatibility, removing use of 'auto_detect_line_endings'.</li>
+                            <li>CHANGE: Drop support for Zen Cart versions prior to zc157, now using admin_html_head.php.</li>
+                            <li>BUGFIX: Use 'zen_cfg_read_only' to prevent the plugin's version settings from being reset.</li>
+                            <li>BUGFIX: Correct PHP notice/warning issued if the tool detects an error.</li>
+                            <li>CHANGE: Correcting 'dynamic properties' deprecations issued by PHP 8.2.</li>
+                            <li>CHANGE: The <em>DbioOrdersHandler</em> now includes <b>all</b> orders_total values (other than 'ot_tax' and 'ot_total').</li>
+                            <li>BUGFIX: Remove duplicate language constants for the <code>dbio_customize</code> tool.</li>
+                            <li>BUGFIX: Correct HTML rendering for 'multiple' select tags integration with iOS browsers.</li>
+                            <li>BUGFIX: Correct PHP deprecation on products' export (meta-tags related).</li>
+                            <li>BUGFIX: Remove duplicate language constant for the <code>dbio_customize</code> tool.</li>
+                            <li>BUGFIX: DbIo Manager checkboxes weren't selectable by clicking on associated text.</li>
+                            <li>The following files were changed:<ol>
+                              <li>/YOUR_ADMIN/dbio_customize.php</li>
+                              <li>/YOUR_ADMIN/dbio_manager.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoCustomersHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoFeaturedHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoManufacturersHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersBase.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersProductsAttribsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsBasicHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsRawHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsDiscountQuantityHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsOptionsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsOptionsValuesHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoSpecialsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoStatsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/functions/extra_functions/zen_cfg_read_only.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio_customize.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.6.7, 2022-02-09 (lat9/torvista):<ul>
+                            <li>BUGFIX: Adding 'longtext' as a valid MySQL character type.</li>
+                            <li>BUGFIX: Correcting length of <code>dbio_reports::handler_name</code> for utf8mb4 database collations.</li>
+                            <li>BUGFIX: Correcting PHP notice on unknown manufacturers' name during 'check' operation.</li>
+                            <li>CHANGE: Update language files to use HTML5 <b>&lt;br&gt;</b>'s.</li>
+                            <li>CHANGE: Products' category-filter now returns products in all sub-categories of selected categories.</li>
+                            <li>BUGFIX: Disallow <code>DbIoProductsHandler</code> 'ADD' for missing/duplicate (if configured) model numbers.</li>
+                            <li>BUGFIX: <code>DbIoProductsHandler</code>, correcting potential creation of category with an 'empty' name.</li>
+                            <li>The following files were changed:<ol>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoManufacturersHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsAttribsBasicHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsAttribsRawHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsDiscountQuantityHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoSpecialsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoStatsHandler.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.6.6, 2021-03-28:<ul>
+                            <li>INTROP: PHP 8.1, modify usage of <code>$GLOBALS</code>.</li>
+                            <li>BUGFIX: Correcting PHP Fatal error (Uncaught  ArgumentCountError) for DbIoProductsHandler.</li>
+                            <li>CHANGE: Add 'v_products_link' (storefront link) to the DbIoProductsHandler.</li>
+                            <li>The following files were changed:<ol>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsRawHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsDiscountQuantityHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsOptionsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsOptionsValuesHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoSpecialsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoStatsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.6.5, 2021-01-22:<ul>
+                            <li>BUGFIX: Properly handle 'enum' type database fields on import.</li>
+                            <li>BUGFIX: Correctly handle 'nullable' fields on import.</li>
+                            <li>The following files were changed:<ol>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.6.4, 2020-10-17:<ul>
+                            <li>BUGFIX: Correct CSV-split handling; split could occur mid-record.</li>
+                            <li>BUGFIX: Correct multi-lingual, customized-template export might have missing fields or fields in the wrong order.</li>
+                            <li>BUGFIX: Correct message missing when multiple <code>v_dbio_command</code> columns found in input.</li>
+                            <li>BUGFIX: Correct valid date detection.</li>
+                            <li>BUGFIX: Additional configuration setting to require <code>Products</code> inserts to include a DbIo <em>ADD</em> command.</li>
+                            <li>CHANGE: The <code>UNLINK</code> command is now available to unlink a product from a category other than its <code>master_categories_id</code>.</li>
+                            <li>BUGFIX: Correct <code>ProductsAttribsRaw</code> handling for 'TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD'.</li>
+                            <li>The following files were changed:<ol>
+                              <li>/YOUR_ADMIN/dbio_manager.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsRawHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/dbio_messages.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio_manager.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.6.3, 2020-06-28:<ul>
+                            <li>BUGFIX: Correct &quot;ProductsAttribsRaw&quot; full-import MySQL error when inserting a new attribute.</li>
+                            <li>BUGFIX: Update needed for Zen Cart 1.5.7 interoperation.</li>
+                            <li>The following files were changed:<ol>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsRawHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.6.2, 2020-06-07:<ul>
+                            <li>BUGFIX: Correct &quot;Products&quot; export creating multiple records for multi-lingual stores.</li>
+                            <li>BUGFIX: Correct &quot;ProductsAttribsRaw&quot; check-only import MySQL error when inserting a new download attribute.</li>
+                            <li>BUGFIX: Correct MySQL error when importing using &quot;ProductsAttribsBasic&quot; with option-values containing single-quotes.</li>
+                            <li>BUGFIX: Correct PHP deprecation notice on 'curly-brace' usage; thanks @torvista!</li>
+                            <li>The following files were changed or <span class="added">added</span>:<ol>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsBasicHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsRawHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/Encoding.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.6.1, 2020-02-12:<ul>
+                            <li>BUGFIX: Hide unwanted (and confusing) link-title on <em>View Import Details</em> pop-up.</li>
+                            <li>BUGFIX: Correct MySQL error on initial install introduced in v1.6.0.</li>
+                            <li>The following files were changed or <span class="added">added</span>:<ol>
+                              <li>/YOUR_ADMIN/includes/javascript/dbio/colorbox.css</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.6.0, 2020-02-08:<ul>
+                            <li>BUGFIX: Update <em>ProductsHandler</em> to include the products' meta-tags' language-based settings.</li>
+                            <li>BUGFIX: <em>ProductsAttribsRawHandler</em><ol type="a">
+                                <li>Ensure the export properly outputs possibly not present fields.</li>
+                                <li>Correct management of the (possibly not present) 'products_attributes_downloads' table's fields.</li>
+                            </ol></li>
+                            <li>BUGFIX: Correct <em>Manufacturers</em> only exports default language for multi-lingual stores.</li>
+                            <li>BUGFIX: Correct PHP notice generated if an export completes unsuccessfully, e.g. generating no records.</li>
+                            <li>CHANGE: Enhance various handlers' on-screen instructions.</li>
+                            <li>BUGFIX: Correctly export (and import) a product's language-specific meta-tags' fields.</li>
+                            <li>BUGFIX: Ensure that minimum information is present to create a new product.</li>
+                            <li>BUGFIX: Correct PHP Notice issued when copying a customized template.</li>
+                            <li>BUGFIX: Correct insertion of customized fields, affects <em>Orders</em> and <em>Products</em> handlers.</li>
+                            <li>CHANGE: Enable 'automatic' download of exports.</li>
+                            <li>BUGFIX: Correct database tables' integer fields' defaults (they're now numeric values).</li>
+                            <li>CHANGE: Update the <em>Stats</em> handler to empty the <code>dbio_stats</code> table on an export.</li>
+                            <li>CHANGE: Include a handler (<em>Specials</em>) to import/export fields from the <code>specials</code> table.</li>
+                            <li>The following files were changed or <span class="added">added</span>:<ol>
+                              <li>/YOUR_ADMIN/dbio_customize.php</li>
+                              <li>/YOUR_ADMIN/dbio_manager.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoManufacturersHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsRawHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+                              <li><span class="added">/YOUR_ADMIN/includes/classes/dbio/DbIoSpecialsHandler.php</span></li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoStatsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio_customize.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio_manager.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoManufacturersHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsAttribsBasicHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsAttribsRawHandler.php</li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/DbIoSpecialsHandler.php</span></li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoStatsHandler.php</li>
+                            </ol></li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.5.7, 2019-09-22:<ul>
+                            <li>BUGFIX: Correct <em>ProductsAttribsRawHandler</em> PHP error on attribute addition with download.</li>
+                            <li>CHANGE: Add jQuery to enable the multi-select dropdowns to be resized vertically.</li>
+                            <li>CHANGE: Update <em>ProductsAttribsRawHandler</em> to also export each product's manufacturer-name.</li>
+                            <li>The following files were changed:<ol>
+                              <li>/YOUR_ADMIN/dbio_manager.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsRawHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.5.6, 2019-08-10:<ul>
+                            <li>BUGFIX: &quot;Split&quot; processing improperly encloses lines with blanks.</li>
+                            <li>BUGFIX: Correct PHP Notice when blank lines are found in an import.</li>
+                            <li>CHANGE: Add buttons to select/unselect all files for the delete action.</li>
+                            <li>The following files were changed:<ol>
+                              <li>/YOUR_ADMIN/dbio_manager.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio_manager.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.5.5, 2019-07-24:<ul>
+                            <li>BUGFIX: &quot;Split&quot; processing creates duplicate header lines on first &quot;part&quot;.</li>
+                            <li>BUGFIX: Don't log generated SQL when performing a full import &mdash; performance issue for large imports.</li>
+                            <li>CHANGE: Disregard blank lines in an imported .csv file.</li>
+                            <li>The following files were changed:<ol>
+                              <li>/YOUR_ADMIN/dbio_manager.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.5.4, 2019-04-30:<ul>
+                            <li>BUGFIX: Correct various PHP Notices.</li>
+                            <li>BUGFIX: <em>ProductsOptions</em> and <em>ProductsOptionsValues</em> handlers won't import when key is 0.</li>
+                            <li>BUGFIX: <em>ProductsAttribsBasic</em> throws MySQL/strict error due to now-invalid <code>GROUP BY</code> clause.</li>
+                            <li>CHANGE: Enable <em>ProductsAttribsRaw</em> to support a <code>v_dbio_command</code> value of <b>REMOVE</b>.</li>
+                            <li>BUGFIX: <em>ProductsDiscountQuantity</em> throws MySQL/strict error due to now-invalid <code>GROUP BY</code> clause.</li>
+                            <li>The following files were changed:<ol>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbioProductsAttribsBasicHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbioProductsAttribsRawHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsOptionsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsOptionsValuesHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsDiscountQuantityHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsAttribsRawHandler.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.5.3, 2019-04-22:<ul>
+                            <li>BUGFIX: PHP error thrown for the <em>Products</em> handler, when creating a category.</li>
+                            <li>BUGFIX: PHP errors and/or notices thrown for the <em>Products</em> handler, when forcing a product to be created via DbIo command.</li>
+                            <li>BUGFIX: Incorrect report of invalid <em>integer</em> values in some configurations.</li>
+                            <li>The following files were changed:<ol>
+                                <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                                <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+                                <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.5.2, 2019-03-05:<ul>
+                            <li>BUGFIX: <code>DB_CHARSET</code> of <code>utf8mb4</code> not recognized as valid <em>utf8</em> variant.</li>
+                            <li>BUGFIX: Properly recognize a database field type of <code>double</code>.</li>
+                            <li>BUGFIX: Negative integers, e.g. -30, should be accepted as valid integer values.</li>
+                            <li>The following files were changed:<ol>
+                                <li>/YOUR_ADMIN/dbio_customize.php</li>
+                                <li>/YOUR_ADMIN/dbio_manager.php</li>
+                                <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                                <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.5.1, 2018-09-13:<ul>
+                            <li>BUGFIX: <code>Products</code> export columns are &quot;off&quot; for its specially-handled fields, due to <code>v_dbio_command</code> column inserts.</li>
+                            <li>The following files were changed:<ol>
+                                <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+                                <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.5.0, 2018-07-21:<ul>
+                            <li>CHANGE: Add the <code>ProductsDiscountQuantity</code> handler.</li>
+                            <li>BUGFIX: <code>Products</code> export results in error when imported.</li>
+                            <li>CHANGE: Include each customer's default-address information for a <code>Customers</code> export.</li>
+                            <li>BUGFIX: Correct <code>Products</code> customized language fields' ordering.</li>
+                            <li>The following files were changed or <span class="added">added</span>:<ol>
+                                <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                                <li>/YOUR_ADMIN/includes/classes/dbio/DbIoCustomersHandler.php</li>
+                                <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+                                <li><span class="added">/YOUR_ADMIN/includes/classes/dbio/DbIoProductsDiscountQuantityHandler.php</span></li>
+                                <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                                <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoCustomersHandler.php</li>
+                                <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsDiscountQuantityHandler.php</span></li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.4.1, 2018-04-05:<ul>
+                            <li>BUGFIX: Zen Cart admin versions less than 1.5.5<b>a</b> don't auto-load jQuery.</li>
+                            <li>BUGFIX: Customized <code>Products</code> export returns <em>all</em> fields of the <code>products_description</code> table.</li>
+                            <li>CHANGE: Allow exports to output multiple lines per request.</li>
+                            <li>BUGFIX: Enable database fields that are <em>nullable</em> to be set to <code>NULL</code>.</li>
+                            <li>BUGFIX: Enable plugin operations when <code>php-mbstring</code> extension is not loaded.</li>
+                            <li>The following files were changed or <span class="added">added</span>:<ol>
+                              <li>/YOUR_ADMIN/dbio_customize.php</li>
+                              <li>/YOUR_ADMIN/dbio_manager.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsBasicHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+                              <li><span class="added">/YOUR_ADMIN/includes/functions/dbio_string_functions.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/functions/dbio_mb_string_functions.php</span></li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.4.0, 2017-11-28:<ul>
+                            <li>CHANGE: Update the &quot;Products&quot; handler to allow a product to be unconditionally created.</li>
+                            <li>The following files were changed:<ol>
+                            </ol></li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                          </ul></li>
+                          <li>v1.3.1, 2017-10-04:<ul>
+                            <li>BUGFIX: Properly detect missing/read-only input-output directories.</li>
+                            <li>BUGFIX: (Products) Import with duplicate records results in debug-log.</li>
+                            <li>BUGFIX: (Products) Import/update of a product doesn't record updated master-categories id.</li>
+                            <li>BUGFIX: (Products) Exports with re-organized manufacturer's name, tax-class id or categories name have mixed data in columns; for (Orders), the same applies for the orders-status name.</li>
+                            <li>BUGFIX: Export error not displayed to admin user</li>
+                            <li>The following files were changed:<ol>
+                            </ol></li>
+                              <li>/YOUR_ADMIN/dbio_manager.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/dbio_messages.php</li>
+                          </ul></li>
+                          <li>v1.3.0, 2017-04-25:<ul>
+                            <li>CHANGE: Display <em>all</em> DbIo configuration settings on the main tool's page.</li>
+                            <li>BUGFIX: Manage the product's date-added/last-modified fields on an import.</li>
+                            <li>BUGFIX: Correct final v1.2.0 initialization fails for &quot;early adopters&quot;.</li>
+                            <li>BUGFIX: Update the <em>Products</em> handler to optionally create any associated categories.</li>
+                            <li>CHANGE: Add a control to enable a handler to totally control the import sequencing.</li>
+                            <li>The following files were changed:<ol>
+                              <li>/YOUR_ADMIN/dbio_manager.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio_manager.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.2.1, 2017-03-01:<ul>
+                            <li>BUGFIX: Alert admin-user when &quot;php-mbstring&quot; extension is not installed.</li>
+                            <li>BUGFIX: Add backticks around database field names.</li>
+                            <li>CHANGE: Enable fixed-field handlers to include special-handling fields.</li>
+                            <li>The following files were changed:<ol>
+                              <li>/YOUR_ADMIN/dbio_manager.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/dbio_messages.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.2.0, 2017-02-06:<ul>
+                            <li>BUGFIX: Truncate character fields to their database-defined maximum length prior to import.</li>
+                            <li>CHANGE: Add an handler to support import/export of the manufacturers' information.</li>
+                            <li>CHANGE: Enable download and removal of <em>DbIo</em> log files.</li>
+                            <li>CHANGE: Reduce creation of &quot;nuisance&quot; DbIo log files.</li>
+                            <li>CHANGE: Use a text-link instead of icon to indicate that import statistics are available.</li>
+                            <li>CHANGE: Enable exported report customizations.</li>
+                            <li>CHANGE: Restructure admin tool's user interface.</li>
+                            <li>CHANGE: Conditionally present a handler's filters for use in the database-export processing.</li>
+                            <li>BUGFIX: Maintain current file selection.</li>
+                            <li>The following files were changed, <span class="added">added</span> or <span class="removed">removed</span>:<ol>
+                              <li>/docs/dbio/uninstall/uninstall_dbio.sql</li>
+                              <li><span class="added">/YOUR_ADMIN/dbio_customize.php</span></li>
+                              <li>/YOUR_ADMIN/dbio_manager.php</li>
+                              <li><span class="removed">/YOUR_ADMIN/images/icons/dbio_information.png</span></li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li><span class="added">/YOUR_ADMIN/classes/dbio/DbIoManufacturersHandler.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersBase.php</span></li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/extra_datafiles/dbio_file_database_names_admin.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio_customize.php</span></li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio_manager.php</li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/DbIoManufacturersHandler.php</span></li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoOrdersHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoOrdersProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/extra_definitions/dbio_admin_extra_definitions.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.1.1, 2017-01-04:<ul>
+                            <li>BUGFIX: <em>OrdersProducts</em> handler generates database error when filtered.</li>
+                            <li>BUGFIX: <em>OrdersProducts</em> handler doesn't encode data on export.</li>
+                            <li>The following files were changed:<ol>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.1.0, 2016-12-19:<ul>
+                            <li>BUGFIX: Correct PHP Notices</li>
+                            <li>CHANGE: Add class-based support for customizable exports; not yet implemented at the <em>Database I/O Manager</em> level.</li>
+                            <li>CHANGE: Add support for the <code class="no-pad">v_dbio_command</code> column, allowing handlers (e.g. <em>Products</em>) to accept commands (like REMOVE).</li>
+                            <li>CHANGE: Split handlers' export-filters' configuration from handlers' base configuration.</li>
+                            <li>CHANGE: Allow handlers to identify a minimum version of the base <code class="no-pad">DbIoHandler</code> class.</li>
+                            <li>CHANGE: Allow handlers to identify &quot;alternate&quot; keys; the <code class="no-pad">DbIoProductsHandler</code> has been updated to enable an import based on either products_id or products_model.</li>
+                            <li>BUGFIX: Cease import processing fully if an initialization error is detected.</li>
+                            <li>BUGFIX: Disallow 'incomplete' records, i.e. fewer columns than the header.</li>
+                            <li>BUGFIX: Fixed-header import misses 'special import' fields.</li>
+                            <li>The following files were changed:<ol>
+                              <li>/YOUR_ADMIN/dbio_manager.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOrdersHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/dbio_messages.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.0.1, 2016-10-24:<ul>
+                            <li>CHANGE: Enable a handler to perform some post-processing for the record-set just imported.</li>
+                            <li>CHANGE: Clarify some of the handlers' instructions.</li>
+                            <li>BUGFIX: Missing function importGetFieldValue.</li>
+                            <li>BUGFIX: Unwanted HTML included in CSV-download in some configurations.</li>
+                            <li>BUGFIX: Missing &quot;Customers&quot; handler's language file.</li>
+                            <li>BUGFIX: Only default language exported by &quot;Products&quot; handler on multi-lingual stores.</li>
+                            <li>BUGFIX: v_categories_name field not properly encoded by the &quot;Products&quot; export.</li>
+                            <li>BUGFIX: Empty dates should be allowed when a date/datetime field is <em>nullable</em>.</li>
+                            <li>CHANGE: Allow a handler to be conditionally enabled.</li>
+                            <li>The following files were changed/<span class="added">added</span>:<ol>
+                              <li>/YOUR_ADMIN/dbio_manager.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/DbIoCustomersHandler.php</span></li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsAttribsBasicHandler.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v1.0.0, 2016-07-01, Initial release.</li>
+                        </ul>
+                    </div>
+
+                    <div class="tab-pane fade shadow rounded bg-white p-4" id="v-pills-6" role="tabpanel" aria-labelledby="v-pills-6-tab">
+                        <h4 class="font-italic mb-4">License</h4>
+                        <p><strong>Database I/O Manager</strong> is released under the General Public License (see LICENSE.txt). This script is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.</p>
+                        <p>Always backup your shop and database before making changes.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>
