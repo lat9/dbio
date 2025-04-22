@@ -28,6 +28,7 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
 {
     protected int $optionValueNameLength;
     protected array $optionsByLanguage;
+    protected bool $isLanguageOnlyInsert;
 
     public static function getHandlerInformation()
     {
@@ -126,21 +127,26 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
     // chance to:
     //
     // 1) See if the products_options_values_id is 0.  If so, force the import to be an insert.
+    //    Otherwise, the value must be associated with an option's value; if not, the record's
+    //    import will be denied.
     // 2) See if the associated language_id is, in fact, valid for the store.  If not, the
     //    record's import will be denied.
+    // 3) If the products_options_values_id and language_id were both found to be valid and the
+    //    record's not *specifically* an insert, check to see whether the values-id/language-id
+    //    pair are currently recorded in the database.  If not, this is a language-only record insert.
     //
     protected function importCheckKeyValue($data)
     {
         $products_options_values_id = $this->importGetFieldValue('products_options_values_id', $data);
+        $this->isLanguageOnlyInsert = false;
         if ($products_options_values_id === '0') {
             $this->import_is_insert = true;
         } else {
             global $db;
             $check = $db->Execute(
-                "SELECT products_options_values_id
+                "SELECT products_options_values_id, language_id
                    FROM " . TABLE_PRODUCTS_OPTIONS_VALUES . "
-                  WHERE products_options_values_id = " . (int)$products_options_values_id . "
-                  LIMIT 1"
+                  WHERE products_options_values_id = " . (int)$products_options_values_id
             );
             if ($check->EOF) {
                 $this->record_status = false;
@@ -152,6 +158,19 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
         if (!in_array($language_id, array_values($this->languages))) {
             $this->record_status = false;
             $this->debugMessage("[*] products_options_values.language_id, line #" . $this->stats['record_count'] . ": Value ($language_id) is not a valid language id.", self::DBIO_ERROR);
+        }
+
+        if ($this->record_status === true && $this->import_is_insert === false) {
+            $this->isLanguageOnlyInsert = true;
+            foreach ($check as $next_value) {
+                if ($language_id == $next_value['language_id']) {
+                    $this->isLanguageOnlyInsert = false;
+                    break;
+                }
+            }
+            if ($this->isLanguageOnlyInsert === true) {
+                $this->import_is_insert = true;
+            }
         }
 
         return parent::importCheckKeyValue($data);
@@ -213,13 +232,17 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
             $sql_data_array[] = ['fieldName' => $field_name, 'value' => $value, 'type' => ($field_name === 'products_options_values_name') ? 'stringIgnoreNull' : 'integer'];
         }
 
+        $products_options_values_id = (int)$this->saved_data['products_options_values_id'];
+
         global $db;
         if ($this->import_is_insert) {
-            $next_id = $db->Execute(
-                "SELECT MAX(products_options_values_id) + 1 AS next_id
-                   FROM " . TABLE_PRODUCTS_OPTIONS_VALUES
-            );
-            $products_options_values_id = $next_id->fields['next_id'];
+            if ($this->isLanguageOnlyInsert === false) {
+                $next_id = $db->Execute(
+                    "SELECT MAX(products_options_values_id) + 1 AS next_id
+                       FROM " . TABLE_PRODUCTS_OPTIONS_VALUES
+                );
+                $products_options_values_id = $next_id->fields['next_id'];
+            }
             $sql_data_array[] = ['fieldName' => 'products_options_values_id', 'value' => $products_options_values_id, 'type' => 'integer'];
 
             $this->debugMessage("Inserting record into products_options_values at line #" . $this->stats['record_count'] . ": " . json_encode($sql_data_array));
@@ -235,7 +258,6 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
         } else {
             $this->debugMessage("Updating record in products_options_values at line #" . $this->stats['record_count'] . ": " . json_encode($sql_data_array));
             if ($this->operation !== 'check') {
-                $products_options_values_id = (int)$this->saved_data['products_options_values_id'];
                 $db->perform(TABLE_PRODUCTS_OPTIONS_VALUES, $sql_data_array, 'update', "products_options_values_id = $products_options_values_id LIMIT 1");
 
                 $check = $db->Execute(
