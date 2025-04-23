@@ -2,9 +2,9 @@
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 //
-// Last updated: DbIo v2.2.0
+// Last updated: DbIo v2.0.2
 //
-// Copyright (c) 2017-2023, Vinos de Frutas Tropicales.
+// Copyright (c) 2017-2025, Vinos de Frutas Tropicales.
 //
 define('HEADING_TITLE', 'Configure DbIo%s Templates');
 
@@ -57,7 +57,7 @@ define('BUTTON_CANCEL', 'Cancel');
 define('BUTTON_CANCEL_TITLE', 'Click here to cancel the current action');
 
 define('INSTRUCTIONS_MAIN',
-    'Use this page to customize an export template for the DbIo\'s <em>%1$s</em> handler.  You can choose a subset of the fields supported by this handler and also customize the order in which those fields are exported into their associated .csv-file columns.' .
+    'Use this page to customize an export template for the DbIo\'s <em>%1$s</em> handler.  You can choose a subset of the fields supported by this handler and also customize the order in which those fields are exported into their associated .csv-file columns. For additional information, refer to this <a href="https://github.com/lat9/dbio/wiki/Manage-DbIo-Templates" target="_blank" rel="noreferrer noopener">Wiki article</a>.' .
     '<br><br>' .
     'A template\'s <em>scope</em> can be either <b>' . TEXT_SCOPE_PUBLIC . '</b>, available for all admin users, or <b>' . TEXT_SCOPE_PRIVATE . '</b>, available only for your use.  Its <em>name</em> will form a portion of an exported csv-file\'s name if the template is used to customize an export action, e.g. <code>dbio.%1$s.template_name.datetime_string</code>.  The <em>description</em> that you provide is displayed on the main <strong>Database I/O Manager</strong> screen when the template is selected, giving you some confirmation of the template\'s features.'
 );

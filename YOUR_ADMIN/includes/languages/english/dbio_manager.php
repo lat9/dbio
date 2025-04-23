@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2023, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2025, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.1
+// Last updated: DbIo v2.0.2
 //
 define('HEADING_TITLE', 'Database I/O (DbIo) Manager');
 
@@ -41,7 +41,7 @@ define('LEGEND_CONFIGURATION', 'Configuration');
 define('LEGEND_FILE_ACTIONS', 'File Actions');
 define('LEGEND_FILE_UPLOADS', 'File Uploads');
 
-define('TEXT_INSTRUCTIONS', 'The <b><i>DbIo Manager</i></b> provides <em>handlers</em> that enable exports and, conditionally, imports of database information, using a comma-separated-value (CSV) file.  Choose the handler to use from the drop-down list below and that handler\'s features, e.g. filters and/or template-customization options, will be displayed.');
+define('TEXT_INSTRUCTIONS', 'The <b><i>DbIo Manager</i></b> provides <em>handlers</em> that enable exports and, conditionally, imports of database information, using a comma-separated-value (CSV) file.  Choose the handler to use from the drop-down list below and that handler\'s features, e.g. filters and/or template-customization options, will be displayed.<br><br>For additional information, refer to the plugin\'s <a href="https://github.com/lat9/dbio/wiki" target="_blank" rel="noreferrer noopener">Wiki articles</a>.');
 
 define('DBIO_BUTTON_DELETE', 'Delete');
 define('DBIO_BUTTON_DELETE_TITLE', 'Click here to delete the currently-selected file(s) from the server.');
