@@ -10,6 +10,6 @@ The DbIo support-thread on the Zen Cart forums is located [here](https://www.zen
 
 The _**Database I/O Manager**_ can also be downloaded from the Zen Cart [support site](https://www.zen-cart.com/downloads.php?do=file&id=2091).
 
-## Handler-Specific Usage Notes
+## Additional Information
 
-Additional, handler-specific usage notes are documented [here](https://github.com/lat9/dbio/wiki).
+Refer to the plugin's [readme.html](https://htmlpreview.github.io/?https://github.com/lat9/dbio/blob/master/readme_dbio.html) and [Wiki Articles](https://github.com/lat9/dbio/wiki) for additional information.
