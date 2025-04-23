@@ -215,7 +215,7 @@ select { padding: 0.1em; margin: 0.5em; }
 table { border-collapse: collapse; }
 td, th { padding: 0.7em; }
 legend { background-color: #fff8dc; padding: 0.3em; border: 1px solid #e5e5e5; }
-#main-wrapper { text-align: center; padding: 1em; }
+#main-wrapper { padding: 1em; }
 #main-contents, #the-list, #template { width: 100%; }
 #move-fields > div { float: left; }
 .move-buttons { padding: 1em 0.5em; }
