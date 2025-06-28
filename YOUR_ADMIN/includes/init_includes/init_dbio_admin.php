@@ -14,8 +14,8 @@ if (empty($_SESSION['admin_id'])) {
     return;
 }
 
-define('DBIO_CURRENT_VERSION', '2.0.2');
-define('DBIO_CURRENT_UPDATE_DATE', '2025-04-23');
+define('DBIO_CURRENT_VERSION', '2.1.0-beta1');
+define('DBIO_CURRENT_UPDATE_DATE', '2025-06-28');
 
 $version_release_date = DBIO_CURRENT_VERSION . ' (' . DBIO_CURRENT_UPDATE_DATE . ')';
 
@@ -47,17 +47,17 @@ if (defined('DBIO_MODULE_VERSION')) {
   
     $db->Execute("INSERT INTO " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function) VALUES ('CSV: Escape', 'DBIO_CSV_ESCAPE', '\\\\', 'Enter the single character used as the escape-character within any DbIo CSV file.  (Default: <b>backslash</b>)', $cgi, 7, now(), NULL, NULL)");
   
-    $db->Execute("INSERT INTO " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function) VALUES ('CSV: Encoding', 'DBIO_CHARSET', 'utf8', 'Choose the type of encoding to be associated with DbIo CSV files.  If you use Microsoft&reg; Excel, choose <b>latin1</b>.  (Default: <b>utf8</b>).', $cgi, 10, now(), NULL, 'zen_cfg_select_option(array(\'utf8\', \'latin1\'),')");
+    $db->Execute("INSERT INTO " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function) VALUES ('CSV: Encoding', 'DBIO_CHARSET', 'utf8', 'Choose the type of encoding to be associated with DbIo CSV files.  If you use Microsoft&reg; Excel, choose <b>latin1</b>.  (Default: <b>utf8</b>).', $cgi, 10, now(), NULL, 'zen_cfg_select_option([\'utf8\', \'latin1\'],')");
   
-    $db->Execute("INSERT INTO " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function) VALUES ('CSV: Import Date Format', 'DBIO_IMPORT_DATE_FORMAT', 'm-d-y', 'Choose the format used for <em>date</em> and <em>datetime</em> fields in any DbIo CSV file.  (Default: <b>m-d-y</b>)', $cgi, 11, now(), NULL, 'zen_cfg_select_option(array(\'m-d-y\', \'d-m-y\', \'y-m-d\'),')");
+    $db->Execute("INSERT INTO " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function) VALUES ('CSV: Import Date Format', 'DBIO_IMPORT_DATE_FORMAT', 'm-d-y', 'Choose the format used for <em>date</em> and <em>datetime</em> fields in any DbIo CSV file.  (Default: <b>m-d-y</b>)', $cgi, 11, now(), NULL, 'zen_cfg_select_option([\'m-d-y\', \'d-m-y\', \'y-m-d\'],')");
 
     $db->Execute("INSERT INTO " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function) VALUES ('Maximum Execution Time (seconds)', 'DBIO_MAX_EXECUTION_TIME', '60', 'Enter the maximum execution time for a DbIo operation, in seconds (default: 60).', $cgi, 20, now(), NULL, NULL)");
 
     $db->Execute("INSERT INTO " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function) VALUES ('Split File: Record Count', 'DBIO_SPLIT_RECORD_COUNT', '2000', 'Sometimes, splitting a .csv file into multiple, smaller files can help if your server is timing out on an <em>import</em> operation or if an exported .csv is too large to download in a single chunk.  Enter the number of records (default: 2000) at which to split these files using the <em>Database I/O Manager</em>.', $cgi, 25, now(), NULL, NULL)");
     
-    $db->Execute("INSERT INTO " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function) VALUES ('Default File Sort Order', 'DBIO_FILE_SORT_DEFAULT', '3d', 'Choose the default sort-order that the <em>Database I/O Manager</em> uses when displaying the I/O files it has discovered, one of:<br /><br /><b>1a</b>: File Name, ascending<br /><b>1d</b>: File Name, descending<br /><b>2a</b>: File Size, ascending<br /><b>2d</b>: File Size, descending<br /><b>3a</b>: File Date, ascending<br /><b>3d</b>: File Date, descending (default)', $cgi, 26, now(), NULL, 'zen_cfg_select_option(array(\'1a\', \'1d\', \'2a\', \'2d\', \'3a\', \'3d\'),')");
+    $db->Execute("INSERT INTO " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function) VALUES ('Default File Sort Order', 'DBIO_FILE_SORT_DEFAULT', '3d', 'Choose the default sort-order that the <em>Database I/O Manager</em> uses when displaying the I/O files it has discovered, one of:<br /><br /><b>1a</b>: File Name, ascending<br /><b>1d</b>: File Name, descending<br /><b>2a</b>: File Size, ascending<br /><b>2d</b>: File Size, descending<br /><b>3a</b>: File Date, ascending<br /><b>3d</b>: File Date, descending (default)', $cgi, 26, now(), NULL, 'zen_cfg_select_option([\'1a\', \'1d\', \'2a\', \'2d\', \'3a\', \'3d\'],')");
 
-    $db->Execute("INSERT INTO " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function) VALUES ('Enable Debug?', 'DBIO_DEBUG', 'false', 'Identify whether (true) or not (false, the default) the DbIo debug is to be enabled.  When enabled, <b>all</b> I/O status is written to a <em>dbio-*.log</em> file in your store\'s /YOUR_ADMIN/dbio/logs folder.', $cgi, 600, now(), NULL, 'zen_cfg_select_option(array(\'true\', \'false\'),')");
+    $db->Execute("INSERT INTO " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function) VALUES ('Enable Debug?', 'DBIO_DEBUG', 'false', 'Identify whether (true) or not (false, the default) the DbIo debug is to be enabled.  When enabled, <b>all</b> I/O status is written to a <em>dbio-*.log</em> file in your store\'s /YOUR_ADMIN/dbio/logs folder.', $cgi, 600, now(), NULL, 'zen_cfg_select_option([\'true\', \'false\'],')");
 
     $db->Execute("INSERT INTO " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function) VALUES ('Debug Date Format', 'DBIO_DEBUG_DATE_FORMAT', 'Y-m-d H:i:s', 'Enter the formatting string used to timestamp all DbIo log entries.', $cgi, 601, now(), NULL, NULL)");
 }
@@ -70,7 +70,7 @@ if (DBIO_CURRENT_VERSION !== $dbio_current_version) {
     // Plugin version-specific updates ...
     //
     if (version_compare($dbio_current_version, '1.1.0', '<')) {
-        $db->Execute ("INSERT IGNORE INTO " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function) VALUES ('<em>Products</em> Import:  Allow Duplicate Models?', 'DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS', 'No', 'When performing a <em>Products</em> import, should an imported record be allowed if it would create a product with a duplicated model number?  (Default: <b>No</b>)', $cgi, 100, now(), NULL, 'zen_cfg_select_option(array(\'Yes\', \'No\'),')");
+        $db->Execute ("INSERT IGNORE INTO " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function) VALUES ('<em>Products</em> Import:  Allow Duplicate Models?', 'DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS', 'No', 'When performing a <em>Products</em> import, should an imported record be allowed if it would create a product with a duplicated model number?  (Default: <b>No</b>)', $cgi, 100, now(), NULL, 'zen_cfg_select_option([\'Yes\', \'No\'],')");
     }
 
     if (version_compare($dbio_current_version, '1.2.0', '<')) {
@@ -151,7 +151,7 @@ if (DBIO_CURRENT_VERSION !== $dbio_current_version) {
                 "INSERT IGNORE INTO " . TABLE_CONFIGURATION . "
                     (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function)
                 VALUES
-                    ('<em>Products</em>: Auto-Create Categories on Import?', 'DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES', 'No', 'How should the <em>DbIo</em> handle missing categories on a <em>Products</em> import?  Choose <b>Yes</b> to have any missing categories automatially generated; choose <b>No</b> (the default) to disallow any product imports when the categories don\'t previously exist.', $cgi, 150, now(), NULL, 'zen_cfg_select_option(array(\'Yes\', \'No\'),')"
+                    ('<em>Products</em>: Auto-Create Categories on Import?', 'DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES', 'No', 'How should the <em>DbIo</em> handle missing categories on a <em>Products</em> import?  Choose <b>Yes</b> to have any missing categories automatially generated; choose <b>No</b> (the default) to disallow any product imports when the categories don\'t previously exist.', $cgi, 150, now(), NULL, 'zen_cfg_select_option([\'Yes\', \'No\'],')"
             );
         }
     }
@@ -162,7 +162,7 @@ if (DBIO_CURRENT_VERSION !== $dbio_current_version) {
                 "INSERT IGNORE INTO " . TABLE_CONFIGURATION . "
                     (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function)
                 VALUES
-                    ('<em>Products</em>: Product Creation Requires Command?', 'DBIO_PRODUCTS_INSERT_REQUIRES_COMMAND', 'No', 'Does a <em>Products</em> import require a DbIo <code>ADD</code> command? Choose <b>No</b> (the default) to allow products to be created if no matching products_id and/or products_model is found.<br><br>Choose <b>Yes</b> to disallow any product-import that results in a new product unless the <code>ADD</code> command is present.', $cgi, 110, now(), NULL, 'zen_cfg_select_option(array(\'Yes\', \'No\'),')"
+                    ('<em>Products</em>: Product Creation Requires Command?', 'DBIO_PRODUCTS_INSERT_REQUIRES_COMMAND', 'No', 'Does a <em>Products</em> import require a DbIo <code>ADD</code> command? Choose <b>No</b> (the default) to allow products to be created if no matching products_id and/or products_model is found.<br><br>Choose <b>Yes</b> to disallow any product-import that results in a new product unless the <code>ADD</code> command is present.', $cgi, 110, now(), NULL, 'zen_cfg_select_option([\'Yes\', \'No\'],')"
             );
         }
     }
@@ -220,7 +220,7 @@ if (DBIO_CURRENT_VERSION !== $dbio_current_version) {
             zen_register_admin_page('toolsDbIoCustomize', 'BOX_TOOLS_DBIO_CUSTOMIZE', 'FILENAME_DBIO_CUSTOMIZE', '', 'tools', 'N');
         }
     }
-    
+
     // -----
     // Versions prior to v1.6.0 had character defaults for numeric database fields, fix them up on any upgrade.
     //
