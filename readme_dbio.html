@@ -144,10 +144,13 @@ body {
                           <li>v2.1.0-beta1, 2025-06-28 (lat9):<ul>
                             <li>CHANGE: Adding <code>LINK</code> and <code>MOVE</code> commands to <var>DbIoProductsHandler</var>. See <a href="https://github.com/lat9/dbio/wiki/Handler%E2%80%90specific-Usage-Notes#productshandler" target="_blank">this</a> GitHub Wiki article for additional information.</li>
                             <li>BUGFIX: Allow MySQL-formatted dates to be accepted on import, regardless of the 'CSV: Import Date Format' setting.</li>
+                            <li>CHANGE: Add <code>REMOVE</code> command to <var>DbIoFeaturedHandler</var>; export format also changed, now includes <code>products_id</code>.</li>
                             <li>The following files were changed:<ol>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoFeaturedHandler.php</li>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
                               <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                              <li>/YOUR_ADMIN/includes/languages/english/dbio/DbIoFeaturedHandler.php</li>
                             </ol></li>
                           </ul></li>
                           <li>v2.0.2, 2025-04-23 (lat9):<ul>
