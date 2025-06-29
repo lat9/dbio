@@ -3,7 +3,7 @@
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2016-2025, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.2
+// Last updated: DbIo v2.1.0
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -334,7 +334,7 @@ abstract class DbIoHandler extends base
                 $date_time_split = explode(' ', $date_value);
                 $needle = (dbio_strpos($date_time_split[0], '/') !== false) ? '/' : '-';
                 $date_split = explode($needle, $date_time_split[0]);
-                if (count($date_split) === 3) {
+                if (count($date_split) === 3 && dbio_strlen($date_split[0]) !== 4) {
                     if (DBIO_IMPORT_DATE_FORMAT === 'd-m-y') {
                         $date_value = sprintf('%u-%02u-%02u', $date_split[2], $date_split[1], $date_split[0]);
                     } else {
