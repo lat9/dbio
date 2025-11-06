@@ -88,7 +88,6 @@ body {
                           <li>Use a class-based approach, enabling a higher degree of code reuse.</li>
                           <li>Let the database drive the data; use the database settings to guide &quot;proper&quot; input processing.</li>
                           <li>Keep the data-pool consistent; broadly define the character-encoding of the .CSV repositories.</li>
-                          <li>Keep to, where possible, the <em>EP-4</em> interface described in its <a href="https://www.zen-cart.com/wiki/index.php/Easy_Populate" target="_blank">wiki</a>.</li>
                           <li>Multi-language awareness.</li>
                           <li>Be <em>data-driven</em>.  If you've installed a plugin that simply adds a field to an existing table (like products or orders), that field is a candidate for any I/O operation on that database table without additional coding.</li>
                         </ol>
@@ -141,7 +140,7 @@ body {
                         <h4 class="font-italic mb-4">Change History</h4>
                         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
                         <ul>
-                          <li>v2.1.0-beta1, 2025-06-28 (lat9):<ul>
+                          <li>v2.1.0, 2025-11-06 (lat9):<ul>
                             <li>CHANGE: Adding <code>LINK</code> and <code>MOVE</code> commands to <var>DbIoProductsHandler</var>. See <a href="https://github.com/lat9/dbio/wiki/Handler%E2%80%90specific-Usage-Notes#productshandler" target="_blank">this</a> GitHub Wiki article for additional information.</li>
                             <li>BUGFIX: Allow MySQL-formatted dates to be accepted on import, regardless of the 'CSV: Import Date Format' setting.</li>
                             <li>CHANGE: Add <code>REMOVE</code> command to <var>DbIoFeaturedHandler</var>; export format also changed, now includes <code>products_id</code>.</li>
