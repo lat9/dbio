@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2025, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.1.0
+// Last updated: DbIo v2.1.1
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -136,13 +136,13 @@ abstract class DbIoHandler extends base
         $this->io_errors = [];
 
         $this->stats = [
-            'report_name' => self::DBIO_UNKNOWN_VALUE, 
-            'errors' => 0, 
-            'warnings' => 0, 
-            'record_count' => 0, 
-            'inserts' => 0, 
-            'updates' => 0, 
-            'date_added' => 'now()' 
+            'report_name' => self::DBIO_UNKNOWN_VALUE,
+            'errors' => 0,
+            'warnings' => 0,
+            'record_count' => 0,
+            'inserts' => 0,
+            'updates' => 0,
+            'date_added' => 'now()'
         ];
 
         $this->languages = [];
@@ -269,9 +269,9 @@ abstract class DbIoHandler extends base
     public function getCsvParameters()
     {
         return [
-            'delimiter' => $this->config['delimiter'], 
-            'enclosure' => $this->config['enclosure'], 
-            'escape' => $this->config['escape'] 
+            'delimiter' => $this->config['delimiter'],
+            'enclosure' => $this->config['enclosure'],
+            'escape' => $this->config['escape']
         ];
     }
 
@@ -356,7 +356,7 @@ abstract class DbIoHandler extends base
                 $return_date = false;
             }
         }
-        $this->debugMessage("formatValidateDate: ($date_value_in, $field_type), DBIO_IMPORT_DATE_FORMAT = '" . DBIO_IMPORT_DATE_FORMAT . "', returning ($return_date). Parsed date: " . print_r($parsed_date, true)); 
+        $this->debugMessage("formatValidateDate: ($date_value_in, $field_type), DBIO_IMPORT_DATE_FORMAT = '" . DBIO_IMPORT_DATE_FORMAT . "', returning ($return_date). Parsed date: " . print_r($parsed_date, true));
         return $return_date;
     }
 
@@ -425,8 +425,8 @@ abstract class DbIoHandler extends base
     }
 
     // -----
-    // Initialize the DbIo export handling. 
-    // 
+    // Initialize the DbIo export handling.
+    //
     public function exportInitialize($language = 'all')
     {
         $this->logCharacterSetConfig();
@@ -445,7 +445,7 @@ abstract class DbIoHandler extends base
         // 1) The current DbIo handler must have included its 'config' section.
         // 2) The current version of this class must "support" the features required by the handler itself.
         // 3) The language requested for the export must be present in the current Zen Cart's database
-        //        
+        //
         if (!isset($this->config)) {
             $this->debugMessage(DBIO_ERROR_NO_HANDLER, self::DBIO_ERROR);
         } elseif ($this->version_mismatch === true) {
@@ -463,7 +463,7 @@ abstract class DbIoHandler extends base
             $this->select_clause = $this->from_clause = $this->where_clause = $this->order_by_clause = '';
             $this->headers = [];
             $this->saved_data = [];
-            
+
             if (isset($this->customized_fields) && is_array($this->customized_fields)) {
                 $initialized = $this->exportInitializeCustomized();
             } else {
@@ -479,8 +479,8 @@ abstract class DbIoHandler extends base
         }
         $additional_headers = (isset($this->config['additional_headers'])) ? ("\nAdditional Headers\n" . print_r($this->config['additional_headers'], true)) : '';
         $this->debugMessage(
-            "exportInitialize ($language), " . (($initialized) ? 'Successful' : ('Unsuccessful (' . $this->message . ')')) . 
-            "\nTables:\n" . print_r($this->tables, true) . 
+            "exportInitialize ($language), " . (($initialized) ? 'Successful' : ('Unsuccessful (' . $this->message . ')')) .
+            "\nTables:\n" . print_r($this->tables, true) .
             $additional_headers .
             "\nHeaders:\n" . print_r($this->headers, true)
         );
@@ -530,7 +530,7 @@ abstract class DbIoHandler extends base
         $export_sql = 'SELECT ' . $this->select_clause . ' FROM ' . $this->from_clause;
         if ($this->where_clause !== '') {
             $export_sql .= ' WHERE ' . $this->where_clause;
-      
+
         }
         if ($this->order_by_clause !== '') {
             $export_sql .= ' ORDER BY ' . $this->order_by_clause;
@@ -734,7 +734,7 @@ abstract class DbIoHandler extends base
             }
             $this->table_names[] = $table_name;
             $this->language_id[] = $field_language_id;
-            
+
             if ($current_field != self::DBIO_NO_IMPORT) {
                 $this->header_field_count++;
                 if ($table_name != self::DBIO_SPECIAL_IMPORT && $table_name !== self::DBIO_NO_IMPORT) {
@@ -803,7 +803,7 @@ abstract class DbIoHandler extends base
                         $this->variable_keys[$current_field]['type'] = $field_type;
                     }
                 }
-            }  
+            }
             $key_index++;
         }
         $this->headers = $header;
@@ -835,10 +835,10 @@ abstract class DbIoHandler extends base
             "importGetHeader: finished ($initialization_complete).\n" .
             print_r(
                 [
-                    'import_sql_data' => $this->import_sql_data, 
-                    'table_names' => $this->table_names, 
-                    'language_id' => $this->language_id, 
-                    'header_field_count' => $this->header_field_count, 
+                    'import_sql_data' => $this->import_sql_data,
+                    'table_names' => $this->table_names,
+                    'language_id' => $this->language_id,
+                    'header_field_count' => $this->header_field_count,
                     'key_index' => $this->key_index,
                     'variable_keys' => $this->variable_keys,
                     'headers' => $this->headers
@@ -953,7 +953,7 @@ abstract class DbIoHandler extends base
             if ($this->importCheckKeyValue($data) !== false) {
                 // -----
                 // Check to see if DbIo commands are included in this import and, if so, check to see if the current to-be-imported
-                // record includes a non-blank command; if so, pass that command off the the active handler.
+                // record includes a non-blank command; if so, pass that command off to the active handler.
                 //
                 // The handler might return nothing (null) or false, causing the import action for the current row to be
                 // considered "finished" or boolean true to indicate that the current row's processing should continue.
@@ -1049,9 +1049,9 @@ abstract class DbIoHandler extends base
     public function importPostProcess()
     {
     }
-  
+
 // ----------------------------------------------------------------------------------
-//                      P R O T E C T E D   F U N C T I O N S 
+//                      P R O T E C T E D   F U N C T I O N S
 // ----------------------------------------------------------------------------------
 
     protected function exportEncodeData($fields)
@@ -1175,7 +1175,7 @@ abstract class DbIoHandler extends base
                     }
                 }
             }
- 
+
             if (isset($this->config['additional_headers']) && is_array($this->config['additional_headers'])) {
                 foreach ($this->config['additional_headers'] as $header_value => $flags) {
                     if (!($flags & self::DBIO_FLAG_NO_EXPORT)) {
@@ -1282,13 +1282,13 @@ abstract class DbIoHandler extends base
     {
         return false;
     }
- 
+
     protected function importCheckKeyValue($data)
     {
         return $this->record_status;
     }
 
-    protected function importUpdateRecordKey($table_name, $table_fields, $key_value) 
+    protected function importUpdateRecordKey($table_name, $table_fields, $key_value)
     {
         return $table_fields;
     }
@@ -1348,9 +1348,9 @@ abstract class DbIoHandler extends base
                         }
                         $this->key_where_clause .= "$table_alias.$key_field_name = $key_match_variable";
                         $this->variable_keys[$key_field_name] = [
-                            'table_name' => $table_name, 
-                            'match_variable_name' => $key_match_variable, 
-                            'key_is_alternate' => (bool)($key_type & self::DBIO_KEY_IS_ALTERNATE) 
+                            'table_name' => $table_name,
+                            'match_variable_name' => $key_match_variable,
+                            'key_is_alternate' => (bool)($key_type & self::DBIO_KEY_IS_ALTERNATE)
                         ];
                     } elseif ($key_type & self::DBIO_KEY_IS_FIXED) {
                         if ($this->key_where_clause !== '') {
@@ -1374,7 +1374,7 @@ abstract class DbIoHandler extends base
                 $this->key_select_clause = dbio_substr($this->key_select_clause, 0, -2);
                 $this->key_field_names = dbio_substr($this->key_field_names, 0, -2);
 
-                $this->data_key_sql = 
+                $this->data_key_sql =
                     "SELECT " . $this->key_select_clause . "
                        FROM " . $this->key_from_clause . "
                       WHERE " . $this->key_where_clause . (($this->alternate_key_included === true) ? '' : ' LIMIT 1');
@@ -1610,7 +1610,7 @@ abstract class DbIoHandler extends base
         $this->message = '';
         $this->version_mismatch = false;
 
-        if (!isset($this->config) || !is_array($this->config) || 
+        if (!isset($this->config) || !is_array($this->config) ||
             !( (isset($this->config['tables']) && is_array($this->config['tables'])) ||
                (isset($this->config['fixed_headers']) && is_array($this->config['fixed_headers'])) ) ) {
             dbioLogError('DbIo configuration not set prior to initialize.  Current class: ' . print_r($this, true));
@@ -1662,7 +1662,7 @@ abstract class DbIoHandler extends base
         $this->tables[$table_name] = [];
         $this->tables[$table_name]['fields'] = [];
         $uses_language = false;
-        
+
         $sql_query = "
              SELECT COLUMN_NAME as `column_name`, COLUMN_DEFAULT as `default`, IS_NULLABLE as `nullable`, DATA_TYPE as `data_type`, 
                     CHARACTER_MAXIMUM_LENGTH as `max_length`, NUMERIC_PRECISION as `precision`, COLUMN_KEY as `key`, EXTRA as `extra`,
@@ -1758,7 +1758,7 @@ abstract class DbIoHandler extends base
     // Function to insert an associative-array element into the specified array at the location
     // identified in the current non-language customized field-list.
     //
-    // Notes: 
+    // Notes:
     // 1) The $fields array is an associative key/value pair, keyed on the field's name.  The
     //    class' customized_fields array is numerically indexed, based on the to-be-exported report's
     //    previously-determined header-order.
@@ -1801,7 +1801,7 @@ abstract class DbIoHandler extends base
                 // Next, insert the requested key/value pair into the updated fields' array.
                 //
                 $updated_fields[$field_name] = $field_value;
- 
+
                 // -----
                 // Finally, copy the remaining elements of the input fields' array after that insertion
                 // and set the reconstructed array as the method's return value.
