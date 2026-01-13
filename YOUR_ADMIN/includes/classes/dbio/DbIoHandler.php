@@ -1182,7 +1182,7 @@ abstract class DbIoHandler extends base
                         $field_name = str_replace('v_', '', $header_value);
                         $this->config['additional_headers'][$header_value] |= self::DBIO_FLAG_NO_EXPORT;
                         $available_fields[$field_name] = [
-                            'uses_language' => (boolean)($flags & self::DBIO_FLAG_PER_LANGUAGE),
+                            'uses_language' => (bool)($flags & self::DBIO_FLAG_PER_LANGUAGE),
                             'select' => ($flags & self::DBIO_FLAG_FIELD_SELECT) ? $this->config['additional_header_select'][$header_value] : false,
                             'include_header' => true,
                             'is_additional_header' => true,
