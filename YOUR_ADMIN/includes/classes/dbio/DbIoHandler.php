@@ -85,8 +85,6 @@ abstract class DbIoHandler extends base
         $handler_does_import,
         $handler_overrides_import,
         $import_sql_data,
-        $export_where_clause,
-        $export_order_by_clause,
 
         $table_names,
 

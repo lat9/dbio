@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2025, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.2
+// Last updated: DbIo v2.2.1
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -34,7 +34,7 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile('ProductsOptionsValues'); 
         return [
-            'version' => '2.0.2',
+            'version' => '2.2.1',
             'handler_version' => '1.0.0',
             'include_header' => true,
             'export_only' => false,
@@ -67,7 +67,7 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
 
     // -----
     // This function, called during the overall class construction, is used to set this handler's database
-    // configuration for the dbIo operations.
+    // configuration for the DbIo operations.
     //
     protected function setHandlerConfiguration()
     {
@@ -103,8 +103,8 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
             'products_options_name' => TABLE_PRODUCTS_OPTIONS,
             'products_options_values_sort_order' => TABLE_PRODUCTS_OPTIONS_VALUES,
         ];
-        $this->export_where_clause = '';
-        $this->export_order_by_clause = '';
+        $this->config['export_where_clause'] = '';
+        $this->config['export_order_by_clause'] = '';
 
         $this->optionValueNameLength = (int)zen_field_length(TABLE_PRODUCTS_OPTIONS_VALUES, 'products_options_values_name');
 
