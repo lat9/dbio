@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2023, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.0.
+// Last updated: DbIo v2.1.1.
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -26,7 +26,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile('ProductsAttribsRaw'); 
         return [
-            'version' => '2.0.0',
+            'version' => '2.1.1',
             'handler_version' => '1.4.0',
             'include_header' => true,
             'export_only' => false,
@@ -272,7 +272,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     {
         if ($table_name === TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
             if (($field_name === 'products_attributes_maxdays' || $field_name === 'products_attributes_maxcount') && empty($field_value)) {
-                $field_value = 0;
+                $field_value = '0';
             }
         } else {
             switch ($field_name) {
