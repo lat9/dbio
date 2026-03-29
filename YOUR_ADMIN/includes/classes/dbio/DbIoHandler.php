@@ -1409,35 +1409,9 @@ abstract class DbIoHandler extends base
             $sql_query = "INSERT INTO $table_name (`" . implode('`, `', array_keys($table_fields)) . "`)\nVALUES (";
             $sql_query = str_replace($this->unused_fields, '', $sql_query);
             foreach ($table_fields as $field_name => $field_info) {
-                switch ($field_info['type']) {
-                    case 'integer':
-                        $field_value = (int)$field_info['value'];
-                        break;
-                     case 'float':
-                        $field_value = (float)$field_info['value'];
-                        break;
-                     case 'date':           //-Fall-through ...
-                     case 'datetime':
-                        $field_value = $field_info['value'];
-                        if ($field_value != 'null' && $field_value != 'NULL' && $field_value != 'now()') {
-                            $field_value = "'" . $db->prepare_input($field_value) . "'";
-                        }
-                        break;
-                    default:
-                        $field_value = $field_info['value'];
-                        if ($field_value != 'null' && $field_value != 'NULL') {
-                            $field_value = "'" . $db->prepare_input($field_value) . "'";
-                        }
-                        break;
-                }
-                $sql_query .= "$field_value, ";
-            }
-            $sql_query = dbio_substr($sql_query, 0, -2) . ")";
-        } else {
-            $sql_query = "UPDATE $table_name $table_alias SET ";
-            $where_clause = $this->where_clause;
-            foreach ($table_fields as $field_name => $field_info) {
-                if ($field_name !== self::DBIO_NO_IMPORT && (!isset($this->variable_keys[$field_name]) || $this->variable_keys[$field_name]['key_is_alternate'] === true)) {
+                if ($this->tables[$table_name]['fields'][$field_name]['nullable'] && ($field_info['value'] == 'null' || $field_info['value'] == 'NULL')) {
+                    $field_value = 'null';
+                } else {
                     switch ($field_info['type']) {
                         case 'integer':
                             $field_value = (int)$field_info['value'];
@@ -1445,10 +1419,10 @@ abstract class DbIoHandler extends base
                          case 'float':
                             $field_value = (float)$field_info['value'];
                             break;
-                         case 'date':
+                         case 'date':           //-Fall-through ...
                          case 'datetime':
                             $field_value = $field_info['value'];
-                            if ($field_value !== 'null' && $field_value !== 'NULL' && $field_value !== 'now()') {
+                            if ($field_value != 'null' && $field_value != 'NULL' && $field_value != 'now()') {
                                 $field_value = "'" . $db->prepare_input($field_value) . "'";
                             }
                             break;
@@ -1458,6 +1432,40 @@ abstract class DbIoHandler extends base
                                 $field_value = "'" . $db->prepare_input($field_value) . "'";
                             }
                             break;
+                    }
+                }
+                $sql_query .= "$field_value, ";
+            }
+            $sql_query = dbio_substr($sql_query, 0, -2) . ")";
+        } else {
+            $sql_query = "UPDATE $table_name $table_alias SET ";
+            $where_clause = $this->where_clause;
+            foreach ($table_fields as $field_name => $field_info) {
+                if ($field_name !== self::DBIO_NO_IMPORT && (!isset($this->variable_keys[$field_name]) || $this->variable_keys[$field_name]['key_is_alternate'] === true)) {
+                    if ($this->tables[$table_name]['fields'][$field_name]['nullable'] && ($field_info['value'] == 'null' || $field_info['value'] == 'NULL')) {
+                        $field_value = 'null';
+                    } else {
+                        switch ($field_info['type']) {
+                            case 'integer':
+                                $field_value = (int)$field_info['value'];
+                                break;
+                             case 'float':
+                                $field_value = (float)$field_info['value'];
+                                break;
+                             case 'date':
+                             case 'datetime':
+                                $field_value = $field_info['value'];
+                                if ($field_value !== 'null' && $field_value !== 'NULL' && $field_value !== 'now()') {
+                                    $field_value = "'" . $db->prepare_input($field_value) . "'";
+                                }
+                                break;
+                            default:
+                                $field_value = $field_info['value'];
+                                if ($field_value != 'null' && $field_value != 'NULL') {
+                                    $field_value = "'" . $db->prepare_input($field_value) . "'";
+                                }
+                                break;
+                        }
                     }
                     $sql_query .= "`$field_name` = $field_value, ";
                 }
