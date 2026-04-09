@@ -1409,8 +1409,8 @@ abstract class DbIoHandler extends base
             $sql_query = "INSERT INTO $table_name (`" . implode('`, `', array_keys($table_fields)) . "`)\nVALUES (";
             $sql_query = str_replace($this->unused_fields, '', $sql_query);
             foreach ($table_fields as $field_name => $field_info) {
-                if ($this->tables[$table_name]['fields'][$field_name]['nullable'] && ($field_info['value'] == 'null' || $field_info['value'] == 'NULL')) {
-                    $field_value = 'null';
+                if ($this->tables[$table_name]['fields'][$field_name]['nullable'] && strtolower($field_info['value'] ?? 'null') === 'null') {
+                    $field_value = 'NULL';
                 } else {
                     switch ($field_info['type']) {
                         case 'integer':
@@ -1422,15 +1422,13 @@ abstract class DbIoHandler extends base
                          case 'date':           //-Fall-through ...
                          case 'datetime':
                             $field_value = $field_info['value'];
-                            if ($field_value != 'null' && $field_value != 'NULL' && $field_value != 'now()') {
+                            if (strtolower($field_value) !== 'now()') {
                                 $field_value = "'" . $db->prepare_input($field_value) . "'";
                             }
                             break;
                         default:
                             $field_value = $field_info['value'];
-                            if ($field_value != 'null' && $field_value != 'NULL') {
-                                $field_value = "'" . $db->prepare_input($field_value) . "'";
-                            }
+                            $field_value = "'" . $db->prepare_input($field_value) . "'";
                             break;
                     }
                 }
@@ -1442,8 +1440,8 @@ abstract class DbIoHandler extends base
             $where_clause = $this->where_clause;
             foreach ($table_fields as $field_name => $field_info) {
                 if ($field_name !== self::DBIO_NO_IMPORT && (!isset($this->variable_keys[$field_name]) || $this->variable_keys[$field_name]['key_is_alternate'] === true)) {
-                    if ($this->tables[$table_name]['fields'][$field_name]['nullable'] && ($field_info['value'] == 'null' || $field_info['value'] == 'NULL')) {
-                        $field_value = 'null';
+                    if ($this->tables[$table_name]['fields'][$field_name]['nullable'] && strtolower($field_info['value'] ?? 'null') === 'null') {
+                        $field_value = 'NULL';
                     } else {
                         switch ($field_info['type']) {
                             case 'integer':
@@ -1455,15 +1453,13 @@ abstract class DbIoHandler extends base
                              case 'date':
                              case 'datetime':
                                 $field_value = $field_info['value'];
-                                if ($field_value !== 'null' && $field_value !== 'NULL' && $field_value !== 'now()') {
+                                if (strtolower($field_value) !== 'now()') {
                                     $field_value = "'" . $db->prepare_input($field_value) . "'";
                                 }
                                 break;
                             default:
                                 $field_value = $field_info['value'];
-                                if ($field_value != 'null' && $field_value != 'NULL') {
-                                    $field_value = "'" . $db->prepare_input($field_value) . "'";
-                                }
+                                $field_value = "'" . $db->prepare_input($field_value) . "'";
                                 break;
                         }
                     }
