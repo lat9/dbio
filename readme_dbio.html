@@ -146,7 +146,10 @@ body {
                             <li>BUGFIX: Correct PHP warning when exporting <code>ProductsOptionsValues</code>.</li>
                             <li>BUGFIX: Correct PHP &quot;strict mode&quot; fatal error when using <code>ProductsAttribsRaw</code> handler.</li>
                             <li>BUGFIX: Allow 'NULL' import to <em>nullable</em> fields.</li>
-                            <li>CHANGE: Dropping support for zc157; adding support for array-based handler files.</li>
+                            <li>CHANGE: Dropping support for zc157<ul>
+                                <li>Adding support for array-based handler language files.</li>
+                                <li>Removing <code>zen_cfg_read_only.php</code> from the extra_functions directory; it's in-core for zc158+.</li>
+                            </ul></li>
                             <li>BUGFIX: Font Awesome classes changed for FA v6, still keeping FA 4 support for zc158.</li>
                             <li>The following files were changed, <span class="added">added</span> or <span class="removed">removed</span>:<ol>
                               <li>/YOUR_ADMIN/dbio_customize.php</li>
@@ -154,6 +157,7 @@ body {
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsRawHandler.php</li>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsOptionsValuesHandler.php</li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/functions/extra_functions/zen_cfg_read_only.php</span></li>
                               <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio_customize.php</span></li>
                               <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio_manager.php</span></li>
                               <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio/DbIoCustomersHandler.php</span></li>
