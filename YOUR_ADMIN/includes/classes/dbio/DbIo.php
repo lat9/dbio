@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2025, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.2
+// Last updated: DbIo v2.2.0
 //
 if (!defined('IS_ADMIN_FLAG')) { 
     exit('Illegal access');
@@ -30,12 +30,8 @@ class DbIo extends base
     {
         $this->file_suffix = (($file_suffix === '') ? '' : ($file_suffix . '.')) . date('Ymd-His-') . mt_rand(1000,999999);
  
-        $message_file_name = DIR_FS_DBIO_LANGUAGES . $_SESSION['language'] . '/dbio/' . FILENAME_DBIO_MESSAGES;
-        if (!file_exists($message_file_name)) {
-            trigger_error("Missing DbIo message file ($message_file_name)", E_USER_WARNING);
-        } else {
-            require_once $message_file_name;
-        }
+        global $languageLoader;
+        $languageLoader->loadExtraLanguageFiles(DIR_FS_DBIO_LANGUAGES, $_SESSION['language'], FILENAME_DBIO_MESSAGES, '/dbio');
 
         spl_autoload_register([$this, 'autoloadDbIoClasses']);
 

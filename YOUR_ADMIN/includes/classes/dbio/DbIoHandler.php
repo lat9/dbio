@@ -3,7 +3,7 @@
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.1.1
+// Last updated: DbIo v2.2.0
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -1059,7 +1059,8 @@ abstract class DbIoHandler extends base
 
     protected final static function loadHandlerMessageFile($handler_name)
     {
-        include_once DIR_FS_DBIO_LANGUAGES . $_SESSION['language'] . '/dbio/DbIo' . $handler_name . 'Handler.php';
+        global $languageLoader;
+        $languageLoader->loadExtraLanguageFiles(DIR_FS_DBIO_LANGUAGES, $_SESSION['language'], 'DbIo' . $handler_name . 'Handler.php', '/dbio');
     }
 
     protected final function logCharacterSetConfig()
