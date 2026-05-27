@@ -55,6 +55,7 @@ body {
                 <li>Zen Cart download link: <a href="https://www.zen-cart.com/downloads.php?do=file&id=2091" target="_blank">https://www.zen-cart.com/downloads.php?do=file&id=2091</a></li>
                 <li>Zen Cart support thread: <a href="https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread</a></li>
                 <li>GitHub repository: <a href="https://github.com/lat9/dbio" target="_blank">https://github.com/lat9/dbio</a></li>
+                <li>Currently supporting Zen Cart versions 1.5.8 and later.</li>
             </ul>
         </header>
 
@@ -116,10 +117,10 @@ body {
                                 <li>/YOUR_ADMIN/includes/functions/extra_functions/dbio_functions.php</li>
                                 <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
                                 <li>/YOUR_ADMIN/includes/javascript/dbio/*.*</li>
-                                <li>/YOUR_ADMIN/includes/languages/english/dbio_manager.php</li>
-                                <li>/YOUR_ADMIN/includes/languages/english/dbio_customize.php <span class="smaller">(Added in v1.2.0)</span></li>
+                                <li>/YOUR_ADMIN/includes/languages/english/lang.dbio_manager.php <span class="smaller">(Converted to array file in v2.2.0)</span></li>
+                                <li>/YOUR_ADMIN/includes/languages/english/lang.dbio_customize.php <span class="smaller">(Added in v1.2.0, Converted to array file in v2.2.0)</span></li>
                                 <li>/YOUR_ADMIN/includes/languages/english/dbio/*.*</li>
-                                <li>/YOUR_ADMIN/includes/languages/english/extra_definitions/dbio_admin_extra_definitions.php</li>
+                                <li>/YOUR_ADMIN/includes/languages/english/extra_definitions/lang.dbio_admin_extra_definitions.php <span class="smaller">(Converted to array file in v2.2.0)</span></li>
                             </ol></li>
                             <li>Click the &quot;Admin Home&quot; link in your Zen Cart's top admin menu.  This action will cause the plugin's installation script to run.</li>
                         </ol>
@@ -140,15 +141,52 @@ body {
                         <h4 class="font-italic mb-4">Change History</h4>
                         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
                         <ul>
-                         <li>v2.1.1-beta2, 2026-04-10 (lat9, torvista, hucario):<ul>
+                         <li>v2.2.0-beta1, 2026-05-27 (lat9, torvista, hucario):<ul>
                             <li>BUGFIX: Correct PHP 8.5 deprecation on use of <code>boolean</code> vs. <code>bool</code> cast.</li>
                             <li>BUGFIX: Correct PHP warning when exporting <code>ProductsOptionsValues</code>.</li>
                             <li>BUGFIX: Correct PHP &quot;strict mode&quot; fatal error when using <code>ProductsAttribsRaw</code> handler.</li>
                             <li>BUGFIX: Allow 'NULL' import to <em>nullable</em> fields.</li>
-                            <li>The following files were changed:<ol>
+                            <li>CHANGE: Dropping support for zc157; adding support for array-based handler files.</li>
+                            <li>The following files were changed, <span class="added">added</span> or <span class="removed">removed</span>:<ol>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsRawHandler.php</li>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsOptionsValuesHandler.php</li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio_customize.php</span></li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio_manager.php</span></li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio/DbIoCustomersHandler.php</span></li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio/DbIoFeaturedHandler.php</span></li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio/DbIoManufacturersHandler.php</span></li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio/DbIoOrdersHandler.php</span></li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio/DbIoOrdersProductsAttribsHandler.php</span></li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio/DbIoOrdersProductsHandler.php</span></li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsAttribsBasicHandler.php</span></li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsAttribsRawHandler.php</span></li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsDiscountQuantityHandler.php</span></li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsHandler.php</span></li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsOptionsHandler.php</span></li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio/DbIoProductsOptionsValuesHandler.php</span></li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio/DbIoSpecialsHandler.php</span></li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio/DbIoStatsHandler.php</span></li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio/dbio_messages.php</span></li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/languages/english/extra_definitions/dbio_admin_extra_definitions.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/lang.dbio_customize.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/lang.dbio_manager.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/lang.DbIoCustomersHandler.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/lang.DbIoFeaturedHandler.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/lang.DbIoManufacturersHandler.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/lang.DbIoOrdersHandler.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/lang.DbIoOrdersProductsAttribsHandler.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/lang.DbIoOrdersProductsHandler.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/lang.DbIoProductsAttribsBasicHandler.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/lang.DbIoProductsAttribsRawHandler.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/lang.DbIoProductsDiscountQuantityHandler.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/lang.DbIoProductsHandler.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/lang.DbIoProductsOptionsHandler.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/lang.DbIoProductsOptionsValuesHandler.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/lang.DbIoSpecialsHandler.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/lang.DbIoStatsHandler.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/dbio/lang.dbio_messages.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/languages/english/extra_definitions/lang.dbio_admin_extra_definitions.php</span></li>
                               <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
                             </ol></li>
                           </ul></li>
