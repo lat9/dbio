@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2017-2025, Vinos de Frutas Tropicales.
+// Copyright (c) 2017-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.2
+// Last updated: DbIo v2.2.0
 //
 require 'includes/application_top.php';
 require DIR_FS_ADMIN . 'includes/functions/dbio_manager_functions.php';
@@ -463,11 +463,22 @@ if ($ok_to_proceed === false) {
             //
             $available_fields_select = zen_draw_pull_down_menu('available_fields', $available_fields, '', 'id="available" multiple="multiple"');
             $available_fields_select = preg_replace('/<option /', '<optgroup disabled hidden></optgroup><option ', $available_fields_select, 1);
+
+            // -----
+            // The admin uses Font Awesome v6, starting in zc200; arrow glyphs are different than FA v4.
+            //
+            if (zen_get_zcversion()[0] === '1') {
+                $left_arrow_class = 'fa-arrow-circle-o-left';
+                $right_arrow_class = 'fa-arrow-circle-o-right';
+            } else {
+                $left_arrow_class = 'fa-arrow-circle-left';
+                $right_arrow_class = 'fa-arrow-circle-right';
+            }
 ?>
                                     <div><?= $available_fields_select ?></div>
                                     <div id="move-left-right" class="move-buttons">
-                                        <div id="move-left"><i class="fa fa-arrow-circle-o-left fa-2x"></i></div>
-                                        <div id="move-right"><i class="fa fa-arrow-circle-o-right fa-2x"></i></div>
+                                        <div id="move-left"><i class="fa <?= $left_arrow_class ?> fa-2x"></i></div>
+                                        <div id="move-right"><i class="fa <?= $right_arrow_class ?> fa-2x"></i></div>
                                     </div>
 <?php
         }
@@ -481,10 +492,20 @@ if ($ok_to_proceed === false) {
                                     <div><?= $customized_fields_select ?></div>
 <?php
         if ($action !== 'copy') {
+            // -----
+            // The admin uses Font Awesome v6, starting in zc200; arrow glyphs are different than FA v4.
+            //
+            if (zen_get_zcversion()[0] === '1') {
+                $up_arrow_class = 'fa-arrow-circle-o-up';
+                $down_arrow_class = 'fa-arrow-circle-o-down';
+            } else {
+                $up_arrow_class = 'fa-arrow-circle-up';
+                $down_arrow_class = 'fa-arrow-circle-down';
+            }
 ?>
                                     <div id="move-up-down" class="move-buttons">
-                                        <div id="move-up"><i class="fa fa-arrow-circle-o-up fa-2x"></i></div>
-                                        <div id="move-down"><i class="fa fa-arrow-circle-o-down fa-2x"></i></div>
+                                        <div id="move-up"><i class="fa <?= $up_arrow_class ?> fa-2x"></i></div>
+                                        <div id="move-down"><i class="fa <?= $down_arrow_class ?> fa-2x"></i></div>
                                     </div>
 <?php
         }
