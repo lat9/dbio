@@ -5,6 +5,9 @@
 //
 // Last updated: DbIo v2.2.0
 //
+use \ForceUTF8\Encoding;
+use \ForceUTF8\IconvOptions;
+
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
 }
@@ -15,7 +18,7 @@ abstract class DbIoHandler extends base
 //                                    C O N S T A N T S
 // ----------------------------------------------------------------------------------
     // ----- Interface Constants -----
-    const DBIO_HANDLER_VERSION   = '1.6.7';
+    const DBIO_HANDLER_VERSION   = '2.2.0';
     // ----- Field-Import Status Values -----
     const DBIO_IMPORT_OK         = '--ok--';
     const DBIO_NO_IMPORT         = '--none--';
@@ -154,10 +157,10 @@ abstract class DbIoHandler extends base
         $this->first_language_code = current(array_keys($this->languages));
         unset($languages);
 
-        if (!class_exists('ForceUTF8\Encoding')) {
-            require DIR_FS_DBIO_CLASSES . 'Encoding.php';
-        }
-        $this->encoding = new ForceUTF8\Encoding;
+        global $psr4Autoloader;
+        $psr4Autoloader->addPrefix('ForceUTF8', DIR_FS_DBIO_CLASSES . 'ForceUTF8');
+        $this->encoding = new ForceUTF8\Encoding();
+
         $this->charset_is_utf8 = (dbio_strtoupper(CHARSET) === 'UTF-8');
 
         $this->setHandlerConfiguration();
@@ -549,6 +552,14 @@ abstract class DbIoHandler extends base
         if (isset($this->config['supports_dbio_commands']) && $this->config['supports_dbio_commands'] === true) {
             $fields[] = '';
         }
+
+        foreach ($fields as &$next_field) {
+            if ($next_field === null) {
+                $next_field = 'NULL';
+            }
+        }
+        unset($next_field);
+
         return $this->exportEncodeData($fields);
     }
 
@@ -859,7 +870,7 @@ abstract class DbIoHandler extends base
         }
         $this->debugMessage("importCsvRecord: starting ...");
 
-        $data = ($this->charset_is_utf8 === true) ? $this->encoding->toUTF8($data) : $this->encoding->toWin1252($data, ForceUTF8\Encoding::ICONV_IGNORE_TRANSLIT);
+        $data = ($this->charset_is_utf8 === true) ? $this->encoding->toUTF8($data) : $this->encoding->toWin1252($data, IconvOptions::ICONV_TRANSLIT);
 
         // -----
         // If the queryCache handler is loaded, reset the cache at the start of each record's import.  This helps to reduce
@@ -1054,7 +1065,7 @@ abstract class DbIoHandler extends base
 
     protected function exportEncodeData($fields)
     {
-       return (DBIO_CHARSET === 'utf8') ? $this->encoding->toUTF8($fields) : $this->encoding->toWin1252($fields, ForceUTF8\Encoding::ICONV_IGNORE_TRANSLIT);
+       return (DBIO_CHARSET === 'utf8') ? $this->encoding->toUTF8($fields) : $this->encoding->toWin1252($fields, IconvOptions::ICONV_TRANSLIT);
     }
 
     protected final static function loadHandlerMessageFile($handler_name)

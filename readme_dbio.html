@@ -151,12 +151,17 @@ body {
                                 <li>Removing <code>zen_cfg_read_only.php</code> from the extra_functions directory; it's in-core for zc158+.</li>
                             </ul></li>
                             <li>BUGFIX: Font Awesome classes changed for FA v6, still keeping FA 4 support for zc158.</li>
+                            <li>CHANGE: Use updated <code>Encoding</code> class, for PHP 8.0+ support.</li>
                             <li>The following files were changed, <span class="added">added</span> or <span class="removed">removed</span>:<ol>
                               <li>/YOUR_ADMIN/dbio_customize.php</li>
+                              <li>/YOUR_ADMIN/dbio_manager.php</li>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsRawHandler.php</li>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsOptionsValuesHandler.php</li>
+                              <li><span class="removed">/YOUR_ADMIN/includes/classes/dbio/Encoding.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/classes/dbio/ForceUTF8/Encoding.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/classes/dbio/ForceUTF8/IconvOptions.php</span></li>
                               <li><span class="removed">/YOUR_ADMIN/includes/functions/extra_functions/zen_cfg_read_only.php</span></li>
                               <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio_customize.php</span></li>
                               <li><span class="removed">/YOUR_ADMIN/includes/languages/english/dbio_manager.php</span></li>

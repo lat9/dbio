@@ -194,17 +194,15 @@ class DbIo extends base
 
                 if ($completion_code !== false && $export_to === 'download') {
                     if (dbio_strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false) {
-                        header('Content-Type: "application/octet-stream"');
+                        header('Content-Type: text/csv; charset=' . ((DBIO_CHARSET === 'utf8') ? 'UTF-8' : 'Windows-1252'));
                         header('Content-Disposition: attachment; filename="' . $this->export_filename . '"');
                         header('Expires: 0');
                         header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-                        header("Content-Transfer-Encoding: binary");
                         header('Pragma: public');
                         header("Content-Length: " . filesize(DIR_FS_DBIO_EXPORT . $this->export_filename));
                     } else {
-                        header('Content-Type: "application/octet-stream"');
+                        header('Content-Type: text/csv; charset=' . ((DBIO_CHARSET === 'utf8') ? 'UTF-8' : 'Windows-1252'));
                         header('Content-Disposition: attachment; filename="' . $this->export_filename . '"');
-                        header("Content-Transfer-Encoding: binary");
                         header('Expires: 0');
                         header('Pragma: no-cache');
                         header("Content-Length: " . filesize(DIR_FS_DBIO_EXPORT . $this->export_filename));
