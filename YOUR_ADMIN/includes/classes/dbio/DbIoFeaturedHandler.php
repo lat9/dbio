@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the Database I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2025, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.1.0
+// Last updated: DbIo v2.2.0
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit ('Illegal access');
@@ -39,23 +39,16 @@ class DbIoFeaturedHandler extends DbIoHandler
     // For each 'featured' row's export, append the product's name, model-number and 'base price' to the output,
     // adding those fields for reference use.
     //
-    // Note: Since this handler supports DbIo commands, the base class' handling has appended an empty
-    // column as the last field to hold a potential command (this handler supports REMOVE).  Need to remove that
-    // column's data from the fields prior to inserting the 'helper' columns and then add it back.
-    //
     public function exportPrepareFields(array $fields)
     {
-        $fields = parent::exportPrepareFields($fields);
-        array_pop($fields);
         unset($fields['featured_id']);
 
         $products_id = $fields['products_id'];
-        
         $fields['products_price'] = zen_get_products_base_price($products_id);
         $fields['products_model'] = zen_get_products_model($products_id);
         $fields['products_name'] = zen_get_products_name($products_id);
-        $fields['v_dbio_command'] = '';
-        return $fields;
+
+        return parent::exportPrepareFields($fields);
     }
 
 // ----------------------------------------------------------------------------------
