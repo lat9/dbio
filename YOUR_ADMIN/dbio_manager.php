@@ -1,16 +1,16 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2024, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.1
+// Last updated: DbIo v2.2.0
 //
 require 'includes/application_top.php';
 require DIR_FS_ADMIN . 'includes/functions/dbio_manager_functions.php';
 
 $languages = zen_get_languages();
 
-if (!defined('DBIO_SUPPORTED_FILE_EXTENSIONS')) define('DBIO_SUPPORTED_FILE_EXTENSIONS', 'csv');
+zen_define_default('DBIO_SUPPORTED_FILE_EXTENSIONS', 'csv');
 
 // -----
 // Make sure that the database and I/O character sets match; any DbIo operation is disallowed otherwise.
@@ -22,23 +22,21 @@ if (stripos(DB_CHARSET, 'utf') === 0) {
     if (stripos(CHARSET, 'utf') !== 0) {
         $ok_to_proceed = false;
     }
-} else {
-    if (stripos(CHARSET, 'utf') === 0) {
-        $ok_to_proceed = false;
-    }
+} elseif (stripos(CHARSET, 'utf') === 0) {
+    $ok_to_proceed = false;
 }
 
 if (!$ok_to_proceed) {
     $error_message = sprintf(DBIO_FORMAT_CONFIGURATION_ERROR, DB_CHARSET, CHARSET);
 } else {
-    $action = (isset($_GET['action'])) ? $_GET['action'] : '';
+    $action = $_GET['action'] ?? '';
 
     if (!isset($_SESSION['dbio_show_filters'])) {
         $_SESSION['dbio_show_filters'] = false;
     }
 
     require DIR_FS_DBIO_CLASSES . 'DbIo.php';
-    $dbio = new DbIo;
+    $dbio = new DbIo();
     if (!$dbio->isInitialized()) {
         $ok_to_proceed = false;
         $error_message = $dbio->getMessage();
@@ -48,12 +46,12 @@ if (!$ok_to_proceed) {
 
     if (!$ok_to_proceed) {
         $error_message = $dbio->getMessage();
-    } elseif (count($dbio_handlers) == 0) {
+    } elseif (count($dbio_handlers) === 0) {
         $ok_to_proceed = false;
         $error_message = DBIO_MESSAGE_NO_HANDLERS_FOUND;
     } else {
         $available_handlers = [];
-        $handler_name = (isset($_POST['handler'])) ? $_POST['handler'] : ((isset($_SESSION['dbio_vars'], $_SESSION['dbio_vars']['handler'])) ? $_SESSION['dbio_vars']['handler'] : false);
+        $handler_name = $_POST['handler'] ?? $_SESSION['dbio_vars']['handler'] ?? false;
         foreach ($dbio_handlers as $current_handler => $handler_info) {
             if ($handler_name === false) {
                 $handler_name = $current_handler;
@@ -69,7 +67,7 @@ if (!$ok_to_proceed) {
             $_SESSION['dbio_vars'] = [];
             $_SESSION['dbio_vars']['handler'] = $handler_name;
         }
-        if ($_SESSION['dbio_vars']['handler'] != $handler_name) {
+        if ($_SESSION['dbio_vars']['handler'] !== $handler_name) {
             unset($_SESSION['dbio_active_filename'], $_SESSION['dbio_import_result']);
         }
         $_SESSION['dbio_vars']['handler'] = $handler_name;
@@ -101,14 +99,13 @@ if (!$ok_to_proceed) {
                 foreach ($files_check as $current_csv_file) {
                     $file_stats = stat($current_csv_file);
                     $current_csv_filename = str_replace(DIR_FS_DBIO, '', $current_csv_file);
-                    if (!isset($_SESSION['dbio_active_filename'])) {
-                        $_SESSION['dbio_active_filename'] = $current_csv_filename;
-                    }
+                    $_SESSION['dbio_active_filename'] ??= $current_csv_filename;
+
                     $filename_hash = md5($current_csv_file);
                     $dbio_files[$filename_hash] = [
                         'full_filepath' => $current_csv_file,
                         'filename_only' => $current_csv_filename,
-                        'selected' => ($_SESSION['dbio_active_filename'] == $current_csv_filename),
+                        'selected' => ($_SESSION['dbio_active_filename'] === $current_csv_filename),
                         'last_modified' => $file_stats[9],
                         'bytes' => $file_stats[7],
                         'handler_name' => $handler_name,
@@ -272,10 +269,10 @@ if (!$ok_to_proceed) {
                                 unset($split_file_info);
 
                                 while (($data = fgetcsv($fp)) !== false) {
-                                    if ($split_count == 0 && $header_included) {
+                                    if ($split_count === 0 && $header_included) {
                                         $header_record = $data;
                                     }
-                                    if ($split_count == 0 || $record_count > (int)DBIO_SPLIT_RECORD_COUNT) {
+                                    if ($split_count === 0 || $record_count > (int)DBIO_SPLIT_RECORD_COUNT) {
                                         if (isset($fp_out)) {
                                             fclose($fp_out);
                                         }
@@ -296,12 +293,12 @@ if (!$ok_to_proceed) {
                                                 $messageStack->add_session(sprintf(ERROR_WRITING_SPLIT_FILE, $out_filename, $record_count));
                                                 break;
                                             }
-                                            if ($split_count == 1) {
+                                            if ($split_count === 1) {
                                                 continue;
                                             }
                                         }
                                     }
-                                    if (!($record_count == 0 && $header_included)) {
+                                    if (!($record_count === 0 && $header_included)) {
                                         $record_count++;
                                         if (fputcsv($fp_out, $data) === false) {
                                             $split_error = true;
@@ -320,7 +317,7 @@ if (!$ok_to_proceed) {
                                 }
                                 fclose($fp);
 
-                                if (!$split_error && $split_count == 1) {
+                                if (!$split_error && $split_count === 1) {
                                     $messageStack->add_session(sprintf(WARNING_FILE_TOO_SMALL_TO_SPLIT, $action_filename, $record_count), 'caution');
                                     $split_error = true;
                                 } else {
@@ -392,7 +389,7 @@ if (!$ok_to_proceed) {
 }  //-END configuration OK, proceeding ...
 ?>
 <!doctype html>
-<html <?php echo HTML_PARAMS; ?>>
+<html <?= HTML_PARAMS ?>>
 <head>
     <?php require DIR_WS_INCLUDES . 'admin_html_head.php'; ?>
     <link rel="stylesheet" href="includes/javascript/dbio/colorbox.css">
@@ -459,35 +456,35 @@ div.export-only span { color: red; font-weight: bold; }
 <body>
 <?php require DIR_WS_INCLUDES . 'header.php'; ?>
   <div id="main-wrapper">
-    <h1><?php echo HEADING_TITLE; ?> <span class="smaller">v<?php echo DBIO_MODULE_VERSION; ?></span></h1>
-    <p id="top-instructions"><?php echo TEXT_INSTRUCTIONS; ?></p>
+    <h1><?= HEADING_TITLE ?> <span class="smaller">v<?= DBIO_MODULE_VERSION ?></span></h1>
+    <p id="top-instructions"><?= TEXT_INSTRUCTIONS ?></p>
 <?php
 $customization_choices = [];
 if ($ok_to_proceed === false || $error_message !== '') {
 ?>
-    <div id="message" class="error"><?php echo $error_message; ?></div>
+    <div id="message" class="error"><?= $error_message ?></div>
 <?php
 } else {
     if ($info_message !== '') {
 ?>
-    <div id="message" class="info"><?php echo $info_message; ?></div>
+    <div id="message" class="info"><?= $info_message ?></div>
 <?php
     }
 ?>
     <table id="main-contents">
         <tr>
             <td id="dbio-choose" colspan="2" class="text-left">
-                <?php echo TEXT_CHOOSE_HANDLER . ' ' . zen_draw_form('dbio-select', FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action']) . 'action=choose', 'post'); ?>
-                    <?php echo zen_draw_pull_down_menu('handler', $available_handlers, $handler_name, 'onchange="this.form.submit();"'); ?>
-                <?php echo '</form>'; ?>
+                <?= TEXT_CHOOSE_HANDLER . ' ' . zen_draw_form('dbio-select', FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action']) . 'action=choose', 'post') ?>
+                    <?= zen_draw_pull_down_menu('handler', $available_handlers, $handler_name, 'onchange="this.form.submit();"') ?>
+                <?= '</form>' ?>
             </td>
         </tr>
 
         <tr>
-            <td id="export-form"><?php echo zen_draw_form('dbio-export', FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action']) . 'action=export', 'post', 'enctype="multipart/form-data"'); ?>
+            <td id="export-form"><?= zen_draw_form('dbio-export', FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action']) . 'action=export', 'post', 'enctype="multipart/form-data"') ?>
                 <fieldset id="reports-export" class="text-left">
-                    <legend><?php echo LEGEND_EXPORT; ?></legend>
-                    <p><?php echo $handler_info['description']; ?></p>
+                    <legend><?= LEGEND_EXPORT ?></legend>
+                    <p><?= $handler_info['description'] ?></p>
 <?php
     $handler_class = 'DbIo' . $handler_name . 'Handler';
     $filter_check = new \ReflectionMethod($handler_class, 'getHandlerExportFilters');
@@ -497,7 +494,7 @@ if ($ok_to_proceed === false || $error_message !== '') {
     if ($handler_has_filters === true) {
 ?>
                     <div id="show-filters">
-                        <label><?php echo zen_draw_checkbox_field('show_filters', '', $_SESSION['dbio_show_filters'], '', 'onchange="this.form.submit();"') . ' ' . TEXT_SHOW_HIDE_FILTERS; ?></label>
+                        <label><?= zen_draw_checkbox_field('show_filters', '', $_SESSION['dbio_show_filters'], '', 'onchange="this.form.submit();"') . ' ' . TEXT_SHOW_HIDE_FILTERS ?></label>
                     </div>
 <?php
         if ($_SESSION['dbio_show_filters'] === true) {
@@ -518,7 +515,7 @@ if ($ok_to_proceed === false || $error_message !== '') {
                         $dropdown_field_suffix = '';
                         switch ($field_parms['type']) {
                             case 'input':
-                                $form_field = zen_draw_input_field($field_name, dbioGetFieldValue ($field_name));
+                                $form_field = zen_draw_input_field($field_name, dbioGetFieldValue($field_name));
                                 break;
                             case 'dropdown_multiple':
                                 $dropdown_options = 'multiple';
@@ -551,7 +548,7 @@ if ($ok_to_proceed === false || $error_message !== '') {
                                         $form_field .= '<span class="filter-subfield-label">' . $subfield_parms['label'] . '</span>';
                                         switch ($subfield_parms['type']) {
                                             case 'input':
-                                                $form_field .= '<span class="filter-subfield">' . zen_draw_input_field($subfield_name, dbioGetFieldValue ($subfield_name)) . '</span>';
+                                                $form_field .= '<span class="filter-subfield">' . zen_draw_input_field($subfield_name, dbioGetFieldValue($subfield_name)) . '</span>';
                                                 break;
                                             case 'dropdown_multiple':
                                                 $dropdown_options = 'multiple';
@@ -590,8 +587,8 @@ if ($ok_to_proceed === false || $error_message !== '') {
                         if ($form_field !== false) {
 ?>
                             <div class="reports-filter-row">
-                                <div class="reports-filter-label<?php echo $extra_field_class; ?>"><?php echo $field_parms['label']; ?></div>
-                                <div class="reports-filter-field<?php echo $extra_field_class; ?>"><?php echo $form_field; ?></div>
+                                <div class="reports-filter-label<?= $extra_field_class ?>"><?= $field_parms['label'] ?></div>
+                                <div class="reports-filter-field<?= $extra_field_class ?>"><?= $form_field ?></div>
                             </div>
 <?php
                         }
@@ -642,34 +639,34 @@ if ($ok_to_proceed === false || $error_message !== '') {
         }
         unset($customizations);
 ?>
-                        <strong><?php echo LABEL_CHOOSE_CUSTOMIZATION; ?></strong> <?php echo zen_draw_pull_down_menu('custom', $customization_choices, 0, 'id="custom-change"') . '&nbsp;&nbsp;' . zen_draw_input_field('customize', TEXT_BUTTON_MANAGE_CUSTOMIZATION, 'onclick="window.location.href=\'' . zen_href_link(FILENAME_DBIO_CUSTOMIZE, "handler=$handler_name") . '\'"', false, 'button'); ?>
-                        <p id="custom-desc"><?php echo htmlentities($customization_choices[0]['desc'], ENT_COMPAT, CHARSET); ?></p>
+                        <strong><?= LABEL_CHOOSE_CUSTOMIZATION ?></strong> <?= zen_draw_pull_down_menu('custom', $customization_choices, 0, 'id="custom-change"') . '&nbsp;&nbsp;' . zen_draw_input_field('customize', TEXT_BUTTON_MANAGE_CUSTOMIZATION, 'onclick="window.location.href=\'' . zen_href_link(FILENAME_DBIO_CUSTOMIZE, "handler=$handler_name") . '\'"', false, 'button') ?>
+                        <p id="custom-desc"><?= htmlentities($customization_choices[0]['desc'], ENT_COMPAT, CHARSET) ?></p>
 <?php
     }
 ?>
                     </div>
                     <div id="export-button">
-                        <label><?php echo zen_draw_checkbox_field('auto_download', '', !empty($_SESSION['dbio_auto_download'])) . ' ' . TEXT_AUTO_DOWNLOAD; ?></label>&nbsp;
-                        <?php echo zen_draw_input_field('export_button', BUTTON_EXPORT, 'title="' . BUTTON_EXPORT_TITLE . '"', false, 'submit'); ?>
+                        <label><?= zen_draw_checkbox_field('auto_download', '', !empty($_SESSION['dbio_auto_download'])) . ' ' . TEXT_AUTO_DOWNLOAD ?></label>&nbsp;
+                        <?= zen_draw_input_field('export_button', BUTTON_EXPORT, 'title="' . BUTTON_EXPORT_TITLE . '"', false, 'submit') ?>
                     </div>
                     <div class="clearBoth"></div>
                 </div>
             </form></td>
 
-            <td id="upload-form"><?php echo zen_draw_form('dbio-upload', FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action']) . 'action=upload', 'post', 'enctype="multipart/form-data"'); ?>
+            <td id="upload-form"><?= zen_draw_form('dbio-upload', FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action']) . 'action=upload', 'post', 'enctype="multipart/form-data"') ?>
                 <fieldset>
-                    <legend><?php echo LEGEND_FILE_UPLOADS; ?></legend>
+                    <legend><?= LEGEND_FILE_UPLOADS ?></legend>
 <?php
     if (isset($handler_info['export_only']) && $handler_info['export_only'] === true) {
 ?>
-                    <p><?php echo sprintf(TEXT_UPLOAD_FOR_IMPORT_ONLY, $handler_name); ?></p>
+                    <p><?= sprintf(TEXT_UPLOAD_FOR_IMPORT_ONLY, $handler_name) ?></p>
 <?php
     } else {
 ?>
                     <div id="upload-file">
-                        <p id="upload-instructions"><?php echo sprintf(TEXT_FILE_UPLOAD_INSTRUCTIONS, $handler_name, DBIO_SUPPORTED_FILE_EXTENSIONS); ?></p>
-                        <p id="upload-file-field"><?php echo TEXT_CHOOSE_FILE . ' ' . zen_draw_file_field('upload_filename'); ?></p>
-                        <p id="upload-button" class="text-right"><?php echo zen_draw_input_field('upload_button', BUTTON_UPLOAD, 'title="' . BUTTON_UPLOAD_TITLE . '"', false, 'submit'); ?></p>
+                        <p id="upload-instructions"><?= sprintf(TEXT_FILE_UPLOAD_INSTRUCTIONS, $handler_name, DBIO_SUPPORTED_FILE_EXTENSIONS) ?></p>
+                        <p id="upload-file-field"><?= TEXT_CHOOSE_FILE . ' ' . zen_draw_file_field('upload_filename') ?></p>
+                        <p id="upload-button" class="text-right"><?= zen_draw_input_field('upload_button', BUTTON_UPLOAD, 'title="' . BUTTON_UPLOAD_TITLE . '"', false, 'submit') ?></p>
                     </div>
 <?php
     }
@@ -680,13 +677,13 @@ if ($ok_to_proceed === false || $error_message !== '') {
         </tr>
 
         <tr>
-            <td id="file-list"><?php echo zen_draw_form('file_form', FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action']) . 'action=file'); ?>
+            <td id="file-list"><?= zen_draw_form('file_form', FILENAME_DBIO_MANAGER, zen_get_all_get_params(['action']) . 'action=file') ?>
                 <fieldset>
-                    <legend><?php echo LEGEND_FILE_ACTIONS; ?></legend>
+                    <legend><?= LEGEND_FILE_ACTIONS ?></legend>
 <?php
     if (!is_array($dbio_files) || count($dbio_files) === 0) {
 ?>
-                    <p class="no-files"><?php echo sprintf(TEXT_NO_DBIO_FILES_AVAILABLE, $handler_name); ?></p>
+                    <p class="no-files"><?= sprintf(TEXT_NO_DBIO_FILES_AVAILABLE, $handler_name) ?></p>
 <?php
     } else {
         $file_actions_array = [
@@ -713,10 +710,15 @@ if ($ok_to_proceed === false || $error_message !== '') {
                 'text' => DBIO_ACTION_CHECK_IMPORT
             ];
         }
-        $file_action = (isset($_POST['file_action'])) ? $_POST['file_action'] : 'none';
+        $file_action = $_POST['file_action'] ?? 'none';
 
-        $sort_1a = $sort_1d = $sort_2a = $sort_2d = $sort_3a = $sort_3d = '';
-        $sort_type = 'sort_' . ((isset($_GET['sort']) && in_array($_GET['sort'], explode(',', '1a,1d,2a,2d,3a,3d'))) ? $_GET['sort'] : DBIO_FILE_SORT_DEFAULT);
+        $sort_1a = '';
+        $sort_1d = '';
+        $sort_2a = '';
+        $sort_2d = '';
+        $sort_3a = '';
+        $sort_3d = '';
+        $sort_type = 'sort_' . (in_array(($_GET['sort'] ?? 'not-set'), explode(',', '1a,1d,2a,2d,3a,3d'), true) ? $_GET['sort'] : DBIO_FILE_SORT_DEFAULT);
         $$sort_type = ' selected-sort';
         $last_update_button = '';
         if (isset($_SESSION['dbio_import_result'])) {
@@ -725,43 +727,43 @@ if ($ok_to_proceed === false || $error_message !== '') {
 ?>
                     <table id="file-actions">
                         <tr>
-                            <td colspan="5" id="file-instrs"><?php echo TEXT_FILE_ACTION_INSTRUCTIONS; ?></td>
+                            <td colspan="5" id="file-instrs"><?= TEXT_FILE_ACTION_INSTRUCTIONS ?></td>
                         </tr>
                         <tr>
                             <td colspan="4" class="file-row-caption text-left">
-                                <?php echo TEXT_CHOOSE_ACTION . ' ' . zen_draw_pull_down_menu('file_action', $file_actions_array, $file_action, 'id="file-action"'); ?>&nbsp;&nbsp;
-                                <?php echo zen_draw_input_field('go_button', DBIO_BUTTON_GO, 'title="' . DBIO_BUTTON_GO_TITLE . '" onclick="return checkSubmit ();"', false, 'submit') . "&nbsp;&nbsp;$last_update_button"; ?>
+                                <?= TEXT_CHOOSE_ACTION . ' ' . zen_draw_pull_down_menu('file_action', $file_actions_array, $file_action, 'id="file-action"') ?>&nbsp;&nbsp;
+                                <?= zen_draw_input_field('go_button', DBIO_BUTTON_GO, 'title="' . DBIO_BUTTON_GO_TITLE . '" class="me-2" onclick="return checkSubmit();"', false, 'submit') . $last_update_button ?>
                             </td>
                             <td id="file-toggle">
-                                <button type="button" id="select-all" title="<?php echo DBIO_SELECT_ALL_TITLE; ?>"><?php echo DBIO_SELECT_ALL; ?></button>
+                                <button type="button" id="select-all" title="<?= DBIO_SELECT_ALL_TITLE ?>"><?= DBIO_SELECT_ALL ?></button>
                                 <br>
-                                <button type="button" id="unselect-all" title="<?php echo DBIO_UNSELECT_ALL_TITLE; ?>"><?php echo DBIO_UNSELECT_ALL; ?></button>
+                                <button type="button" id="unselect-all" title="<?= DBIO_UNSELECT_ALL_TITLE ?>"><?= DBIO_UNSELECT_ALL ?></button>
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="4" class="text-right"><?php echo TEXT_FILE_ACTION_DELETE_INSTRUCTIONS; ?></td>
+                            <td colspan="4" class="text-right"><?= TEXT_FILE_ACTION_DELETE_INSTRUCTIONS ?></td>
                             <td id="file-delete-action">
-                                <?php echo zen_draw_input_field('delete_button', DBIO_BUTTON_DELETE, 'title="' . DBIO_BUTTON_DELETE_TITLE . '" onclick="return checkDelete ();"', false, 'submit'); ?>
+                                <?= zen_draw_input_field('delete_button', DBIO_BUTTON_DELETE, 'title="' . DBIO_BUTTON_DELETE_TITLE . '" onclick="return checkDelete();"', false, 'submit') ?>
                             </td>
                         </tr>
                         <tr id="file-row-header">
-                            <td class="file-item"><?php echo HEADING_CHOOSE_FILE; ?></td>
+                            <td class="file-item"><?= HEADING_CHOOSE_FILE ?></td>
                             <td class="file-item">
-                                <span class="file-sorter<?php echo $sort_1a; ?>"><a href="<?php echo zen_href_link(FILENAME_DBIO_MANAGER, 'sort=1a'); ?>" title="<?php echo TEXT_SORT_NAME_ASC; ?>">&utrif;</a></span>
-                                <?php echo HEADING_FILENAME; ?>
-                                <span class="file-sorter<?php echo $sort_1d;?>"><a href="<?php echo zen_href_link(FILENAME_DBIO_MANAGER, 'sort=1d'); ?>" title="<?php echo TEXT_SORT_NAME_DESC; ?>">&dtrif;</a></span>
+                                <span class="file-sorter<?= $sort_1a ?>"><a href="<?= zen_href_link(FILENAME_DBIO_MANAGER, 'sort=1a') ?>" title="<?= TEXT_SORT_NAME_ASC ?>">&utrif;</a></span>
+                                <?= HEADING_FILENAME ?>
+                                <span class="file-sorter<?= $sort_1d;?>"><a href="<?= zen_href_link(FILENAME_DBIO_MANAGER, 'sort=1d') ?>" title="<?= TEXT_SORT_NAME_DESC ?>">&dtrif;</a></span>
                             </td>
                             <td class="file-item text-center">
-                                <span class="file-sorter<?php echo $sort_2a; ?>"><a href="<?php echo zen_href_link(FILENAME_DBIO_MANAGER, 'sort=2a'); ?>" title="<?php echo TEXT_SORT_SIZE_ASC; ?>">&utrif;</a></span>
-                                <?php echo HEADING_BYTES; ?>
-                                <span class="file-sorter<?php echo $sort_2d; ?>"><a href="<?php echo zen_href_link(FILENAME_DBIO_MANAGER, 'sort=2d'); ?>" title="<?php echo TEXT_SORT_SIZE_DESC; ?>">&dtrif;</a></span>
+                                <span class="file-sorter<?= $sort_2a ?>"><a href="<?= zen_href_link(FILENAME_DBIO_MANAGER, 'sort=2a') ?>" title="<?= TEXT_SORT_SIZE_ASC ?>">&utrif;</a></span>
+                                <?= HEADING_BYTES ?>
+                                <span class="file-sorter<?= $sort_2d ?>"><a href="<?= zen_href_link(FILENAME_DBIO_MANAGER, 'sort=2d') ?>" title="<?= TEXT_SORT_SIZE_DESC ?>">&dtrif;</a></span>
                             </td>
                             <td class="file-item text-center">
-                                <span class="file-sorter<?php echo $sort_3a; ?>"><a href="<?php echo zen_href_link(FILENAME_DBIO_MANAGER, 'sort=3a'); ?>" title="<?php echo TEXT_SORT_DATE_ASC; ?>">&utrif;</a></span>
-                                <?php echo HEADING_LAST_MODIFIED; ?>
-                                <span class="file-sorter<?php echo $sort_3d; ?>"><a href="<?php echo zen_href_link(FILENAME_DBIO_MANAGER, 'sort=3d'); ?>" title="<?php echo TEXT_SORT_DATE_DESC; ?>">&dtrif;</a></span>
+                                <span class="file-sorter<?= $sort_3a ?>"><a href="<?= zen_href_link(FILENAME_DBIO_MANAGER, 'sort=3a') ?>" title="<?= TEXT_SORT_DATE_ASC ?>">&utrif;</a></span>
+                                <?= HEADING_LAST_MODIFIED ?>
+                                <span class="file-sorter<?= $sort_3d ?>"><a href="<?= zen_href_link(FILENAME_DBIO_MANAGER, 'sort=3d') ?>" title="<?= TEXT_SORT_DATE_DESC ?>">&dtrif;</a></span>
                             </td>
-                            <td class="file-item text-center"><?php echo HEADING_DELETE; ?></td>
+                            <td class="file-item text-center"><?= HEADING_DELETE ?></td>
                         </tr>
 <?php
         uasort($dbio_files, function($a, $b)
@@ -795,11 +797,11 @@ if ($ok_to_proceed === false || $error_message !== '') {
             $select_parms = (dbio_strpos($file_info['filename_only'], 'logs') === 0) ? 'class="dbio-log"' : '';
 ?>
                         <tr class="file-row">
-                            <td class="file-item"><?php echo zen_draw_radio_field('filename_hash', $name_hash, $file_info['selected'], '', $select_parms); ?></td>
-                            <td class="file-item text-left"><?php echo $file_info['filename_only']; ?></td>
-                            <td class="file-item text-center"><?php echo $file_info['bytes']; ?></td>
-                            <td class="file-item text-center"><?php echo date(DBIO_DEBUG_DATE_FORMAT, $file_info['last_modified']); ?></td>
-                            <td class="file-item text-center"><?php echo zen_draw_checkbox_field('delete_hash[' . $name_hash . ']', '', false, '', 'class="delete-hash"'); ?></td>
+                            <td class="file-item"><?= zen_draw_radio_field('filename_hash', $name_hash, $file_info['selected'], '', $select_parms) ?></td>
+                            <td class="file-item text-left"><?= $file_info['filename_only'] ?></td>
+                            <td class="file-item text-center"><?= $file_info['bytes'] ?></td>
+                            <td class="file-item text-center"><?= date(DBIO_DEBUG_DATE_FORMAT, $file_info['last_modified']) ?></td>
+                            <td class="file-item text-center"><?= zen_draw_checkbox_field('delete_hash[' . $name_hash . ']', '', false, '', 'class="delete-hash"') ?></td>
                         </tr>
 <?php
             $first_file = false;
@@ -817,8 +819,8 @@ if ($ok_to_proceed === false || $error_message !== '') {
 ?>
             <td id="configuration">
                 <fieldset>
-                    <legend><?php echo LEGEND_CONFIGURATION; ?></legend>
-                    <p id="configuration-info"><?php echo sprintf(TEXT_FORMAT_CONFIG_INFO, zen_href_link(FILENAME_CONFIGURATION, "gID=$configuration_group_id")); ?></p>
+                    <legend><?= LEGEND_CONFIGURATION ?></legend>
+                    <p id="configuration-info"><?= sprintf(TEXT_FORMAT_CONFIG_INFO, zen_href_link(FILENAME_CONFIGURATION, "gID=$configuration_group_id")) ?></p>
 <?php
     unset($config_check, $configuration_group_id);
     $dbio_configuration = [
@@ -850,14 +852,14 @@ if ($ok_to_proceed === false || $error_message !== '') {
     foreach ($dbio_configuration as $config_group_name => $config_values) {
 ?>
                         <tr>
-                            <td colspan="2" class="config-header"><?php echo $config_group_name; ?></td>
+                            <td colspan="2" class="config-header"><?= $config_group_name ?></td>
                         </tr>
 <?php
         foreach ($config_values as $config_title => $config_value) {
 ?>
                         <tr>
-                            <td class="config-title"><?php echo $config_title; ?>:</td>
-                            <td class="config-value"><?php echo $config_value; ?></td>
+                            <td class="config-title"><?= $config_title ?>:</td>
+                            <td class="config-value"><?= $config_value ?></td>
                         </tr>
 <?php
         }
@@ -875,39 +877,39 @@ if ($ok_to_proceed === false || $error_message !== '') {
 ?>
     <div style="display: none;"><div id="file-last-import">
         <div id="file-last-import-info">
-            <p><?php echo LAST_STATS_LEAD_IN; ?></p>
+            <p><?= LAST_STATS_LEAD_IN ?></p>
             <ul id="flii-details">
                 <li>
-                    <span class="flii-label"><?php echo LAST_STATS_FILE_NAME; ?></span>
-                    <span class="flii-value"><?php echo $_SESSION['dbio_import_result']['import_filename']; ?></span>
+                    <span class="flii-label"><?= LAST_STATS_FILE_NAME ?></span>
+                    <span class="flii-value"><?= $_SESSION['dbio_import_result']['import_filename'] ?></span>
                 </li>
                 <li>
-                    <span class="flii-label"><?php echo LAST_STATS_OPERATION; ?></span>
-                    <span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['action']; ?></span>
+                    <span class="flii-label"><?= LAST_STATS_OPERATION ?></span>
+                    <span class="flii-value"><?= $_SESSION['dbio_import_result']['stats']['action'] ?></span>
                 </li>
                 <li>
-                    <span class="flii-label"><?php echo LAST_STATS_RECORDS_READ; ?></span>
-                    <span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['record_count']; ?></span>
+                    <span class="flii-label"><?= LAST_STATS_RECORDS_READ ?></span>
+                    <span class="flii-value"><?= $_SESSION['dbio_import_result']['stats']['record_count'] ?></span>
                 </li>
                 <li>
-                    <span class="flii-label"><?php echo LAST_STATS_RECORDS_INSERTED; ?></span>
-                    <span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['inserts']; ?></span>
+                    <span class="flii-label"><?= LAST_STATS_RECORDS_INSERTED ?></span>
+                    <span class="flii-value"><?= $_SESSION['dbio_import_result']['stats']['inserts'] ?></span>
                 </li>
                 <li>
-                    <span class="flii-label"><?php echo LAST_STATS_RECORDS_UPDATED; ?></span>
-                    <span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['updates']; ?></span>
+                    <span class="flii-label"><?= LAST_STATS_RECORDS_UPDATED ?></span>
+                    <span class="flii-value"><?= $_SESSION['dbio_import_result']['stats']['updates'] ?></span>
                 </li>
                 <li>
-                    <span class="flii-label"><?php echo LAST_STATS_WARNINGS; ?></span>
-                    <span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['warnings']; ?></span>
+                    <span class="flii-label"><?= LAST_STATS_WARNINGS ?></span>
+                    <span class="flii-value"><?= $_SESSION['dbio_import_result']['stats']['warnings'] ?></span>
                 </li>
                 <li>
-                    <span class="flii-label"><?php echo LAST_STATS_ERRORS; ?></span>
-                    <span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['errors']; ?></span>
+                    <span class="flii-label"><?= LAST_STATS_ERRORS ?></span>
+                    <span class="flii-value"><?= $_SESSION['dbio_import_result']['stats']['errors'] ?></span>
                 </li>
                 <li>
-                    <span class="flii-label"><?php echo LAST_STATS_PARSE_TIME; ?></span>
-                    <span class="flii-value"><?php echo $_SESSION['dbio_import_result']['stats']['parse_time']; ?></span>
+                    <span class="flii-label"><?= LAST_STATS_PARSE_TIME ?></span>
+                    <span class="flii-value"><?= $_SESSION['dbio_import_result']['stats']['parse_time'] ?></span>
                 </li>
             </ul>
         </div>
@@ -915,13 +917,13 @@ if ($ok_to_proceed === false || $error_message !== '') {
         if (isset($_SESSION['dbio_import_result']['io_errors']) && count($_SESSION['dbio_import_result']['io_errors']) !== 0) {
 ?>
         <div id="flii-messages">
-            <div id="flii-message-intro"><?php echo LAST_STATS_MESSAGES_EXIST; ?></div>
+            <div id="flii-message-intro"><?= LAST_STATS_MESSAGES_EXIST ?></div>
 <?php
             foreach ($_SESSION['dbio_import_result']['io_errors'] as $current_error) {
                 $message_status = ($current_error[2] & DbIoHandler::DBIO_WARNING) ? 'warning' : (($current_error[2] & DbIoHandler::DBIO_ERROR) ? 'error' : 'info');
 ?>
-            <div class="flii-<?php echo $message_status; ?>">
-                <?php echo str_replace('[*]', '<span class="flii-item">&cross;</span>', $current_error[0]); ?>
+            <div class="flii-<?= $message_status ?>">
+                <?= str_replace('[*]', '<span class="flii-item">&cross;</span>', $current_error[0]) ?>
             </div>
 <?php
             }
@@ -958,7 +960,7 @@ if ($ok_to_proceed === false || $error_message !== '') {
         var e = document.getElementById( 'file-action' );
         var file_action = e.options[e.selectedIndex].value;
         if (file_action == 'none') {
-            alert( '<?php echo JS_MESSAGE_CHOOSE_ACTION; ?>' );
+            alert( '<?= JS_MESSAGE_CHOOSE_ACTION ?>' );
             return false;
         }
         return true;
@@ -976,9 +978,9 @@ if ($ok_to_proceed === false || $error_message !== '') {
             }
         }
         if (selected == 0) {
-            alert( '<?php echo JS_MESSAGE_NO_FILES_SELECTED; ?>' );
+            alert( '<?= JS_MESSAGE_NO_FILES_SELECTED ?>' );
         } else {
-            submitOK = confirm( '<?php echo JS_MESSAGE_OK2DELETE_PART1; ?>'+selected+'<?php echo JS_MESSAGE_OK2DELETE_PART2; ?>' );
+            submitOK = confirm( '<?= JS_MESSAGE_OK2DELETE_PART1 ?>'+selected+'<?= JS_MESSAGE_OK2DELETE_PART2 ?>' );
         }
         return submitOK;
     }
@@ -987,7 +989,7 @@ if ($ok_to_proceed === false || $error_message !== '') {
 <?php
 foreach ($customization_choices as $index => $info) {
 ?>
-    dbioDescriptions[<?php echo $info['id']; ?>] = '<?php echo addslashes($info['desc']); ?>';
+    dbioDescriptions[<?= $info['id'] ?>] = '<?= addslashes($info['desc']) ?>';
 <?php
 }
 ?>
