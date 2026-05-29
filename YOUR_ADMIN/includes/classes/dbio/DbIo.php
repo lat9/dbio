@@ -181,7 +181,7 @@ class DbIo extends base
                     trigger_error($this->message, E_USER_WARNING);
                 } else {
                     $this->debugMessage('dbioExport: Begin CSV creation loop.');
-                    ini_set('max_execution_time', DBIO_MAX_EXECUTION_TIME);
+                    ini_set('max_execution_time', zen_config('DBIO_MAX_EXECUTION_TIME'));
 
                     $this->writeCsvRecord($this->handler->exportGetHeader());
                     foreach ($export_info as $next_record) {
@@ -194,14 +194,14 @@ class DbIo extends base
 
                 if ($completion_code !== false && $export_to === 'download') {
                     if (dbio_strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false) {
-                        header('Content-Type: text/csv; charset=' . ((DBIO_CHARSET === 'utf8') ? 'UTF-8' : 'Windows-1252'));
+                        header('Content-Type: text/csv; charset=' . ((zen_config('DBIO_CHARSET') === 'utf8') ? 'UTF-8' : 'Windows-1252'));
                         header('Content-Disposition: attachment; filename="' . $this->export_filename . '"');
                         header('Expires: 0');
                         header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
                         header('Pragma: public');
                         header("Content-Length: " . filesize(DIR_FS_DBIO_EXPORT . $this->export_filename));
                     } else {
-                        header('Content-Type: text/csv; charset=' . ((DBIO_CHARSET === 'utf8') ? 'UTF-8' : 'Windows-1252'));
+                        header('Content-Type: text/csv; charset=' . ((zen_config('DBIO_CHARSET') === 'utf8') ? 'UTF-8' : 'Windows-1252'));
                         header('Content-Disposition: attachment; filename="' . $this->export_filename . '"');
                         header('Expires: 0');
                         header('Pragma: no-cache');
@@ -263,7 +263,7 @@ class DbIo extends base
                     if (!$this->handler->importGetHeader(($this->handler->isHeaderIncluded()) ? $this->getCsvRecord() : false)) {
                         $this->message = $this->handler->getHandlerMessage();
                     } else {
-                        ini_set('max_execution_time', DBIO_MAX_EXECUTION_TIME);
+                        ini_set('max_execution_time', zen_config('DBIO_MAX_EXECUTION_TIME'));
                         while (($data = $this->getCsvRecord()) !== false) {
                             $this->handler->importCsvRecord($data);
                         }

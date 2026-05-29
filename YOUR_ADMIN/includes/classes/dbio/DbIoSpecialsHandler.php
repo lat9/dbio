@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the Database I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2020-2023, Vinos de Frutas Tropicales.
+// Copyright (c) 2020-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.0.
+// Last updated: DbIo v2.2.0
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -72,7 +72,7 @@ class DbIoSpecialsHandler extends DbIoHandler
     //
     public function importInitialize($language = 'all', $operation = 'check') 
     {
-        $this->enable_specials_gv = (defined('MODULE_ORDER_TOTAL_GV_SPECIAL') && MODULE_ORDER_TOTAL_GV_SPECIAL != 'false');
+        $this->enable_specials_gv = zen_config('MODULE_ORDER_TOTAL_GV_SPECIAL') !== 'false';
         return parent::importInitialize($language, $operation);
     }
 

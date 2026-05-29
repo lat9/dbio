@@ -3,7 +3,7 @@
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.1.1.
+// Last updated: DbIo v2.2.0
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -407,7 +407,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     //
     protected function checkDownloadFilename($filename)
     {
-        $modifier = (DBIO_CHARSET === 'utf8') ? 'u' : '';
+        $modifier = (zen_config('DBIO_CHARSET') === 'utf8') ? 'u' : '';
         return !($filename === '' || dbio_substr($filename, 0, 1) === '.' || preg_match('#[<>:"|?*]#' . $modifier, $filename));
     }
 
