@@ -52,7 +52,6 @@ class DbIoManufacturersHandler extends DbIoHandler
     {
         global $db;
 
-        $fields = parent::exportPrepareFields($fields);
         $default_language_code = $this->first_language_code;
 
         if ($this->export_language === 'all') {
@@ -72,7 +71,7 @@ class DbIoManufacturersHandler extends DbIoHandler
                 }
             }
         }
-        return $fields;
+        return parent::exportPrepareFields($fields);
     }
 
 // ----------------------------------------------------------------------------------

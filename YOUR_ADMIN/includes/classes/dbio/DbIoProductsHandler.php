@@ -231,25 +231,12 @@ class DbIoProductsHandler extends DbIoHandler
 
     public function exportPrepareFields(array $fields)
     {
-        $fields = parent::exportPrepareFields($fields);
         $products_id = $fields['products_id'];
 
-        // -----
-        // Starting with v1.5.0, the base DbIoHandler class' processing has added an empty element to the
-        // end of the $fields array to hold any to-be-imported DbIo command.  The command, if present
-        // is always the very last column of an export.
-        //
-        // We'll pop (i.e. remove) that last element and re-add it once the "special" products' export
-        // fields are inserted.
-        //
-        if (version_compare(parent::getHandlerVersion(), '1.5.0', '>=')) {
-            array_pop($fields);
-        }
-
         $tax_class_id = 0;
-        if (isset ($fields['products_tax_class_id'])) {
+        if (isset($fields['products_tax_class_id'])) {
             $tax_class_id = $fields['products_tax_class_id'];
-            unset ($fields['products_tax_class_id']);
+            unset($fields['products_tax_class_id']);
         }
 
         $first_language_code = $this->first_language_code;
@@ -273,11 +260,10 @@ class DbIoProductsHandler extends DbIoHandler
                 $language_fields = [];
                 foreach ($this->languages as $language_code => $language_id) {
                     if ($language_code != $first_language_code) {
-                        $description_info = $db->Execute(sprintf($this->saved_data['products_description_sql'], $products_id, $language_id));
+                        $description_info = $db->Execute(sprintf($this->saved_data['products_description_sql'], (int)$products_id, (int)$language_id));
                         if (!$description_info->EOF) {
-                            $encoded_fields = $this->exportEncodeData($description_info->fields);
-                            foreach ($encoded_fields as $field_name => $field_value) {
-                                if ($field_name != 'products_id' && $field_name != 'language_id') {
+                            foreach ($description_info->fields as $field_name => $field_value) {
+                                if ($field_name !== 'products_id' && $field_name !== 'language_id') {
                                     if (!isset($this->customized_fields)) {
                                         $language_fields[$field_name . '_' . $language_code] = $field_value;
                                     } else {
@@ -317,7 +303,7 @@ class DbIoProductsHandler extends DbIoHandler
                 //
                 foreach ($this->languages as $language_code => $language_id) {
                     if ($language_code !== $first_language_code) {
-                        $metatags_info = $db->Execute(sprintf($this->saved_data['products_metatags_sql'], $products_id, $language_id));
+                        $metatags_info = $db->Execute(sprintf($this->saved_data['products_metatags_sql'], (int)$products_id, (int)$language_id));
                         if (!$metatags_info->EOF) {
                             $metatags_fields = $metatags_info->fields;
                         } else {
@@ -329,8 +315,8 @@ class DbIoProductsHandler extends DbIoHandler
                                 }
                             }
                         }
-                        $encoded_fields = $this->exportEncodeData($metatags_fields);
-                        foreach ($encoded_fields as $field_name => $field_value) {
+
+                        foreach ($metatags_fields as $field_name => $field_value) {
                             if ($field_name !== 'products_id' && $field_name !== 'language_id') {
                                 if (!isset($this->customized_fields)) {
                                     $language_fields[$field_name . '_' . $language_code] = $field_value;
@@ -418,12 +404,7 @@ class DbIoProductsHandler extends DbIoHandler
             }
         }
 
-        // -----
-        // Now, add an empty column at the very end to hold the 'v_dbio_command' when the CSV is imported.
-        //
-        $fields[] = '';
-
-        return $fields;
+        return parent::exportPrepareFields($fields);
     }
 
     // -----

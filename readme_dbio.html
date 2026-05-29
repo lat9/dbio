@@ -153,7 +153,7 @@ body {
                             </ul></li>
                             <li>BUGFIX: Font Awesome classes changed for FA v6, still keeping FA 4 support for zc158.</li>
                             <li>CHANGE: Use updated <code>Encoding</code> class, for PHP 8.0+ support.</li>
-                            <li>BUGFIX: <code>DbIoFeaturedHandler</code>, product's name and model aren't encoded.</li>
+                            <li>BUGFIX: Various handlers can have unencoded text fields for a <code>latin1</code> export.</li>
                             <li>CHANGE: Provide a <code>zen_config</code> polyfill, supporting that change for zc300.</li>
                             <li>The following files were changed, <span class="added">added</span> or <span class="removed">removed</span>:<ol>
                               <li>/YOUR_ADMIN/dbio_customize.php</li>

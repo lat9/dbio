@@ -43,23 +43,17 @@ class DbIoSpecialsHandler extends DbIoHandler
     // For each 'specials' row's export, append the product's name, model-number and 'base price' to the output,
     // adding those fields for reference use.
     //
-    // Note: Since this handler supports DbIo commands, the base class' handling has appended an empty
-    // column as the last field to hold a potential command (this handler supports REMOVE).  Need to remove that
-    // column's data from the fields prior to inserting the 'helper' columns and then add it back.
-    //
     public function exportPrepareFields(array $fields)
     {
-        $fields = parent::exportPrepareFields($fields);
-        array_pop($fields);
         unset($fields['specials_id']);
 
         $products_id = $fields['products_id'];
-        
+
         $fields['products_price'] = zen_get_products_base_price($products_id);
         $fields['products_model'] = zen_get_products_model($products_id);
         $fields['products_name'] = zen_get_products_name($products_id);
-        $fields['v_dbio_command'] = '';
-        return $fields;
+
+        return parent::exportPrepareFields($fields);
     }
 
     // -----
