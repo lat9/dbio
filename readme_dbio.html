@@ -155,12 +155,17 @@ body {
                             <li>CHANGE: Use updated <code>Encoding</code> class, for PHP 8.0+ support.</li>
                             <li>BUGFIX: Various handlers can have unencoded text fields for a <code>latin1</code> export.</li>
                             <li>CHANGE: Provide a <code>zen_config</code> polyfill, supporting that change for zc300.</li>
+                            <li>CHANGE: Added handlers for <em>Products' Options' Stock Manager</em>; it needs to be installed for the handlers to be used.</li>
                             <li>The following files were changed, <span class="added">added</span> or <span class="removed">removed</span>:<ol>
                               <li>/YOUR_ADMIN/dbio_customize.php</li>
                               <li>/YOUR_ADMIN/dbio_manager.php</li>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIo.php</li>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoFeaturedHandler.php</li>
+                              <li><span class="added">/YOUR_ADMIN/includes/classes/dbio/DbIoOptionsStockBase.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/classes/dbio/DbIoOptionsStockFullHandler.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/classes/dbio/DbIoOptionsStockNames.php</span></li>
+                              <li><span class="added">/YOUR_ADMIN/includes/classes/dbio/DbIoOptionsStockUpdate.php</span></li>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsBasicHandler.php</li>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsAttribsRawHandler.php</li>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
