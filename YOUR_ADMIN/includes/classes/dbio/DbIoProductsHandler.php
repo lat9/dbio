@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2025, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.1.0
+// Last updated: DbIo v2.2.0
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -108,7 +108,7 @@ class DbIoProductsHandler extends DbIoHandler
             if ($this->where_clause !== '') {
                 $this->where_clause .= ' AND ';
             }
-            $export_language = ($this->export_language == 'all') ? $this->languages[$this->first_language_code] : $this->languages[$this->export_language];
+            $export_language = ($this->export_language === 'all') ? $this->languages[$this->first_language_code] : $this->languages[$this->export_language];
             $this->where_clause .= "p.products_id = pd.products_id AND pd.language_id = $export_language";
             $this->order_by_clause .= 'p.products_id ASC';
 
@@ -387,7 +387,7 @@ class DbIoProductsHandler extends DbIoHandler
                     //
                     if (!($this->config['additional_headers']['v_categories_name'] & self::DBIO_FLAG_NO_EXPORT)) {
                         $cPath_array = explode('_', zen_get_product_path($products_id));
-                        $default_language_id = $this->languages[DEFAULT_LANGUAGE];
+                        $default_language_id = $this->languages[zen_config('DEFAULT_LANGUAGE')];
                         $categories_name = '';
                         foreach ($cPath_array as $next_category_id) {
                             $category_info = $db->Execute(
@@ -506,7 +506,7 @@ class DbIoProductsHandler extends DbIoHandler
         //
         $metatags_fields_included = false;
         foreach ($this->table_names as $table_name) {
-            if ($table_name == TABLE_META_TAGS_PRODUCTS_DESCRIPTION) {
+            if ($table_name === TABLE_META_TAGS_PRODUCTS_DESCRIPTION) {
                 $metatags_fields_included = true;
                 break;
             }
@@ -699,7 +699,7 @@ class DbIoProductsHandler extends DbIoHandler
                 // If the products-model **is** supplied and, by configuration, models cannot be duplicated, check to see that the current
                 // model doesn't already exist.
                 //
-                } elseif (!defined('DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS') || DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS === 'No') {
+                } elseif (zen_config('DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS', 'No') === 'No') {
                     $model_check = $db->Execute(
                         "SELECT products_id
                            FROM " . TABLE_PRODUCTS . "
@@ -870,7 +870,7 @@ class DbIoProductsHandler extends DbIoHandler
 
         $parent_category = 0;
         $categories_name_ok = true;
-        $language_id = $this->languages[DEFAULT_LANGUAGE];
+        $language_id = $this->languages[zen_config('DEFAULT_LANGUAGE')];
         $categories = explode('^', $this->importGetFieldValue('categories_name', $data));
         foreach ($categories as $current_category_name) {
             $category_info_sql =
@@ -926,7 +926,7 @@ class DbIoProductsHandler extends DbIoHandler
                 } else {
                     $current_products_model = zen_get_products_model($products_id);
                     $products_model = $this->importGetFieldValue('products_model', $data);
-                    if ($products_model != $current_products_model && (!defined('DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS') || DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS == 'No')) {
+                    if ($products_model != $current_products_model && zen_config('DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS', 'No') === 'No') {
                         $this->debugMessage("Record at line #" . $this->stats['record_count'] . " not imported; products_model ($products_model) exists and cannot, by configuration, be duplicated.", self::DBIO_WARNING);
                     } else {
                         foreach ($this->data_key_check as $next_key) {
@@ -968,7 +968,7 @@ class DbIoProductsHandler extends DbIoHandler
                 // Check to see whether an import is allowed without an associated "ADD" command.  If not and either no
                 // v_dbio_command column is present or that column doesn't contain that command, deny the record import.
                 //
-                if (defined('DBIO_PRODUCTS_INSERT_REQUIRES_COMMAND') && DBIO_PRODUCTS_INSERT_REQUIRES_COMMAND == 'Yes') {
+                if (zen_config('DBIO_PRODUCTS_INSERT_REQUIRES_COMMAND') === 'Yes') {
                     if (!isset($this->dbio_command_index) || $data[$this->dbio_command_index] !== self::DBIO_COMMAND_ADD) {
                         $this->record_status = false;
                         $this->debugMessage("Record at line#" . $this->stats['record_count'] . " not imported; v_dbio_command must be set to 'ADD' for a product addition.", self::DBIO_WARNING);
@@ -1187,7 +1187,7 @@ class DbIoProductsHandler extends DbIoHandler
                     case 'categories_name':
                         $parent_category = 0;
                         $categories_name_ok = true;
-                        $language_id = $this->languages[DEFAULT_LANGUAGE];
+                        $language_id = $this->languages[zen_config('DEFAULT_LANGUAGE')];
                         $categories = explode('^', $field_value);
                         foreach ($categories as $current_category_name) {
                             if ($current_category_name === '') {
@@ -1208,7 +1208,7 @@ class DbIoProductsHandler extends DbIoHandler
                             if (!$category_info->EOF) {
                                 $parent_category = $category_info->fields['categories_id'];
                             } elseif ($this->import_is_insert === true) {
-                                if (DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES !== 'Yes') {
+                                if (zen_config('DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES') !== 'Yes') {
                                     $categories_name_ok = false;
                                     $this->debugMessage('[*] Product not inserted at line number ' . $this->stats['record_count'] . ", no match found for categories_name ($current_category_name).", self::DBIO_WARNING);
                                 } else {

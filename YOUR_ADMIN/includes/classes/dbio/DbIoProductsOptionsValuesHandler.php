@@ -3,7 +3,7 @@
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.2.1
+// Last updated: DbIo v2.2.0
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -34,7 +34,7 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
     {
         DbIoHandler::loadHandlerMessageFile('ProductsOptionsValues'); 
         return [
-            'version' => '2.2.1',
+            'version' => '2.2.0',
             'handler_version' => '1.0.0',
             'include_header' => true,
             'export_only' => false,

@@ -243,7 +243,7 @@ if ($action === 'new' || $action === 'edit' || $action === 'copy') {
 <body>
 <?php require DIR_WS_INCLUDES . 'header.php'; ?>
 <div id="main-wrapper">
-    <h1><?= sprintf(HEADING_TITLE, $handler_name) ?> <span class="smaller">v<?= DBIO_MODULE_VERSION ?></span></h1>
+    <h1><?= sprintf(HEADING_TITLE, $handler_name) ?> <span class="smaller">v<?= zen_config('DBIO_MODULE_VERSION') ?></span></h1>
 <?php
 if ($ok_to_proceed === false) {
 ?>
@@ -414,8 +414,8 @@ if ($ok_to_proceed === false) {
         $language_instructions = INSTRUCTIONS_DESCRIPTION;
         foreach ($dbio_languages as $current_language) {
             $language_image = zen_image(DIR_WS_CATALOG_LANGUAGES . $current_language['directory'] . '/images/' . $current_language['image'], $current_language['name']);
-            $description = (isset($report_description[$current_language['id']])) ? $report_description[$current_language['id']] : TEXT_ENTER_REPORT_DESCRIPTION_HERE;
-            $description = htmlspecialchars(stripslashes($description), ENT_COMPAT, CHARSET, TRUE);
+            $description = $report_description[$current_language['id']] ?? TEXT_ENTER_REPORT_DESCRIPTION_HERE;
+            $description = htmlspecialchars(stripslashes($description), ENT_COMPAT, CHARSET, true);
 ?>
                             <tr>
                                 <td class="dbio-label"><?= $language_image . '&nbsp;' . COLUMN_HEADING_DESCRIPTION ?></td>

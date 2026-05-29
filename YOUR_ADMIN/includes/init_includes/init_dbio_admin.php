@@ -3,6 +3,8 @@
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
 //
+// Last updated: DbIo v2.2.0
+//
 if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
 }
@@ -34,8 +36,8 @@ if ($configuration->EOF) {
 // ----
 // Record the configuration's current version in the database.
 //
-if (defined('DBIO_MODULE_VERSION')) {
-    $dbio_versions = explode(' ', DBIO_MODULE_VERSION);
+if (!empty(zen_config('DBIO_MODULE_VERSION'))) {
+    $dbio_versions = explode(' ', zen_config('DBIO_MODULE_VERSION'));
     $dbio_current_version = $dbio_versions[0];
 } else {
     $dbio_current_version = '0.0.0';
@@ -65,7 +67,7 @@ if (defined('DBIO_MODULE_VERSION')) {
 // -----
 // If the plugin's version has changed, see if there's any additional configuration settings to be set.
 //
-if (DBIO_CURRENT_VERSION !== $dbio_current_version) {
+if (zen_config('DBIO_CURRENT_VERSION') !== $dbio_current_version) {
     // -----
     // Plugin version-specific updates ...
     //
@@ -146,7 +148,7 @@ if (DBIO_CURRENT_VERSION !== $dbio_current_version) {
     }
 
     if (version_compare($dbio_current_version, '1.3.0', '<')) {
-        if (!defined('DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES')) {
+        if (zen_config('DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES') === null) {
             $db->Execute(
                 "INSERT IGNORE INTO " . TABLE_CONFIGURATION . "
                     (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function)
@@ -157,7 +159,7 @@ if (DBIO_CURRENT_VERSION !== $dbio_current_version) {
     }
 
     if (version_compare($dbio_current_version, '1.6.4', '<')) {
-        if (!defined('DBIO_PRODUCTS_INSERT_REQUIRES_COMMAND')) {
+        if (zen_config('DBIO_PRODUCTS_INSERT_REQUIRES_COMMAND') === null) {
             $db->Execute(
                 "INSERT IGNORE INTO " . TABLE_CONFIGURATION . "
                     (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added, use_function, set_function)
@@ -209,16 +211,14 @@ if (DBIO_CURRENT_VERSION !== $dbio_current_version) {
     // -----
     // Register the admin-level pages for use.
     //
-    if (function_exists('zen_page_key_exists')) {
-        if (!zen_page_key_exists('toolsDbIo')) {
-            zen_register_admin_page('toolsDbIo', 'BOX_TOOLS_DBIO', 'FILENAME_DBIO_MANAGER', '', 'tools', 'Y');
-        }
-        if (!zen_page_key_exists('configDbIo')) {
-            zen_register_admin_page('configDbIo', 'BOX_CONFIGURATION_DBIO', 'FILENAME_CONFIGURATION', "gID=$cgi", 'configuration', 'Y');
-        }
-        if (!zen_page_key_exists('toolsDbIoCustomize')) {
-            zen_register_admin_page('toolsDbIoCustomize', 'BOX_TOOLS_DBIO_CUSTOMIZE', 'FILENAME_DBIO_CUSTOMIZE', '', 'tools', 'N');
-        }
+    if (!zen_page_key_exists('toolsDbIo')) {
+        zen_register_admin_page('toolsDbIo', 'BOX_TOOLS_DBIO', 'FILENAME_DBIO_MANAGER', '', 'tools', 'Y');
+    }
+    if (!zen_page_key_exists('configDbIo')) {
+        zen_register_admin_page('configDbIo', 'BOX_CONFIGURATION_DBIO', 'FILENAME_CONFIGURATION', "gID=$cgi", 'configuration', 'Y');
+    }
+    if (!zen_page_key_exists('toolsDbIoCustomize')) {
+        zen_register_admin_page('toolsDbIoCustomize', 'BOX_TOOLS_DBIO_CUSTOMIZE', 'FILENAME_DBIO_CUSTOMIZE', '', 'tools', 'N');
     }
 
     // -----

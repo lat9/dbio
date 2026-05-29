@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2015-2024, Vinos de Frutas Tropicales.
+// Copyright (c) 2015-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.1
+// Last updated: DbIo v2.2.0
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -125,7 +125,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
         ];
         $this->config['export_where_clause'] = 'pa.products_id = p.products_id AND pa.options_id = po.products_options_id AND po.language_id = ' . $this->languages[DEFAULT_LANGUAGE] . ' GROUP BY p.products_model, po.products_options_id, po.products_options_type, po.products_options_name, p.products_id';
         
-        if (PRODUCTS_OPTIONS_SORT_ORDER === '0') {
+        if (zen_config('PRODUCTS_OPTIONS_SORT_ORDER') === '0') {
             $options_order_by = 'LPAD(po.products_options_sort_order,11,"0")';
         } else {
             $options_order_by = 'po.products_options_name';
@@ -183,7 +183,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
         } else {
             $products_options_name = $this->saved_data['option']['products_options_name'];
             $products_options_type = $this->saved_data['option']['products_options_type'];
-            $language_id = $this->languages[DEFAULT_LANGUAGE];
+            $language_id = $this->languages[zen_config('DEFAULT_LANGUAGE')];
             
             $option_check = $db->ExecuteNoCache(
                 "SELECT products_options_id FROM " . TABLE_PRODUCTS_OPTIONS . "

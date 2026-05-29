@@ -109,8 +109,8 @@ if (!$ok_to_proceed) {
                         'last_modified' => $file_stats[9],
                         'bytes' => $file_stats[7],
                         'handler_name' => $handler_name,
-                        'is_export_only' => (isset($dbio_handlers[$handler_name], $dbio_handlers[$handler_name]['export_only'])) ? $dbio_handlers[$handler_name]['export_only'] : false,
-                        'is_header_included' => (isset($dbio_handlers[$handler_name], $dbio_handlers[$handler_name]['include_header'])) ? $dbio_handlers[$handler_name]['include_header'] : false,
+                        'is_export_only' => $dbio_handlers[$handler_name]['export_only'] ?? false,
+                        'is_header_included' => $dbio_handlers[$handler_name]['include_header'] ?? false,
                     ];
                 }
             }
@@ -456,7 +456,7 @@ div.export-only span { color: red; font-weight: bold; }
 <body>
 <?php require DIR_WS_INCLUDES . 'header.php'; ?>
   <div id="main-wrapper">
-    <h1><?= HEADING_TITLE ?> <span class="smaller">v<?= DBIO_MODULE_VERSION ?></span></h1>
+    <h1><?= HEADING_TITLE ?> <span class="smaller">v<?= zen_config('DBIO_MODULE_VERSION') ?></span></h1>
     <p id="top-instructions"><?= TEXT_INSTRUCTIONS ?></p>
 <?php
 $customization_choices = [];
@@ -718,7 +718,7 @@ if ($ok_to_proceed === false || $error_message !== '') {
         $sort_2d = '';
         $sort_3a = '';
         $sort_3d = '';
-        $sort_type = 'sort_' . (in_array(($_GET['sort'] ?? 'not-set'), explode(',', '1a,1d,2a,2d,3a,3d'), true) ? $_GET['sort'] : DBIO_FILE_SORT_DEFAULT);
+        $sort_type = 'sort_' . (in_array(($_GET['sort'] ?? 'not-set'), explode(',', '1a,1d,2a,2d,3a,3d'), true) ? $_GET['sort'] : zen_config('DBIO_FILE_SORT_DEFAULT'));
         $$sort_type = ' selected-sort';
         $last_update_button = '';
         if (isset($_SESSION['dbio_import_result'])) {
@@ -768,7 +768,7 @@ if ($ok_to_proceed === false || $error_message !== '') {
 <?php
         uasort($dbio_files, function($a, $b)
         {
-            $sort_type = (isset($_GET['sort'])) ? $_GET['sort'] : DBIO_FILE_SORT_DEFAULT;
+            $sort_type = $_GET['sort'] ?? zen_config('DBIO_FILE_SORT_DEFAULT');
             switch ($sort_type) {
                 case '1d':          //-File-name, descending
                     $compare_value = strcmp($b['filename_only'], $a['filename_only']);
@@ -800,7 +800,7 @@ if ($ok_to_proceed === false || $error_message !== '') {
                             <td class="file-item"><?= zen_draw_radio_field('filename_hash', $name_hash, $file_info['selected'], '', $select_parms) ?></td>
                             <td class="file-item text-left"><?= $file_info['filename_only'] ?></td>
                             <td class="file-item text-center"><?= $file_info['bytes'] ?></td>
-                            <td class="file-item text-center"><?= date(DBIO_DEBUG_DATE_FORMAT, $file_info['last_modified']) ?></td>
+                            <td class="file-item text-center"><?= date(zen_config('DBIO_DEBUG_DATE_FORMAT'), $file_info['last_modified']) ?></td>
                             <td class="file-item text-center"><?= zen_draw_checkbox_field('delete_hash[' . $name_hash . ']', '', false, '', 'class="delete-hash"') ?></td>
                         </tr>
 <?php
@@ -825,25 +825,25 @@ if ($ok_to_proceed === false || $error_message !== '') {
     unset($config_check, $configuration_group_id);
     $dbio_configuration = [
         TEXT_DBIO_SETTINGS => [
-            TEXT_CSV_DELIMITER => DBIO_CSV_DELIMITER,
-            TEXT_CSV_ENCLOSURE => DBIO_CSV_ENCLOSURE,
-            TEXT_CSV_ESCAPE => DBIO_CSV_ESCAPE,
-            TEXT_CSV_ENCODING => DBIO_CHARSET,
-            TEXT_CSV_DATE_FORMAT => DBIO_IMPORT_DATE_FORMAT,
-            TEXT_MAX_EXECUTION => DBIO_MAX_EXECUTION_TIME,
-            TEXT_SPLIT_RECORD_COUNT => DBIO_SPLIT_RECORD_COUNT,
-            TEXT_FILE_DEFAULT_SORT_ORDER => DBIO_FILE_SORT_DEFAULT,
-            TEXT_ALLOW_DUPLICATE_MODELS => DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS,
-            TEXT_AUTO_CREATE_CATEGORIES => DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES,
-            TEXT_INSERT_REQUIRES_COMMAND => DBIO_PRODUCTS_INSERT_REQUIRES_COMMAND,
-            TEXT_DEBUG_ENABLED => DBIO_DEBUG,
-            TEXT_DATE_FORMAT => DBIO_DEBUG_DATE_FORMAT,
+            TEXT_CSV_DELIMITER => zen_config('DBIO_CSV_DELIMITER'),
+            TEXT_CSV_ENCLOSURE => zen_config('DBIO_CSV_ENCLOSURE'),
+            TEXT_CSV_ESCAPE => zen_config('DBIO_CSV_ESCAPE'),
+            TEXT_CSV_ENCODING => zen_config('DBIO_CHARSET'),
+            TEXT_CSV_DATE_FORMAT => zen_config('DBIO_IMPORT_DATE_FORMAT'),
+            TEXT_MAX_EXECUTION => zen_config('DBIO_MAX_EXECUTION_TIME'),
+            TEXT_SPLIT_RECORD_COUNT => zen_config('DBIO_SPLIT_RECORD_COUNT'),
+            TEXT_FILE_DEFAULT_SORT_ORDER => zen_config('DBIO_FILE_SORT_DEFAULT'),
+            TEXT_ALLOW_DUPLICATE_MODELS => zen_config('DBIO_PRODUCTS_ALLOW_DUPLICATE_MODELS'),
+            TEXT_AUTO_CREATE_CATEGORIES => zen_config('DBIO_PRODUCTS_AUTO_CREATE_CATEGORIES'),
+            TEXT_INSERT_REQUIRES_COMMAND => zen_config('DBIO_PRODUCTS_INSERT_REQUIRES_COMMAND'),
+            TEXT_DEBUG_ENABLED => zen_config('DBIO_DEBUG'),
+            TEXT_DATE_FORMAT => zen_config('DBIO_DEBUG_DATE_FORMAT'),
         ],
         TEXT_DBIO_SYSTEM_SETTINGS => [
            TEXT_MAX_UPLOAD_FILE_SIZE => ini_get('upload_max_filesize'),
            TEXT_CHARSET => CHARSET,
            TEXT_DB_CHARSET => DB_CHARSET,
-           TEXT_DEFAULT_LANGUAGE => DEFAULT_LANGUAGE,
+           TEXT_DEFAULT_LANGUAGE => zen_config('DEFAULT_LANGUAGE'),
         ],
     ];
 ?>

@@ -122,8 +122,8 @@ abstract class DbIoHandler extends base
                 $this->queryCacheOlder = $queryCache;
             }
         }
-        $this->debug = (DBIO_DEBUG !== 'false');
-        switch (DBIO_DEBUG) {
+        $this->debug = (zen_config('DBIO_DEBUG') !== 'false');
+        switch (zen_config('DBIO_DEBUG')) {
             case 'true':
                 $this->debug_level = self::DBIO_INFORMATIONAL | self::DBIO_WARNING | self::DBIO_ERROR | self::DBIO_STATUS;
                 break;
@@ -296,7 +296,7 @@ abstract class DbIoHandler extends base
     public function debugMessage($message, $severity = self::DBIO_INFORMATIONAL, $log_it = false)
     {
         if ($this->debug === true || ($severity & $this->debug_level)) {
-            error_log(date(DBIO_DEBUG_DATE_FORMAT) . ": $message\n", 3, $this->debug_log_file);
+            error_log(date(zen_config('DBIO_DEBUG_DATE_FORMAT')) . ": $message\n", 3, $this->debug_log_file);
         }
         if ($severity & self::DBIO_WARNING) {
             $this->stats['warnings']++;
@@ -331,12 +331,12 @@ abstract class DbIoHandler extends base
             $parsed_date = '';
         } else {
             $date_value = $date_value_in;
-            if (DBIO_IMPORT_DATE_FORMAT !== 'y-m-d') {
+            if (zen_config('DBIO_IMPORT_DATE_FORMAT') !== 'y-m-d') {
                 $date_time_split = explode(' ', $date_value);
                 $needle = (dbio_strpos($date_time_split[0], '/') !== false) ? '/' : '-';
                 $date_split = explode($needle, $date_time_split[0]);
                 if (count($date_split) === 3 && dbio_strlen($date_split[0]) !== 4) {
-                    if (DBIO_IMPORT_DATE_FORMAT === 'd-m-y') {
+                    if (zen_config('DBIO_IMPORT_DATE_FORMAT') === 'd-m-y') {
                         $date_value = sprintf('%u-%02u-%02u', $date_split[2], $date_split[1], $date_split[0]);
                     } else {
                         $date_value = sprintf('%u-%02u-%02u', $date_split[2], $date_split[0], $date_split[1]);
@@ -357,7 +357,7 @@ abstract class DbIoHandler extends base
                 $return_date = false;
             }
         }
-        $this->debugMessage("formatValidateDate: ($date_value_in, $field_type), DBIO_IMPORT_DATE_FORMAT = '" . DBIO_IMPORT_DATE_FORMAT . "', returning ($return_date). Parsed date: " . print_r($parsed_date, true));
+        $this->debugMessage("formatValidateDate: ($date_value_in, $field_type), DBIO_IMPORT_DATE_FORMAT = '" . zen_config('DBIO_IMPORT_DATE_FORMAT') . "', returning ($return_date). Parsed date: " . print_r($parsed_date, true));
         return $return_date;
     }
 
@@ -1065,7 +1065,7 @@ abstract class DbIoHandler extends base
 
     protected function exportEncodeData($fields)
     {
-       return (DBIO_CHARSET === 'utf8') ? $this->encoding->toUTF8($fields) : $this->encoding->toWin1252($fields, IconvOptions::ICONV_TRANSLIT);
+       return (zen_config('DBIO_CHARSET') === 'utf8') ? $this->encoding->toUTF8($fields) : $this->encoding->toWin1252($fields, IconvOptions::ICONV_TRANSLIT);
     }
 
     protected final static function loadHandlerMessageFile($handler_name)
@@ -1076,7 +1076,7 @@ abstract class DbIoHandler extends base
 
     protected final function logCharacterSetConfig()
     {
-        $this->debugMessage('Configured CHARSET (' . CHARSET . '), DB_CHARSET (' . DB_CHARSET . '), DBIO_CHARSET (' . DBIO_CHARSET . '), DEFAULT_LANGUAGE (' . DEFAULT_LANGUAGE . '), ' . dbio_get_string_info());
+        $this->debugMessage('Configured CHARSET (' . CHARSET . '), DB_CHARSET (' . DB_CHARSET . '), DBIO_CHARSET (' . zen_config('DBIO_CHARSET') . '), DEFAULT_LANGUAGE (' . zen_config('DEFAULT_LANGUAGE') . '), ' . dbio_get_string_info());
     }
 
     // -----
@@ -1636,13 +1636,13 @@ abstract class DbIoHandler extends base
             $this->config['include_header'] = true;
         }
         if (!isset($this->config['delimiter'])) {
-            $this->config['delimiter'] = (DBIO_CSV_DELIMITER === 'TAB') ? "\t" : DBIO_CSV_DELIMITER;
+            $this->config['delimiter'] = (zen_config('DBIO_CSV_DELIMITER') === 'TAB') ? "\t" : zen_config('DBIO_CSV_DELIMITER');
         }
         if (!isset($this->config['enclosure'])) {
-            $this->config['enclosure'] = DBIO_CSV_ENCLOSURE;
+            $this->config['enclosure'] = zen_config('DBIO_CSV_ENCLOSURE');
         }
         if (!isset($this->config['escape'])) {
-            $this->config['escape'] = DBIO_CSV_ESCAPE;
+            $this->config['escape'] = zen_config('DBIO_CSV_ESCAPE');
         }
         $this->config['export_only'] = (isset($this->config['export_only']) && $this->config['export_only'] === true);
 
