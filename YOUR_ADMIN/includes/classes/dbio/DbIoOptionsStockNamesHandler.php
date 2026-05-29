@@ -1,9 +1,9 @@
 <?php
 // -----
-// Part of the DataBase Import/Export (aka dbIO) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2022, Vinos de Frutas Tropicales.
+// Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
+// Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
 //
-// Last Updated:  POSM v4.4.0
+// Last Updated:  DbIo v2.2.0
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -30,13 +30,13 @@ class DbIoOptionsStockNamesHandler extends DbIoHandler
     {
         global $sniffer;
 
-        if (!defined('DBIO_CURRENT_VERSION') || DBIO_CURRENT_VERSION < '1.0.1' || !$sniffer->table_exists(TABLE_PRODUCTS_OPTIONS_STOCK_NAMES)) {
-            trigger_error("Incompatible DbIo version (" . DBIO_CURRENT_VERSION . ") detected.  Either update the DbIo plugin to v1.0.1 or later or remove this file.", E_USER_WARNING);
+        if (zen_config('DBIO_CURRENT_VERSION', '0.0.0') < '1.1.0' || !defined('TABLE_PRODUCTS_OPTIONS_STOCK_NAMES') || !$sniffer->table_exists(TABLE_PRODUCTS_OPTIONS_STOCK_NAMES)) {
+            trigger_error("Incompatible DbIo version (" . zen_config('DBIO_CURRENT_VERSION', '0.0.0') . ") detected.  Either update the DbIo plugin to v1.0.1 or later or remove this file.", E_USER_WARNING);
             return false;
         }
         DbIoHandler::loadHandlerMessageFile('OptionsStockNames');
         return [
-            'version' => '1.0.1',
+            'version' => '2.2.0',
             'handler_version' => '1.0.0',
             'include_header' => true,
             'export_only' => false,

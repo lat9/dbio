@@ -1,9 +1,9 @@
 <?php
 // -----
-// Part of the "Product Options Stock Manager" plugin by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2014-2022 Vinos de Frutas Tropicales
+// Part of the DataBase Import/Export (aka DbIo) plugin by Cindy Merkin (cindy@vinosdefrutastropicales.com)
+// Copyright (c) 2014-2026 Vinos de Frutas Tropicales
 //
-// Last Updated:  POSM v4.4.0
+// Last updated:  DbIo v2.2.0
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -30,16 +30,7 @@ class DbIoOptionsStockBase extends DbIoHandler
     // -----
     // Handler-specific variable declarations.
     //
-    protected
-        $products_id;
-
-    // -----
-    // Must be overridden by the actual handler.
-    //
-    public static function getHandlerInformation()
-    {
-        return false;
-    }
+    protected string $products_id;
 
     // -----
     // Update the export header, inserting the product's name and model and the option-combinations' name list and removing
@@ -107,10 +98,11 @@ class DbIoOptionsStockBase extends DbIoHandler
     // construction to have the handler set its database-related configuration.  It needs to be defined
     // here for class-inheritance but the actual handlers need to supply it!
     //
+    // If not overridden, a PHP fatal error is logged and a `zen_exit` is made!
+    //
     protected function setHandlerConfiguration()
     {
-        trigger_error('The real handler needs to supply this function!', E_USER_ERROR);
-        exit();
+        dbioLogError('The real handler needs to supply this function!');
     }
 
     // -----
@@ -131,7 +123,7 @@ class DbIoOptionsStockBase extends DbIoHandler
     // record using the products_id associated with an input products_model, so long as that model number
     // is unique.
     //
-    protected function posmBaseDetermineProductsId($data)
+    protected function posmBaseDetermineProductsId(array $data): bool
     {
         global $db;
 
@@ -264,7 +256,7 @@ class DbIoOptionsStockBase extends DbIoHandler
                     }
                 }
                 if ($option_error === true) {
-                    $option_message = 'unknown option-combinations specified (' . str_replace (self::OPTION_OUTER_SEPARATOR . self::OPTION_OUTER_SEPARATOR, self::OPTION_OUTER_SEPARATOR, $option_message) . ')';
+                    $option_message = 'unknown option-combinations specified (' . str_replace(self::OPTION_OUTER_SEPARATOR . self::OPTION_OUTER_SEPARATOR, self::OPTION_OUTER_SEPARATOR, $option_message) . ')';
                 }
             } else {
                 foreach ($combinations as $current_combination) {
@@ -339,7 +331,7 @@ class DbIoOptionsStockBase extends DbIoHandler
             "SELECT products_options_id
               FROM " . TABLE_PRODUCTS_OPTIONS . "
              WHERE products_options_name = '" . $db->prepare_input($option_name) . "'
-               AND language_id = " . $this->languages[DEFAULT_LANGUAGE]
+               AND language_id = " . $this->languages[zen_config('DEFAULT_LANGUAGE')]
         );
         switch ($option_info->RecordCount()) {
             case 0:
@@ -384,7 +376,7 @@ class DbIoOptionsStockBase extends DbIoHandler
             "SELECT products_options_values_id, products_options_values_sort_order
              FROM " . TABLE_PRODUCTS_OPTIONS_VALUES . "
             WHERE products_options_values_name = '" . $db->prepare_input($option_value_name) . "'
-              AND language_id = " . $this->languages[DEFAULT_LANGUAGE]
+              AND language_id = " . $this->languages[zen_config('DEFAULT_LANGUAGE')]
         );
         switch ($option_value_info->RecordCount()) {
             // -----
