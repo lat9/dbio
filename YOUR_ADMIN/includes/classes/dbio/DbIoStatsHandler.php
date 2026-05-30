@@ -1,7 +1,9 @@
 <?php
+
+declare(strict_types=1);
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2022, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
 //
 // Last updated: DbIo v2.0.0.
 //
@@ -14,15 +16,14 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 class DbIoStatsHandler extends DbIoHandler
 {
-    protected
-        $stats_records_count;
+    protected int $stats_records_count;
 
-    public static function getHandlerInformation()
+    public static function getHandlerInformation(): array|false
     {
-        DbIoHandler::loadHandlerMessageFile('Stats'); 
+        DbIoHandler::loadHandlerMessageFile('Stats');
         return [
-            'version' => '2.0.0',
-            'handler_version' => '1.0.0',
+            'version' => '2.2.0',
+            'handler_version' => '2.2.0',
             'include_header' => true,
             'export_only' => true,
             'description' => DBIO_STATS_DESCRIPTION,
@@ -34,7 +35,7 @@ class DbIoStatsHandler extends DbIoHandler
     // the number of records in the 'dbio_stats' table, so that the table is truncated (i.e. emptied)
     // after the last record's export.
     //
-    public function exportGetHeader()
+    public function exportGetHeader(): false|array
     {
         global $db;
 
@@ -70,7 +71,7 @@ class DbIoStatsHandler extends DbIoHandler
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the DbIo operations.
     //
-    protected function setHandlerConfiguration()
+    protected function setHandlerConfiguration(): void
     {
         $this->stats['report_name'] = 'Stats';
         $this->config = self::getHandlerInformation();

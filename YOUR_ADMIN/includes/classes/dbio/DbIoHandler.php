@@ -18,95 +18,83 @@ abstract class DbIoHandler extends base
 //                                    C O N S T A N T S
 // ----------------------------------------------------------------------------------
     // ----- Interface Constants -----
-    const DBIO_HANDLER_VERSION   = '2.2.0';
+    public const string DBIO_HANDLER_VERSION   = '2.2.0';
     // ----- Field-Import Status Values -----
-    const DBIO_IMPORT_OK         = '--ok--';
-    const DBIO_NO_IMPORT         = '--none--';
-    const DBIO_SPECIAL_IMPORT    = '--special--';
-    const DBIO_UNKNOWN_VALUE     = '--unknown--';
+    public const string DBIO_IMPORT_OK = '--ok--';
+    public const string DBIO_NO_IMPORT = '--none--';
+    public const string DBIO_SPECIAL_IMPORT = '--special--';
+    public const string DBIO_UNKNOWN_VALUE = '--unknown--';
     // ----- DbIo commands -----
-    const DBIO_COMMAND_REMOVE    = 'REMOVE';
+    public const string DBIO_COMMAND_REMOVE = 'REMOVE';
     // ----- Message Severity ----- ** Note ** This set of constants are bit-flags!
-    const DBIO_INFORMATIONAL     = 1;
-    const DBIO_WARNING           = 2;
-    const DBIO_ERROR             = 4;
-    const DBIO_STATUS            = 8;
-    const DBIO_ACTIVITY          = 16;
+    public const int DBIO_INFORMATIONAL = 1;
+    public const int DBIO_WARNING = 2;
+    public const int DBIO_ERROR = 4;
+    public const int DBIO_STATUS = 8;
+    public const int DBIO_ACTIVITY = 16;
     // ----- Handler configuration bit switches -----
-    const DBIO_FLAG_NONE         = 0;       //- No special handling
-    const DBIO_FLAG_PER_LANGUAGE = 1;       //- Field is handled once per language
-    const DBIO_FLAG_NO_EXPORT    = 2;       //- Possibly set during export-customization to indicate that the field should not be exported
-    const DBIO_FLAG_FIELD_SELECT = 4;       //- Indicates that an additional-header field has a companion select-field
+    public const int DBIO_FLAG_NONE = 0;            //- No special handling
+    public const int DBIO_FLAG_PER_LANGUAGE = 1;    //- Field is handled once per language
+    public const int DBIO_FLAG_NO_EXPORT = 2;       //- Possibly set during export-customization to indicate that the field should not be exported
+    public const int DBIO_FLAG_FIELD_SELECT = 4;    //- Indicates that an additional-header field has a companion select-field
     // ----- Handler key-configuration bit-switches -----
-    const DBIO_KEY_IS_VARIABLE   = 1;       //- The associated key is mapped to an imported variable
-    const DBIO_KEY_IS_FIXED      = 2;       //- The key is mapped to a fixed database field.
-    const DBIO_KEY_SELECTED      = 4;       //- The key value is selected as part of the key-checking SQL (at least one required).
-    const DBIO_KEY_IS_MASTER     = 8;       //- The key value is selected as part of the query, but is not mapped
-    const DBIO_KEY_IS_ALTERNATE  = 16;      //- The key is used in addition to the "master" key setting to locate a unique matching record
+    public const int DBIO_KEY_IS_VARIABLE = 1;      //- The associated key is mapped to an imported variable
+    public const int DBIO_KEY_IS_FIXED = 2;         //- The key is mapped to a fixed database field.
+    public const int DBIO_KEY_SELECTED = 4;         //- The key value is selected as part of the key-checking SQL (at least one required).
+    public const int DBIO_KEY_IS_MASTER = 8;        //- The key value is selected as part of the query, but is not mapped
+    public const int DBIO_KEY_IS_ALTERNATE = 16;    //- The key is used in addition to the "master" key setting to locate a unique matching record
     // ----- Handler language_override values -----
-    const DBIO_OVERRIDE_ALL      = 1;       //- ALL fields within the language-based table use only the DEFAULT_LANGUAGE
-    const DBIO_OVERRIDE_STRING   = 2;       //- String fields are I/O with language; others aren't.
+    public const int DBIO_OVERRIDE_ALL = 1;     //- ALL fields within the language-based table use only the DEFAULT_LANGUAGE
+    public const int DBIO_OVERRIDE_STRING = 2;  //- String fields are I/O with language; others aren't.
 
-    public
-        $stats;
+    public array $stats;
 
-    protected
-        $queryCache = null,
-        $queryCacheOlder = null,
-        $debug,
-        $debug_level,
-        $debug_log_file,
-        $version_mismatch,
-
-        $operation,
-
-        $languages,
-        $first_language_code,
-        $export_language,
-        $import_language_id,
-        $language_id,
-
-        $encoding,
-        $charset_is_utf8,
-        $config,
-        $message,
-        $io_errors,
-
-        $tables,
-        $customized_fields,
-        $unused_fields,
-
-        $select_clause,
-        $from_clause,
-        $where_clause,
-        $order_by_clause,
-        $headers,
-        $header_columns,
-        $header_field_count,
-
-        $saved_data,
-        $handler_does_import,
-        $handler_overrides_import,
-        $import_sql_data,
-
-        $table_names,
-
-        $key_index,
-        $key_fields,
-        $key_field_names,
-        $key_from_clause,
-        $key_select_clause,
-        $key_where_clause,
-        $alternate_key_included,
-        $variable_keys,
-
-        $dbio_command_index,
-
-        $record_status,
-        $import_action,
-        $import_is_insert,
-        $data_key_sql,
-        $data_key_check;
+    protected bool $version_mismatch;
+    protected array $language_id;
+    protected bool $alternate_key_included;
+    protected bool $charset_is_utf8;
+    protected array $config;
+    protected array $customized_fields;
+    protected object $data_key_check;
+    protected string $data_key_sql;
+    protected bool $debug;
+    protected int $debug_level;
+    protected string $debug_log_file;
+    protected int $dbio_command_index;
+    protected object $encoding;
+    protected string $export_language;
+    protected string|int|false $first_language_code;
+    protected string $from_clause;
+    protected bool $handler_does_import;
+    protected bool $handler_overrides_import;
+    protected int $header_columns;
+    protected int $header_field_count;
+    protected array $headers;
+    protected string $import_action;
+    protected bool $import_is_insert;
+    protected $import_language_id;
+    protected array $import_sql_data;
+    protected array $io_errors;
+    protected string $key_field_names;
+    protected array $key_fields;
+    protected string $key_from_clause;
+    protected false|string $key_index;
+    protected string $key_select_clause;
+    protected string $key_where_clause;
+    protected array $languages;
+    protected string $message;
+    protected string $operation;
+    protected string $order_by_clause;
+    protected ?object $queryCache = null;
+    protected ?object $queryCacheOlder = null;
+    protected bool $record_status;
+    protected array $saved_data;
+    protected string $select_clause;
+    protected array $table_names;
+    protected array $tables;
+    protected array $unused_fields;
+    protected array $variable_keys;
+    protected string $where_clause;
 
 // ----------------------------------------------------------------------------------
 //                             P U B L I C   F U N C T I O N S
@@ -150,7 +138,7 @@ abstract class DbIoHandler extends base
         if (!class_exists('language')) {
             require DIR_FS_CATALOG . DIR_WS_CLASSES . 'language.php';
         }
-        $languages = new language;
+        $languages = new language();
         foreach ($languages->catalog_languages as $iso_code_2 => $language_info) {
             $this->languages[$iso_code_2] = $language_info['id'];
         }
@@ -172,11 +160,13 @@ abstract class DbIoHandler extends base
         $this->initializeDbIo();
     }
 
-    public static function getHandlerInformation()
+    public static function getHandlerInformation(): array|false
     {
         dbioLogError("Missing handler information for the active report");
+        return false;   //- Note will never be executed, as dbioLogError exits, but needed for output type-hint
     }
 
+    //steve cannot set return type: Ordersbase
     public static function getHandlerExportFilters()
     {
         return false;
@@ -185,7 +175,7 @@ abstract class DbIoHandler extends base
     // -----
     // Returns the current version of the DbIoHandler class.
     //
-    public function getHandlerVersion()
+    public function getHandlerVersion(): string
     {
         return self::DBIO_HANDLER_VERSION;
     }
@@ -193,7 +183,7 @@ abstract class DbIoHandler extends base
     // -----
     // Set the current time into the process's start time.
     //
-    public function startTimer()
+    public function startTimer(): void
     {
         $this->stats['start_time'] = microtime(true);
     }
@@ -201,7 +191,7 @@ abstract class DbIoHandler extends base
     // -----
     // Stops a (presumed previously-set) timer, collecting the statistics for the duration.
     //
-    public function stopTimer($record_statistics = true)
+    public function stopTimer($record_statistics = true): void
     {
         $stop_time = microtime(true);
         $this->stats['parse_time'] = $stop_time - $this->stats['start_time'];
@@ -227,7 +217,7 @@ abstract class DbIoHandler extends base
     // - memory_usage ... the memory usage at completion
     // - peak_memory_usage ... the highest memory usage
     //
-    public function getStatsArray()
+    public function getStatsArray(): array
     {
         return $this->stats;
     }
@@ -235,15 +225,15 @@ abstract class DbIoHandler extends base
     // -----
     // Return the language-specific description for the handler.
     //
-    public function getHandlerDescription()
+    public function getHandlerDescription(): string
     {
-        return (isset($this->config) && isset($this->config['description'])) ? $this->config['description'] : DBIO_FORMAT_TEXT_NO_DESCRIPTION;
+        return $this->config['description'] ?? DBIO_FORMAT_TEXT_NO_DESCRIPTION;
     }
 
     // -----
     // Return any message (usually an error or warning) from the last action performed by the handler.
     //
-    public function getHandlerMessage()
+    public function getHandlerMessage(): string
     {
         return $this->message;
     }
@@ -267,7 +257,7 @@ abstract class DbIoHandler extends base
     // -----
     // Return the CSV parameters used by the handler.  Note that a handler can override the configuration's default settings.
     //
-    public function getCsvParameters()
+    public function getCsvParameters(): array
     {
         return [
             'delimiter' => $this->config['delimiter'],
@@ -280,20 +270,20 @@ abstract class DbIoHandler extends base
     // Return the array of export-filter "instructions"; return false if no filters are provided by the handler.  These values
     // are handled by the DbIo caller, either a cron-job or the admin's Tools->Database I/O Manager.
     //
-    public function getExportFilters()
+    public function getExportFilters(): false|array
     {
-        return (isset($this->config) && isset($this->config['export_filters']) && is_array($this->config['export_filters'])) ? $this->config['export_filters'] : false;
+        return (isset($this->config['export_filters']) && is_array($this->config['export_filters'])) ? $this->config['export_filters'] : false;
     }
 
-    public function getIOErrors()
+    public function getIOErrors(): array
     {
-        return (isset($this->io_errors)) ? $this->io_errors : [];
+        return $this->io_errors ?? [];
     }
 
     // -----
     // Writes the requested message to the current debug-log file, if DbIo debug is enabled.
     //
-    public function debugMessage($message, $severity = self::DBIO_INFORMATIONAL, $log_it = false)
+    public function debugMessage($message, $severity = self::DBIO_INFORMATIONAL, $log_it = false): void
     {
         if ($this->debug === true || ($severity & $this->debug_level)) {
             error_log(date(zen_config('DBIO_DEBUG_DATE_FORMAT')) . ": $message\n", 3, $this->debug_log_file);
@@ -324,7 +314,7 @@ abstract class DbIoHandler extends base
         }
     }
 
-    public function formatValidateDate($date_value_in, $field_type = 'date', $is_nullable = false)
+    public function formatValidateDate($date_value_in, $field_type = 'date', $is_nullable = false): false|string
     {
         if (empty($date_value_in)) {
             $return_date = ($is_nullable) ? 'null' : false;
@@ -365,7 +355,7 @@ abstract class DbIoHandler extends base
     // This function returns an associative array containing the 'keys' (i.e. required) and 'fields' (i.e. optional) available
     // for export using the current handler.
     //
-    final public function getCustomizableFields()
+    final public function getCustomizableFields(): array
     {
         $customizable_fields = [];
         if (isset($this->config['allow_export_customizations']) && $this->config['allow_export_customizations'] === true) {
@@ -413,7 +403,7 @@ abstract class DbIoHandler extends base
     // 2) Calling this function with an empty array essentially disables the table's export!
     // 3) For proper operation, this function needs to be called prior to any call to the class' exportInitialize function!
     //
-    final public function exportCustomizeFields($customized_fields)
+    final public function exportCustomizeFields($customized_fields): bool
     {
         $customized = false;
         if (is_array($customized_fields) && isset($this->config['allow_export_customizations']) && $this->config['allow_export_customizations'] === true) {
@@ -428,7 +418,7 @@ abstract class DbIoHandler extends base
     // -----
     // Initialize the DbIo export handling.
     //
-    public function exportInitialize($language = 'all')
+    public function exportInitialize($language = 'all'): bool
     {
         $this->logCharacterSetConfig();
 
@@ -496,7 +486,7 @@ abstract class DbIoHandler extends base
     // Returns a boolean (true/false) indication of whether the export's initialization was successful.  If unsuccessful, the handler
     // is **assumed** to have set its reason into the class message variable.
     //
-    public function exportFinalizeInitialization()
+    public function exportFinalizeInitialization(): bool
     {
         $this->debugMessage("exportFinalizeInitialization\n" . print_r($this, true));
         return true;
@@ -509,7 +499,7 @@ abstract class DbIoHandler extends base
     // If no header is to be returned, the function returns (bool)false.  Otherwise, the exported record-count is incremented by 1 (to
     // reflect the header's output) and the array of header titles is returned to the caller.
     //
-    public function exportGetHeader()
+    public function exportGetHeader(): false|array
     {
         $header = false;
         if ($this->config['include_header'] === true) {
@@ -522,7 +512,7 @@ abstract class DbIoHandler extends base
     // -----
     // If properly initialized, creates and returns the SQL query associated with the current export.
     //
-    public function exportGetSql($sql_limit = '')
+    public function exportGetSql($sql_limit = ''): string
     {
         if (!isset($this->export_language) || !isset($this->select_clause)) {
             dbioLogError('Export aborted: DbIo export sequence error; not previously initialized.');
@@ -563,7 +553,7 @@ abstract class DbIoHandler extends base
         return $this->exportEncodeData($fields);
     }
 
-    public function importInitialize($language = 'all', $operation = 'check')
+    public function importInitialize($language = 'all', $operation = 'check'): bool
     {
         $this->logCharacterSetConfig();
 
@@ -659,7 +649,7 @@ abstract class DbIoHandler extends base
         return $import_ok;
     }
 
-    public function importGetHeader($header)
+    public function importGetHeader($header): bool
     {
         if (!isset($this->headers)) {
             dbioLogError("Import aborted, sequencing error. Can't get the header before overall initialization.");
@@ -760,7 +750,7 @@ abstract class DbIoHandler extends base
                     }
 
                     $field_type = false;
-                    if (isset($this->tables[$table_name]) && isset($this->tables[$table_name]['fields'][$current_field])) {
+                    if (isset($this->tables[$table_name]['fields'][$current_field])) {
                         $valid_string_field = false;
                         switch ($this->tables[$table_name]['fields'][$current_field]['data_type']) {
                             case 'int':
@@ -861,7 +851,7 @@ abstract class DbIoHandler extends base
     // -----
     // This function is the heart of the DbIo-Import handling, processing the current CSV record into the store's database.
     //
-    public function importCsvRecord(array $data)
+    public function importCsvRecord(array $data): void
     {
         global $db;
 
@@ -1065,16 +1055,16 @@ abstract class DbIoHandler extends base
 
     protected function exportEncodeData($fields)
     {
-       return (zen_config('DBIO_CHARSET') === 'utf8') ? $this->encoding->toUTF8($fields) : $this->encoding->toWin1252($fields, IconvOptions::ICONV_TRANSLIT);
+        return (zen_config('DBIO_CHARSET') === 'utf8') ? $this->encoding->toUTF8($fields) : $this->encoding->toWin1252($fields, IconvOptions::ICONV_TRANSLIT);
     }
 
-    protected final static function loadHandlerMessageFile($handler_name)
+    protected final static function loadHandlerMessageFile($handler_name): void
     {
         global $languageLoader;
         $languageLoader->loadExtraLanguageFiles(DIR_FS_DBIO_LANGUAGES, $_SESSION['language'], 'DbIo' . $handler_name . 'Handler.php', '/dbio');
     }
 
-    protected final function logCharacterSetConfig()
+    protected final function logCharacterSetConfig(): void
     {
         $this->debugMessage('Configured CHARSET (' . CHARSET . '), DB_CHARSET (' . DB_CHARSET . '), DBIO_CHARSET (' . zen_config('DBIO_CHARSET') . '), DEFAULT_LANGUAGE (' . zen_config('DEFAULT_LANGUAGE') . '), ' . dbio_get_string_info());
     }
@@ -1085,7 +1075,7 @@ abstract class DbIoHandler extends base
     //
     abstract protected function setHandlerConfiguration();
 
-    protected function exportInitializeAll()
+    protected function exportInitializeAll(): bool
     {
         foreach ($this->config['tables'] as $config_table_name => $config_table_info) {
             $table_prefix = $this->exportInitializeFromClause($config_table_name, $config_table_info);
@@ -1161,7 +1151,7 @@ abstract class DbIoHandler extends base
         return true;  //-Indicate that the export has been successfully initialized
     }
 
-    protected function exportInitializeCustomized()
+    protected function exportInitializeCustomized(): bool
     {
         if (isset($this->config['fixed_headers'])) {
             $initialized = false;
@@ -1267,7 +1257,7 @@ abstract class DbIoHandler extends base
         return $table_prefix;
     }
 
-    protected function insertBeforeKey($array, $key, $data)
+    protected function insertBeforeKey($array, $key, $data): array
     {
         $offset = array_search($key, array_keys($array));
         if ($offset === false) {
@@ -1293,7 +1283,7 @@ abstract class DbIoHandler extends base
         return false;
     }
 
-    protected function importCheckKeyValue($data)
+    protected function importCheckKeyValue($data): bool
     {
         return $this->record_status;
     }
@@ -1306,7 +1296,7 @@ abstract class DbIoHandler extends base
     // -----
     // Retrieve the value associated with the specified field name in the current data record.
     //
-    protected function importGetFieldValue($field_name, $data)
+    protected function importGetFieldValue($field_name, $data): false|string
     {
         $this->debugMessage("importGetFieldValue for '$field_name' from " . print_r($data, true) . print_r($this->headers, true));
         $field_index = array_search($field_name, $this->headers);
@@ -1328,7 +1318,7 @@ abstract class DbIoHandler extends base
         return ($field_index === false) ? false : $data[$field_index];
     }
 
-    protected function importInitializeKeys()
+    protected function importInitializeKeys(): bool
     {
         $keys_ok = true;
         $this->key_from_clause = $this->key_select_clause = $this->key_where_clause = '';
@@ -1397,7 +1387,7 @@ abstract class DbIoHandler extends base
     // Called as the very last step of an import's header processing (so long as no previous error), giving a handler
     // one last time to verify that the header is acceptable.  Return true if the initialization is successful; false, otherwise.
     //
-    protected function importFinalizeHeader()
+    protected function importFinalizeHeader(): bool
     {
         return true;
     }
@@ -1411,7 +1401,7 @@ abstract class DbIoHandler extends base
         }
         return $sql_template;
     }
-
+//steve string everywhere except false in DbIoProductsAttribsRawHandler.php
     protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
     {
         global $db;
@@ -1501,12 +1491,12 @@ abstract class DbIoHandler extends base
     //
     // Note: If a handler sets config['handler_does_import'] = true and does NOT supply this function, an error log will be generated.
     //
-    protected function importFinishProcessing()
+    protected function importFinishProcessing(): void
     {
         $this->debugMessage(sprintf(DBIO_ERROR_HANDLER_MISSING_FUNCTION, $this->stats['report_name'], 'importFinishProcessing'), self::DBIO_ERROR);
     }
 
-    protected function importProcessField($table_name, $field_name, $language_id, $field_value)
+    protected function importProcessField($table_name, $field_name, $language_id, $field_value): void
     {
         $this->debugMessage("importProcessField ($table_name, $field_name, $language_id, $field_value)");
         if ($table_name === self::DBIO_SPECIAL_IMPORT) {
@@ -1534,7 +1524,8 @@ abstract class DbIoHandler extends base
                         $field_value = 'null';
                         break;
                     }
-                    if (!preg_match('/^-?\d+$/', $field_value)) {
+                    //steve https://github.com/lat9/dbio/issues/246
+                    if (!preg_match('/^-?\d+$/', (string)$field_value)) {
                         $field_error = true;
                         $this->debugMessage("[*] $import_table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is not an integer", self::DBIO_ERROR);
                     }
@@ -1596,7 +1587,7 @@ abstract class DbIoHandler extends base
         }
     }
 
-    protected function importAddField($table_name, $field_name, $field_value)
+    protected function importAddField($table_name, $field_name, $field_value): void
     {
         $this->debugMessage("importAddField ($table_name, $field_name, $field_value)");
         $this->import_sql_data[$table_name][$field_name]['value'] = $field_value;
@@ -1610,7 +1601,7 @@ abstract class DbIoHandler extends base
     //                           that the field is calculated separately by the handler's processing.
     // - DBIO_SPECIAL_IMPORT ... The field requires special-handling by the handler to create the associated database elements.
     //
-    protected function importHeaderFieldCheck($field_name)
+    protected function importHeaderFieldCheck($field_name): string
     {
         return self::DBIO_IMPORT_OK;
     }
@@ -1619,7 +1610,7 @@ abstract class DbIoHandler extends base
 //                      P R I V A T E   F U N C T I O N S
 // ----------------------------------------------------------------------------------
 
-    private function initializeDbIo()
+    private function initializeDbIo(): void
     {
         $this->message = '';
         $this->version_mismatch = false;
@@ -1666,7 +1657,7 @@ abstract class DbIoHandler extends base
     // as being an auto-increment field, which has "special" interpretation by the DbIo processing.  If that field is found
     // within the processing, simply mark it as non-auto-increment; ZC1.5.5 and later already do this.
     //
-    private function initializeTableFields($table_name, $table_config)
+    private function initializeTableFields($table_name, $table_config): void
     {
         global $db;
 
@@ -1756,9 +1747,9 @@ abstract class DbIoHandler extends base
         return $return_value;
     }
 
-    protected function headerInsertColumns($after_key, $insert_array)
+    protected function headerInsertColumns($after_key, $insert_array): void
     {
-        if (array_search($after_key, $this->headers) === false) {
+        if (!in_array($after_key, $this->headers)) {
             dbioLogError("Unknown key ($after_key) requested");
         } else {
             foreach ($insert_array as $current_value) {

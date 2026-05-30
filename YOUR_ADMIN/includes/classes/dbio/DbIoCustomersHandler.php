@@ -1,9 +1,9 @@
 <?php
 // -----
 // Part of the DataBase Import/Export (aka dbIO) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2022, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.0.
+// Last updated: DbIo v2.2.0
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -14,7 +14,7 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 class DbIoCustomersHandler extends DbIoHandler
 {
-    public static function getHandlerInformation()
+    public static function getHandlerInformation(): false|array
     {
         DbIoHandler::loadHandlerMessageFile('Customers');
         return [
@@ -59,7 +59,7 @@ class DbIoCustomersHandler extends DbIoHandler
                     'address_book_id' => false,
                     'customers_id' => false,
                 ],
-            ], 
+            ],
         ];
     }
 }  //-END class DbIoCustomersHandler

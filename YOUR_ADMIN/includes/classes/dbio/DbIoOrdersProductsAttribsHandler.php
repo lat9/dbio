@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2016-2022, Vinos de Frutas Tropicales.
@@ -13,10 +15,9 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 class DbIoOrdersProductsAttribsHandler extends DbIoOrdersProductsHandler
 {
-    protected
-        $last_orders_products_id_handled;
+    protected string $last_orders_products_id_handled;
 
-    public static function getHandlerInformation()
+    public static function getHandlerInformation(): false|array
     {
         DbIoHandler::loadHandlerMessageFile ('OrdersProductsAttribs');
         $handler_info = parent::getHandlerInformation ();
@@ -29,7 +30,7 @@ class DbIoOrdersProductsAttribsHandler extends DbIoOrdersProductsHandler
     // Let the OrdersProducts handler do its thing, gathering the base order and product information, then check to
     // see if the current product has any attributes ... and add them.  Note that
     //
-    public function exportPrepareFields (array $fields)
+    public function exportPrepareFields(array $fields): array
     {
         $fields = parent::exportPrepareFields ($fields);
         if (!isset($this->last_orders_products_id_handled) || $this->last_orders_products_id_handled !== $fields['orders_products_id']) {
@@ -55,7 +56,7 @@ class DbIoOrdersProductsAttribsHandler extends DbIoOrdersProductsHandler
     // configuration for the dbIO operations.  Since this handler "extends" the OrdersProducts handler, let
     // that handler provide the default configuration, then make extension-specific overrides.
     //
-    protected function setHandlerConfiguration()
+    protected function setHandlerConfiguration(): void
     {
         parent::setHandlerConfiguration();
         $this->stats['report_name'] = 'OrdersProductsAttribs';

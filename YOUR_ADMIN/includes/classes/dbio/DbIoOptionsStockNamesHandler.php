@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
@@ -26,18 +28,18 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 class DbIoOptionsStockNamesHandler extends DbIoHandler
 {
-    public static function getHandlerInformation()
+    public static function getHandlerInformation(): array|false
     {
         global $sniffer;
 
-        if (zen_config('DBIO_CURRENT_VERSION', '0.0.0') < '1.1.0' || !defined('TABLE_PRODUCTS_OPTIONS_STOCK_NAMES') || !$sniffer->table_exists(TABLE_PRODUCTS_OPTIONS_STOCK_NAMES)) {
-            trigger_error("Incompatible DbIo version (" . zen_config('DBIO_CURRENT_VERSION', '0.0.0') . ") detected.  Either update the DbIo plugin to v1.0.1 or later or remove this file.", E_USER_WARNING);
+        if (zen_config('DBIO_CURRENT_VERSION', '0.0.0') < '2.2.0' || !defined('TABLE_PRODUCTS_OPTIONS_STOCK_NAMES') || !$sniffer->table_exists(TABLE_PRODUCTS_OPTIONS_STOCK_NAMES)) {
+            trigger_error("Incompatible DbIo version (" . zen_config('DBIO_CURRENT_VERSION', '0.0.0') . ") detected.  Either update the DbIo plugin to v2.2.0 or later or remove this file.", E_USER_WARNING);
             return false;
         }
         DbIoHandler::loadHandlerMessageFile('OptionsStockNames');
         return [
             'version' => '2.2.0',
-            'handler_version' => '1.0.0',
+            'handler_version' => '2.2.0',
             'include_header' => true,
             'export_only' => false,
             'description' => DBIO_OPTIONSSTOCKNAMES_DESCRIPTION,
@@ -52,7 +54,7 @@ class DbIoOptionsStockNamesHandler extends DbIoHandler
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the dbIO operations.
     //
-    protected function setHandlerConfiguration()
+    protected function setHandlerConfiguration(): void
     {
         $this->stats['report_name'] = 'OptionsStockNames';
         $this->config = self::getHandlerInformation();

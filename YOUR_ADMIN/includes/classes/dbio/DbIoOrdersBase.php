@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2017-2025, Vinos de Frutas Tropicales.
@@ -60,7 +62,7 @@ class DbIoOrdersBase extends DbIoHandler
     // Returns a boolean (true/false) indication of whether the export's initialization was successful.  If unsuccessful, the handler
     // is **assumed** to have set its reason into the class message variable.
     //
-    public function exportFinalizeInitialization()
+    public function exportFinalizeInitialization(): bool
     {
         // -----
         // Check to see if any of this handler's filter variables have been set.  If set, check the values and then
@@ -95,7 +97,7 @@ class DbIoOrdersBase extends DbIoHandler
     // construction to have the handler set its database-related configuration.  It needs to be defined
     // here for class-inheritance but the actual handlers need to supply it!
     //
-    protected function setHandlerConfiguration()
+    protected function setHandlerConfiguration(): void
     {
         dbioLogError('The real handler needs to supply this function!');
     }

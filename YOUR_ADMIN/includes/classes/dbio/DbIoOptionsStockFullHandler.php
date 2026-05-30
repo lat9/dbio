@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2014-2026 Vinos de Frutas Tropicales
@@ -22,19 +24,19 @@ class DbIoOptionsStockFullHandler extends DbIoOptionsStockBase
     // -----
     // Handler-specific variable declarations.
     //
-    protected $saved_data;
+    protected array $saved_data;
 
-    public static function getHandlerInformation()
+    public static function getHandlerInformation(): array|false
     {
         global $sniffer;
-        if (zen_config('DBIO_CURRENT_VERSION', '0.0.0') < '1.1.0' || !defined('TABLE_PRODUCTS_OPTIONS_STOCK') || !$sniffer->table_exists(TABLE_PRODUCTS_OPTIONS_STOCK)) {
-            trigger_error("Incompatible DbIo version (" . zen_config('DBIO_CURRENT_VERSION', '0.0.0') . ") detected.  Either update the DbIo plugin to v1.1.0 or later or remove this file.", E_USER_WARNING);
+        if (zen_config('DBIO_CURRENT_VERSION', '0.0.0') < '2.2.0' || !defined('TABLE_PRODUCTS_OPTIONS_STOCK') || !$sniffer->table_exists(TABLE_PRODUCTS_OPTIONS_STOCK)) {
+            trigger_error("Incompatible DbIo version (" . zen_config('DBIO_CURRENT_VERSION', '0.0.0') . ") detected.  Either update the DbIo plugin to v2.2.0 or later or remove this file.", E_USER_WARNING);
             return false;
         }
         DbIoHandler::loadHandlerMessageFile('OptionsStockFull');
         return [
             'version' => '2.2.0',
-            'handler_version' => '1.1.0',
+            'handler_version' => '2.2.0',
             'include_header' => true,
             'export_only' => false,
             'description' => DBIO_OPTIONSSTOCKFULL_DESCRIPTION,
@@ -45,7 +47,7 @@ class DbIoOptionsStockFullHandler extends DbIoOptionsStockBase
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the DbIo operations.
     //
-    protected function setHandlerConfiguration()
+    protected function setHandlerConfiguration(): void
     {
         $this->stats['report_name'] = 'OptionsStockFull';
         $this->config = self::getHandlerInformation();
@@ -108,7 +110,7 @@ class DbIoOptionsStockFullHandler extends DbIoOptionsStockBase
     // This report's import handling is a little different.  The base class' handling is used to determine whether an options' stock
     // record exists for the current CSV record's specified product's ID.
     //
-    protected function importCheckKeyValue($data)
+    protected function importCheckKeyValue($data): bool
     {
         global $db;
 
@@ -184,7 +186,7 @@ class DbIoOptionsStockFullHandler extends DbIoOptionsStockBase
     //
     // Note: Unlike other base-class functions, this function is a total override; calling the parent function will result in a record-import error.
     //
-    protected function importFinishProcessing()
+    protected function importFinishProcessing(): void
     {
         global $db;
 

@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
@@ -22,7 +24,7 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 class DbIoProductsAttribsRawHandler extends DbIoHandler
 {
-    public static function getHandlerInformation()
+    public static function getHandlerInformation(): array|false
     {
         DbIoHandler::loadHandlerMessageFile('ProductsAttribsRaw'); 
         return [
@@ -38,7 +40,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     // There are some "subtleties" about this report that require some force-feeding for the SQL necessary to properly
     // create the associated report, so override the export SQL generation.
     //
-    public function exportFinalizeInitialization()
+    public function exportFinalizeInitialization(): bool
     {
         // -----
         // Grab the fields from the various product/attribute tables.
@@ -59,17 +61,17 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
                     ON m.manufacturers_id = p.manufacturers_id";
 
         // -----
-        // Insert the products_model, manufacturers_name, products_options_name and 
+        // Insert the products_model, manufacturers_name, products_options_name and
         // products_options_values_name fields, to make the output a little more readable.
         //
         $this->select_clause = str_replace(
             [
-                'pa.products_id,', 
+                'pa.products_id,',
                 'pa.options_id,',
                 'pa.options_values_id,',
             ],
             [
-                'pa.products_id, p.products_model, m.manufacturers_name,', 
+                'pa.products_id, p.products_model, m.manufacturers_name,',
                 'pa.options_id, po.products_options_name,',
                 'pa.options_values_id, pov.products_options_values_name,',
             ],
@@ -108,23 +110,23 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     public function exportPrepareFields(array $fields)
     {
         if (empty($fields['products_attributes_maxdays'])) {
-            $fields['products_attributes_maxdays'] = 0;
+            $fields['products_attributes_maxdays'] = '0';
         }
         if (empty($fields['products_attributes_maxcount'])) {
-            $fields['products_attributes_maxcount'] = 0;
+            $fields['products_attributes_maxcount'] = '0';
         }
         return parent::exportPrepareFields($fields);
     }
 
 // ----------------------------------------------------------------------------------
-//             I N T E R N A L / P R O T E C T E D   F U N C T I O N S 
+//             I N T E R N A L / P R O T E C T E D   F U N C T I O N S
 // ----------------------------------------------------------------------------------
-    
+
     // -----
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the DbIO operations.
     //
-    protected function setHandlerConfiguration()
+    protected function setHandlerConfiguration(): void
     {
         $this->stats['report_name'] = 'ProductsAttribsRaw';
         $this->config = self::getHandlerInformation();
@@ -163,7 +165,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     // -----
     // While the products_attributes_id field might be specified by the imported CSV, it's not a value that's importable.
     //
-    protected function importHeaderFieldCheck($field_name)
+    protected function importHeaderFieldCheck($field_name): string
     {
         return ($field_name === 'products_attributes_id') ? self::DBIO_NO_IMPORT : self::DBIO_IMPORT_OK;
     }
@@ -176,7 +178,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     // Note: The checking needs to be performed **only** for an insert, since a products_attributes record is located
     // by a match on those three fields.
     //
-    protected function importCheckKeyValue($data)
+    protected function importCheckKeyValue($data): bool
     {
         global $db;
 
@@ -206,7 +208,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
                 $this->debugMessage("ProductsAttribsRawHandler::importCheckKeyValue: Unknown options_id ($options_id) at line #" . $this->stats['record_count'] . ', record not inserted.', self::DBIO_WARNING);
             }
             unset($check);
- 
+
             $options_values_id = (int)$this->importGetFieldValue('options_values_id', $data);
             $check = $db->Execute(
                 "SELECT products_options_values_id
@@ -226,7 +228,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     // This function, called by the base DbIoHandler class when a non-blank v_dbio_command field is found in the
     // current import-record, gives this handler a chance to REMOVE a product option-combination from the database.
     //
-    protected function importHandleDbIoCommand($command, $data)
+    protected function importHandleDbIoCommand($command, $data): bool
     {
         global $db;
 
@@ -268,7 +270,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     // Fix-up any blank values in the attribute's download maxdays/maxcount fields (they're output as blank if no associated downloads-table
     // record is found) to prevent unwanted warnings from being issued.
     //
-    protected function importProcessField($table_name, $field_name, $language_id, $field_value)
+    protected function importProcessField($table_name, $field_name, $language_id, $field_value): void
     {
         if ($table_name === TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
             if (($field_name === 'products_attributes_maxdays' || $field_name === 'products_attributes_maxcount') && empty($field_value)) {
@@ -305,7 +307,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     }
 
     // -----
-    // This function, called to create an import-record's associated SQL, checks to see if the current attribute is to 
+    // This function, called to create an import-record's associated SQL, checks to see if the current attribute is to
     // have an associated download-file, tested by the presence of a value in the 'products_attributes_filename' field in the record.
     //
     protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
@@ -405,17 +407,17 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     // considered 'not good' if it's an empty string, starts with a '.' character (preventing ../filename.ext) or
     // if the name contains one or more of the 'usual' invalid characters.
     //
-    protected function checkDownloadFilename($filename)
+    protected function checkDownloadFilename($filename): bool
     {
         $modifier = (zen_config('DBIO_CHARSET') === 'utf8') ? 'u' : '';
         return !($filename === '' || dbio_substr($filename, 0, 1) === '.' || preg_match('#[<>:"|?*]#' . $modifier, $filename));
     }
 
     // -----
-    // At the end of a record's import, make sure that there's an entry in the po2pov table that ties the just-processed 
+    // At the end of a record's import, make sure that there's an entry in the po2pov table that ties the just-processed
     // option/value pair together and update the associated product's price-sorter.
     //
-    protected function importRecordPostProcess($record_key_value)
+    protected function importRecordPostProcess($record_key_value): void
     {
         global $db;
         if ($this->operation !== 'check') {
@@ -428,7 +430,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
                       LIMIT 1");
                 if ($check->EOF) {
                     $record_inserted = 'yes';
-                    $sql_query = 
+                    $sql_query =
                         "INSERT INTO " . TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS . "
                             (products_options_id, products_options_values_id)
                          VALUES

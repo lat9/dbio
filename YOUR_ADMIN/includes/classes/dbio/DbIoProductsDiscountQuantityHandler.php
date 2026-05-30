@@ -1,9 +1,11 @@
 <?php
+
+declare(strict_types=1);
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2018-2023, Vinos de Frutas Tropicales.
+// Copyright (c) 2018-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.0.
+// Last updated: DbIo v2.2.0
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -14,20 +16,20 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 class DbIoProductsDiscountQuantityHandler extends DbIoHandler
 {
-    const DISCOUNT_TYPE_NONE            = '0';
-    const DISCOUNT_TYPE_PERCENTAGE      = '1';
-    const DISCOUNT_TYPE_ACTUAL_PRICE    = '2';
-    const DISCOUNT_TYPE_AMOUNT_OFF      = '3';
-    
-    const DISCOUNT_TYPE_FROM_PRICE      = '0';
-    const DISCOUNT_TYPE_FROM_SPECIAL    = '1';
-    
-    public static function getHandlerInformation()
+    public const string DISCOUNT_TYPE_NONE = '0';
+    public const string DISCOUNT_TYPE_PERCENTAGE = '1';
+    public const string DISCOUNT_TYPE_ACTUAL_PRICE = '2';
+    public const string DISCOUNT_TYPE_AMOUNT_OFF = '3';
+
+    public const string DISCOUNT_TYPE_FROM_PRICE = '0';
+    public const string DISCOUNT_TYPE_FROM_SPECIAL = '1';
+
+    public static function getHandlerInformation(): array|false
     {
-        DbIoHandler::loadHandlerMessageFile('ProductsDiscountQuantity'); 
+        DbIoHandler::loadHandlerMessageFile('ProductsDiscountQuantity');
         return [
-            'version' => '2.0.0',
-            'handler_version' => '1.0.0',
+            'version' => '2.2.0.0',
+            'handler_version' => '2.2.0',
             'include_header' => true,
             'export_only' => false,
             'description' => DBIO_PRODUCTSDISCOUNTQUANTITY_DESCRIPTION,
@@ -37,7 +39,7 @@ class DbIoProductsDiscountQuantityHandler extends DbIoHandler
     // -----
     // This function overrides the base DbIo SQL query generation.
     //
-    public function exportGetSql($sql_limit = '')
+    public function exportGetSql($sql_limit = ''): string
     {
         $export_sql =
             "SELECT DISTINCT p.products_id, p.products_model, p.products_discount_type, p.products_discount_type_from, p.products_mixed_discount_quantity, GROUP_CONCAT(CONCAT_WS(':', pdq.discount_qty, pdq.discount_price) SEPARATOR ';') AS qty_prices 
@@ -50,14 +52,14 @@ class DbIoProductsDiscountQuantityHandler extends DbIoHandler
     }
 
 // ----------------------------------------------------------------------------------
-//             I N T E R N A L / P R O T E C T E D   F U N C T I O N S 
+//             I N T E R N A L / P R O T E C T E D   F U N C T I O N S
 // ----------------------------------------------------------------------------------
-    
+
     // -----
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the dbIO operations.
     //
-    protected function setHandlerConfiguration()
+    protected function setHandlerConfiguration(): void
     {
         $this->stats['report_name'] = 'ProductsDiscountQuantity';
 
@@ -75,10 +77,10 @@ class DbIoProductsDiscountQuantityHandler extends DbIoHandler
         $this->config['tables'] = [
             TABLE_PRODUCTS => [
                 'alias' => 'p',
-            ], 
+            ],
             TABLE_PRODUCTS_DISCOUNT_QUANTITY => [
                 'alias' => 'pdq',
-            ], 
+            ],
         ];
         $this->config['fixed_headers'] = [
             'products_id' => TABLE_PRODUCTS,
@@ -106,7 +108,7 @@ class DbIoProductsDiscountQuantityHandler extends DbIoHandler
     // For this handler, a import-record must contain either a products_id or products_model that exists within the database or
     // the record cannot be imported.
     //
-    protected function importCheckKeyValue($data)
+    protected function importCheckKeyValue($data): bool
     {
         global $db;
 
@@ -125,7 +127,7 @@ class DbIoProductsDiscountQuantityHandler extends DbIoHandler
     // This function handles any overall record post-processing required for the ProductsDiscountQuantity import, specifically
     // making sure that the products' price sorter is run for the just inserted/updated product.
     //
-    protected function importRecordPostProcess($products_id)
+    protected function importRecordPostProcess($products_id): void
     {
         $this->debugMessage("ProductsDiscountQuantity::importRecordPostProcess ($products_id)", self::DBIO_INFORMATIONAL);
         if ($products_id !== false && $this->operation !== 'check') {
@@ -137,7 +139,7 @@ class DbIoProductsDiscountQuantityHandler extends DbIoHandler
     // This function, called to process each field within a CSV import, validates the values for the products-table
     // entries.
     //
-    protected function importProcessField($table_name, $field_name, $language_id, $field_value)
+    protected function importProcessField($table_name, $field_name, $language_id, $field_value): void
     {
         parent::importProcessField($table_name, $field_name, $language_id, $field_value);
         if ($this->record_status && $table_name == TABLE_PRODUCTS) {
@@ -187,7 +189,7 @@ class DbIoProductsDiscountQuantityHandler extends DbIoHandler
     // Since this handler performs the insert itself, this required method provides that processing for each
     // imported CSV record.
     //
-    protected function importFinishProcessing()
+    protected function importFinishProcessing(): void
     {
         global $db;
 
@@ -208,7 +210,7 @@ class DbIoProductsDiscountQuantityHandler extends DbIoHandler
             $products_id = $this->saved_data['products_id'];
             $qty_prices = $this->saved_data['qty_prices'];
             $products_discount_type = $this->saved_data['products_discount_type'];
-            
+
             if ($products_discount_type === self::DISCOUNT_TYPE_NONE) {
                 if (!empty($qty_prices)) {
                     $message = "Discount type is 'None', but quantity discounts provided.";

@@ -14,9 +14,9 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 class DbIoFeaturedHandler extends DbIoHandler
 {
-    public static function getHandlerInformation()
+    public static function getHandlerInformation(): array
     {
-        DbIoHandler::loadHandlerMessageFile('Featured'); 
+        DbIoHandler::loadHandlerMessageFile('Featured');
         return [
             'version' => '2.1.0',
             'handler_version' => '1.0.0',
@@ -26,7 +26,7 @@ class DbIoFeaturedHandler extends DbIoHandler
         ];
     }
 
-    public function exportInitialize($language = 'all')
+    public function exportInitialize($language = 'all'): bool
     {
         $initialized = parent::exportInitialize($language);
         if ($initialized === true) {
@@ -59,7 +59,7 @@ class DbIoFeaturedHandler extends DbIoHandler
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the dbIO operations.
     //
-    protected function setHandlerConfiguration()
+    protected function setHandlerConfiguration(): void
     {
         $this->stats['report_name'] = 'Featured';
         $this->config = self::getHandlerInformation();
@@ -78,7 +78,7 @@ class DbIoFeaturedHandler extends DbIoHandler
                 'io_field_overrides' => [
                     'featured_id' => 'no-header',
                 ],
-            ], 
+            ],
         ];
         $this->config['additional_headers'] = [
             'v_products_price' => self::DBIO_FLAG_NONE,
@@ -95,7 +95,7 @@ class DbIoFeaturedHandler extends DbIoHandler
     //                           that the field is calculated separately by the handler's processing.
     // - DBIO_SPECIAL_IMPORT ... The field requires special-handling by the handler to create the associated database elements.
     //
-    protected function importHeaderFieldCheck($field_name)
+    protected function importHeaderFieldCheck($field_name): string
     {
         if ($field_name !== 'featured_id' && in_array($field_name, array_keys($this->tables['featured']['fields']))) {
             return self::DBIO_IMPORT_OK;
@@ -103,7 +103,7 @@ class DbIoFeaturedHandler extends DbIoHandler
         return self::DBIO_NO_IMPORT;
     }
 
-    protected function importProcessField($table_name, $field_name, $language_id, $field_value)
+    protected function importProcessField($table_name, $field_name, $language_id, $field_value): void
     {
         global $db;
 
@@ -129,7 +129,7 @@ class DbIoFeaturedHandler extends DbIoHandler
         parent::importProcessField($table_name, $field_name, $language_id, $field_value);
     }
 
-    protected function importAddField($table_name, $field_name, $field_value)
+    protected function importAddField($table_name, $field_name, $field_value): void
     {
         $this->debugMessage("Featured::importAddField($table_name, $field_name, $field_value)");
         switch ($table_name) {

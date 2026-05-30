@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2014-2026 Vinos de Frutas Tropicales
@@ -24,19 +26,19 @@ class DbIoOptionsStockBase extends DbIoHandler
     // use of the colon (:) as the inner separator.  Unfortunately, there are stores (like the ZC demo products) that include
     // a colon in either an option's name or an option-value's name.
     //
-    const OPTION_OUTER_SEPARATOR = '^';
-    const OPTION_INNER_SEPARATOR = '~';
+    public const string OPTION_OUTER_SEPARATOR = '^';
+    public const string OPTION_INNER_SEPARATOR = '~';
 
     // -----
     // Handler-specific variable declarations.
     //
-    protected string $products_id;
+    protected bool|string $products_id;
 
     // -----
     // Update the export header, inserting the product's name and model and the option-combinations' name list and removing
     // the pos_id and pos_hash columns.
     //
-    public function exportFinalizeInitialization()
+    public function exportFinalizeInitialization(): bool
     {
         $this->headerInsertColumns(
             'v_products_id',
@@ -100,7 +102,7 @@ class DbIoOptionsStockBase extends DbIoHandler
     //
     // If not overridden, a PHP fatal error is logged and a `zen_exit` is made!
     //
-    protected function setHandlerConfiguration()
+    protected function setHandlerConfiguration(): void
     {
         dbioLogError('The real handler needs to supply this function!');
     }
@@ -109,7 +111,7 @@ class DbIoOptionsStockBase extends DbIoHandler
     // Since the $db->ExecuteNoCache method is not supported on all Zen Cart versions, define a
     // method here for various processes to use.  It'll make the code a bit more readable.
     //
-    protected function dbExecuteNoCache($sql_statement)
+    protected function dbExecuteNoCache($sql_statement): queryFactoryResult
     {
         global $db;
 
@@ -159,19 +161,19 @@ class DbIoOptionsStockBase extends DbIoHandler
     // Since we've determined the current record's products_id either directly or via model-number lookup, make sure that the
     // current products_id value is being used for any record manipulations.
     //
-    protected function importProcessField($table_name, $field_name, $language_id, $field_value)
+    protected function importProcessField($table_name, $field_name, $language_id, $field_value): void
     {
         if ($field_name === 'products_id' && isset($this->products_id)) {
             $field_value = $this->products_id;
         }
-        return parent::importProcessField($table_name, $field_name, $language_id, $field_value);
+        parent::importProcessField($table_name, $field_name, $language_id, $field_value);
     }
 
     // -----
     // While the pos_id or pos_hash fields might be specified by the imported CSV, they're not values that are importable and
     // the products_options_combination field requires "special handling".
     //
-    protected function importHeaderFieldCheck($field_name)
+    protected function importHeaderFieldCheck($field_name): string
     {
         switch ($field_name) {
             case 'pos_id':      //- Fall through ...
@@ -192,7 +194,7 @@ class DbIoOptionsStockBase extends DbIoHandler
     // Used in export processing, creates the textual option-name/option-value-name string associated with the specified
     // option_id/option_value_id pair, returning boolean false if invalid inputs are received or the string otherwise.
     //
-    protected function getOptionValueNamePair($options_id, $options_values_id)
+    protected function getOptionValueNamePair($options_id, $options_values_id): false|string
     {
         global $db;
 
@@ -218,7 +220,7 @@ class DbIoOptionsStockBase extends DbIoHandler
     //
     // If all option-pairs are found, the function returns an associative array containing the database record ids for the option combinations.
     //
-    protected function posmBaseProcessCurrentOptionCombination($products_id, $data, &$option_message, $options_must_exist = true)
+    protected function posmBaseProcessCurrentOptionCombination($products_id, $data, &$option_message, $options_must_exist = true): false|array
     {
         global $db;
 
@@ -362,7 +364,7 @@ class DbIoOptionsStockBase extends DbIoHandler
     //
     // * When the return-value is an array, then the matching 'option_id' and 'option_value_id' values are returned.
     //
-    private function getOptionValueIdFromName($option_value_name, $option_id)
+    private function getOptionValueIdFromName($option_value_name, $option_id): false|array
     {
         global $db;
 
@@ -514,7 +516,7 @@ class DbIoOptionsStockBase extends DbIoHandler
     // -----
     // For any import, ensure that the last_modified field is set to the current date/time.
     //
-    protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
+    protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true): string
     {
         $table_fields['last_modified'] = [
             'value' => 'now()',
@@ -531,7 +533,7 @@ class DbIoOptionsStockBase extends DbIoHandler
     // Note: The class method posmBaseDetermineProductsId has previously set the
     // class variable 'products_id' to reflect that being currently processed.
     //
-    protected function posmBaseUpdateBaseProductsQuantity()
+    protected function posmBaseUpdateBaseProductsQuantity(): void
     {
         if (!empty($this->products_id)) {
             posm_update_base_product_quantity($this->products_id);
@@ -548,7 +550,7 @@ class DbIoOptionsStockBase extends DbIoHandler
     // definition in the DbIoHandler class, but is unused -- see the method definition
     // above.
     //
-    protected function importRecordPostProcess($key_value)
+    protected function importRecordPostProcess($key_value): void
     {
         $this->posmBaseUpdateBaseProductsQuantity();
     }

@@ -1,9 +1,11 @@
 <?php
+
+declare(strict_types=1);
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2022, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.0.
+// Last updated: DbIo v2.2.0
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -15,15 +17,14 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 class DbIoOrdersProductsHandler extends DbIoOrdersBase
 {
-    protected
-        $last_order_handled;
+    protected string $last_order_handled;
 
-    public static function getHandlerInformation()
+    public static function getHandlerInformation(): array|false
     {
         DbIoHandler::loadHandlerMessageFile ('OrdersProducts');
         return [
-            'version' => '2.0.0',
-            'handler_version' => '1.1.0',
+            'version' => '2.2.0',
+            'handler_version' => '2.2.0',
             'include_header' => true,
             'export_only' => true,
             'description' => DBIO_ORDERSPRODUCTS_DESCRIPTION,
@@ -51,7 +52,7 @@ class DbIoOrdersProductsHandler extends DbIoOrdersBase
     }
 
 // ----------------------------------------------------------------------------------
-//             I N T E R N A L / P R O T E C T E D   F U N C T I O N S 
+//             I N T E R N A L / P R O T E C T E D   F U N C T I O N S
 // ----------------------------------------------------------------------------------
 
     // -----
@@ -60,7 +61,7 @@ class DbIoOrdersProductsHandler extends DbIoOrdersBase
     //
     // Since this is an export-only report, it doesn't include a 'key'.
     //
-    protected function setHandlerConfiguration()
+    protected function setHandlerConfiguration(): void
     {
         $this->stats['report_name'] = 'OrdersProducts';
         $this->config = self::getHandlerInformation ();
