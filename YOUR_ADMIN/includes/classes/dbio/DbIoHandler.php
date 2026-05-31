@@ -315,7 +315,7 @@ abstract class DbIoHandler extends base
 
     public function formatValidateDate(?string $date_value_in, string $field_type = 'date', bool $is_nullable = false): false|string
     {
-        if (empty($date_value_in)) {
+        if (empty($date_value_in) || strtolower($date_value_in) === 'null') {
             $return_date = ($is_nullable) ? 'null' : false;
             $parsed_date = '';
         } else {
