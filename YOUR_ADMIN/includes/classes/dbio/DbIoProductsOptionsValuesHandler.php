@@ -220,7 +220,7 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
         }
 
         $option_id = $this->saved_data['products_options_id'];
-        if (!isset($this->optionsByLanguage[$language_id][$option_id])) {
+        if (!in_array($option_id, $this->optionsByLanguage[$language_id], true)) {
             $this->record_status = false;
             $this->debugMessage("[*] importFinishProcessing, line #" . $this->stats['record_count'] . ": Unknown option id ($option_id) for language_id $language_id.", self::DBIO_ERROR);
         }
