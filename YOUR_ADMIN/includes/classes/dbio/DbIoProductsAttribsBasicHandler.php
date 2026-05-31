@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 // -----
 // Part of the DataBase I/O Manager (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2015-2026, Vinos de Frutas Tropicales.
@@ -14,7 +16,7 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 // The I/O fields supported by this fixed-field I/O handler are:  v_products_model, v_products_options_type, v_products_options_name, and v_products_options_values
 //
-// For imports, 
+// For imports,
 // - The v_products_model field identifies the (presumed) single product associated with the (possibly) multiple imports.
 // - The combination of v_products_options_type and v_products_options_name are used to find existing option/option-value pairs in the
 //   store's DEFAULT LANGUAGE.  All combinations must pre-exist in the database or the associated record's information is not imported.
@@ -22,12 +24,12 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 class DbIoProductsAttribsBasicHandler extends DbIoHandler
 {
-    public static function getHandlerInformation()
+    public static function getHandlerInformation(): array|false
     {
         DbIoHandler::loadHandlerMessageFile('ProductsAttribsBasic');
         return [
-            'version' => '2.0.1',
-            'handler_version' => '1.0.0',
+            'version' => '2.2.0',
+            'handler_version' => '2.2.0',
             'include_header' => true,
             'export_only' => false,
             'description' => DBIO_PRODUCTSATTRIBSBASIC_DESCRIPTION,
@@ -50,7 +52,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
         $products_id = $fields['products_id'];
         $products_options_id = $fields['products_options_id'];
         unset($fields['products_id'], $fields['products_options_id']);
-        
+
         if (PRODUCTS_OPTIONS_SORT_BY_PRICE === '1') {
             $order_by = 'LPAD(pa.products_options_sort_order,11,"0"), pov.products_options_values_name';
         } else {
@@ -81,7 +83,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the DbIo operations.
     //
-    protected function setHandlerConfiguration()
+    protected function setHandlerConfiguration(): void
     {
         $this->stats['report_name'] = 'ProductsAttribsBasic';
         $this->config = self::getHandlerInformation();
@@ -124,7 +126,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
             'products_options_id',
         ];
         $this->config['export_where_clause'] = 'pa.products_id = p.products_id AND pa.options_id = po.products_options_id AND po.language_id = ' . $this->languages[DEFAULT_LANGUAGE] . ' GROUP BY p.products_model, po.products_options_id, po.products_options_type, po.products_options_name, p.products_id';
-        
+
         if (zen_config('PRODUCTS_OPTIONS_SORT_ORDER') === '0') {
             $options_order_by = 'LPAD(po.products_options_sort_order,11,"0")';
         } else {
@@ -144,7 +146,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
     //
     // The products_id value is saved by the base class processing in the class array "key_fields".
     //
-    protected function importCheckKeyValue($data)
+    protected function importCheckKeyValue(array $data): bool
     {
         if ($this->import_is_insert === true) {
             $this->record_status = false;
@@ -153,7 +155,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
         return $this->record_status;
     }
 
-    protected function importProcessField($table_name, $field_name, $language_id, $field_value)
+    protected function importProcessField(string $table_name, string $field_name, string $language_id, ?string $field_value): void
     {
         switch ($field_name) {
             case 'products_options_type':
@@ -171,7 +173,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
         }
     }
 
-    protected function importFinishProcessing()
+    protected function importFinishProcessing(): void
     {
         global $db;
 
@@ -273,7 +275,6 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
                             }
                         }
                     }
-                    $this->record_status = 'processed';
                 }
             }
         }
@@ -283,7 +284,14 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
         }
     }
 
-    protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
+    protected function importBuildSqlQuery(
+        string $table_name,
+        string $table_alias,
+        array $table_fields,
+        string $extra_where_clause = '',
+        bool $is_override = false,
+        bool $is_insert = true
+    ): string|false
     {
         return ($table_name === TABLE_PRODUCTS) ? false : parent::importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause, $is_override, $is_insert);
     }

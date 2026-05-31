@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
@@ -16,7 +17,7 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 // For the import, the CSV **must** contain both the products_options_values_id and language_id fields, since those are
 // used as the table's key-pair.  An entry is updated if a database record is found that matches both fields; otherwise,
-// the record is inserted using the specified language_id and a products_options_values_id that is calculated as the 
+// the record is inserted using the specified language_id and a products_options_values_id that is calculated as the
 // current table's maximum value (+1).
 //
 // Usage Notes:
@@ -30,12 +31,12 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
     protected array $optionsByLanguage;
     protected bool $isLanguageOnlyInsert;
 
-    public static function getHandlerInformation()
+    public static function getHandlerInformation(): array|false
     {
-        DbIoHandler::loadHandlerMessageFile('ProductsOptionsValues'); 
+        DbIoHandler::loadHandlerMessageFile('ProductsOptionsValues');
         return [
             'version' => '2.2.0',
-            'handler_version' => '1.0.0',
+            'handler_version' => '2.2.0',
             'include_header' => true,
             'export_only' => false,
             'description' => DBIO_PRODUCTSOPTIONSVALUES_DESCRIPTION,
@@ -45,7 +46,7 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
     // -----
     // Generate and return the SQL query used to export the products' options' values.
     //
-    public function exportGetSql($sql_limit = '')
+    public function exportGetSql($sql_limit = ''): string
     {
         $export_sql =
             "SELECT pov.products_options_values_id, pov.language_id, pov.products_options_values_name, po.products_options_id, po.products_options_name, pov.products_options_values_sort_order
@@ -69,7 +70,7 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the DbIo operations.
     //
-    protected function setHandlerConfiguration()
+    protected function setHandlerConfiguration(): void
     {
         $this->stats['report_name'] = 'ProductsOptionsValues';
         $this->config = self::getHandlerInformation();
@@ -135,7 +136,7 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
     //    record's not *specifically* an insert, check to see whether the values-id/language-id
     //    pair are currently recorded in the database.  If not, this is a language-only record insert.
     //
-    protected function importCheckKeyValue($data)
+    protected function importCheckKeyValue(array $data): bool
     {
         $products_options_values_id = $this->importGetFieldValue('products_options_values_id', $data);
         $this->isLanguageOnlyInsert = false;
@@ -176,7 +177,7 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
         return parent::importCheckKeyValue($data);
     }
 
-    protected function importProcessField($table_name, $field_name, $language_id, $field_value)
+    protected function importProcessField(string $table_name, string $field_name, string $language_id, ?string $field_value): void
     {
         switch ($field_name) {
             case 'products_options_values_id':
@@ -203,7 +204,7 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
         }
     }
 
-    protected function importFinishProcessing()
+    protected function importFinishProcessing(): void
     {
         if (count($this->saved_data) !== 5) {
             $this->record_status = false;

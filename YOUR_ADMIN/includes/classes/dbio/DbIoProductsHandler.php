@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2015-2026, Vinos de Frutas Tropicales.
@@ -14,22 +16,22 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 class DbIoProductsHandler extends DbIoHandler
 {
-    const DBIO_COMMAND_ADD    = 'ADD';      //-Forces the current product to be added, even if the model already exists.
-    const DBIO_COMMAND_LINK   = 'LINK';     //-Links the product to the category specified by v_categories_name
-    const DBIO_COMMAND_MOVE   = 'MOVE';     //-Moves the product to the category specified by v_categories_name
-    const DBIO_COMMAND_UNLINK = 'UNLINK';   //-Unlinks the product from the specified v_categories_name, so long as it's not the current master_categories_id.
+    public const string DBIO_COMMAND_ADD = 'ADD';      //-Forces the current product to be added, even if the model already exists.
+    public const string DBIO_COMMAND_LINK = 'LINK';     //-Links the product to the category specified by v_categories_name
+    public const string DBIO_COMMAND_MOVE = 'MOVE';     //-Moves the product to the category specified by v_categories_name
+    public const string DBIO_COMMAND_UNLINK = 'UNLINK';   //-Unlinks the product from the specified v_categories_name, so long as it's not the current master_categories_id.
 
     protected bool $categories_name_found;
     protected bool $import_meta_tags_post_process;
     protected bool $import_can_insert;
 
-    public static function getHandlerInformation()
+    public static function getHandlerInformation(): array|false
     {
         global $db;
-        DbIoHandler::loadHandlerMessageFile('Products'); 
+        DbIoHandler::loadHandlerMessageFile('Products');
         return [
-            'version' => '2.1.0',
-            'handler_version' => '1.6.0',
+            'version' => '2.2.0',
+            'handler_version' => '2.2.0',
             'include_header' => true,
             'export_only' => false,
             'allow_export_customizations' => true,
@@ -37,7 +39,7 @@ class DbIoProductsHandler extends DbIoHandler
         ];
     }
 
-    public static function getHandlerExportFilters()
+    public static function getHandlerExportFilters(): array
     {
         global $db;
 
@@ -98,10 +100,10 @@ class DbIoProductsHandler extends DbIoHandler
 
     // -----
     // This function, called at the beginning of an export operation, gives the handler an opportunity to perform
-    // some special checks.  For this handler, that's the gathering of the language-specific elements in the 
+    // some special checks.  For this handler, that's the gathering of the language-specific elements in the
     // 'products_description' and 'meta_tags_products_description' tables.
-    // 
-    public function exportInitialize($language = 'all') 
+    //
+    public function exportInitialize($language = 'all'): bool
     {
         $initialized = parent::exportInitialize($language);
         if ($initialized) {
@@ -161,7 +163,7 @@ class DbIoProductsHandler extends DbIoHandler
                         AND language_id = %u
                       LIMIT 1";
                 $this->saved_data['products_description_last_field'] = $this->getTableLastFieldName(TABLE_PRODUCTS_DESCRIPTION);
-                
+
                 $this->saved_data['products_metatags_sql'] =
                     "SELECT *
                        FROM " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . "
@@ -182,7 +184,7 @@ class DbIoProductsHandler extends DbIoHandler
     // Returns a boolean (true/false) indication of whether the export's initialization was successful.  If unsuccessful, the handler
     // is **assumed** to have set its reason into the class message variable.
     //
-    public function exportFinalizeInitialization()
+    public function exportFinalizeInitialization(): bool
     {
         $this->debugMessage('Products::exportFinalizeInitialization. POST variables:' . print_r($_POST, true));
 
@@ -213,14 +215,14 @@ class DbIoProductsHandler extends DbIoHandler
         return true;
     }
 
-    protected function getSubCategories($categories_id, $products_categories)
+    protected function getSubCategories(string $categories_id, array $products_categories): array
     {
         global $db;
 
         $subcats = $db->Execute(
             "SELECT categories_id
                FROM " . TABLE_CATEGORIES . "
-              WHERE parent_id = $categories_id"
+              WHERE parent_id = " . (int)$categories_id
         );
         $products_categories[] = $categories_id;
         foreach ($subcats as $next_subcat) {
@@ -412,7 +414,7 @@ class DbIoProductsHandler extends DbIoHandler
     // to override the 'FROM' clause for the to-be-generated SQL to gather *only* the records for the
     // first/only selected language.  Otherwise, duplicated (and incorrect) records will be exported.
     //
-    public function exportGetSql($sql_limit = '')
+    public function exportGetSql($sql_limit = ''): string
     {
         if (!isset($this->export_language) || !isset($this->select_clause)) {
             dbioLogError('Export aborted: DbIo export sequence error; not previously initialized.');
@@ -432,7 +434,7 @@ class DbIoProductsHandler extends DbIoHandler
     }
 
 // ----------------------------------------------------------------------------------
-//             I N T E R N A L / P R O T E C T E D   F U N C T I O N S 
+//             I N T E R N A L / P R O T E C T E D   F U N C T I O N S
 // ----------------------------------------------------------------------------------
 
     // -----
@@ -459,7 +461,7 @@ class DbIoProductsHandler extends DbIoHandler
     // The class variable categories_name_found, on exit, indicates whether/not the v_categories_name column
     // is present.  This value is used by importHandleDbIoCommand's processing of 'UNLINK', 'LINK' or 'MOVE' commands.
     //
-    protected function importFinalizeHeader()
+    protected function importFinalizeHeader(): bool
     {
         $this->categories_name_found = false;
         $required_fields_found = false;
@@ -500,7 +502,7 @@ class DbIoProductsHandler extends DbIoHandler
     // For a 'full' export of the products' information, the store's non-default language fields are
     // inserted into the export after the specified field.
     //
-    protected function insertLanguageFields($fields, $language_fields, $insert_after_field)
+    protected function insertLanguageFields($fields, $language_fields, $insert_after_field): array
     {
         $keys = array_keys($fields);
         $fields_updated = [];
@@ -544,7 +546,7 @@ class DbIoProductsHandler extends DbIoHandler
     // supplied table.  This establishes the 'anchor' position for the insertion of any additional
     // languages that might be used in the store.
     //
-    protected function getTableLastFieldName($table_name)
+    protected function getTableLastFieldName($table_name): false|int|string
     {
         $keys = array_keys($this->tables[$table_name]['fields']);
         return end($keys);
@@ -554,7 +556,7 @@ class DbIoProductsHandler extends DbIoHandler
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the DbIo operations.
     //
-    protected function setHandlerConfiguration()
+    protected function setHandlerConfiguration(): void
     {
         $this->stats['report_name'] = 'Products';
         $this->config = self::getHandlerInformation ();
@@ -582,7 +584,7 @@ class DbIoProductsHandler extends DbIoHandler
                 'join_clause' =>
                     "LEFT JOIN " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . " AS mtpd
                         ON mtpd.products_id = p.products_id"
-            ], 
+            ],
             TABLE_PRODUCTS_DESCRIPTION => [
                 'alias' => 'pd',
                 'language_field' => 'language_id',
@@ -620,7 +622,7 @@ class DbIoProductsHandler extends DbIoHandler
     //                           that the field is calculated separately by the handler's processing.
     // - DBIO_SPECIAL_IMPORT ... The field requires special-handling by the handler to create the associated database elements.
     //
-    protected function importHeaderFieldCheck($field_name)
+    protected function importHeaderFieldCheck(string $field_name): string
     {
         $field_status = self::DBIO_IMPORT_OK;
         switch ($field_name) {
@@ -630,11 +632,13 @@ class DbIoProductsHandler extends DbIoHandler
             case 'master_categories_id':
                 $field_status = self::DBIO_NO_IMPORT;
                 break;
+
             case 'manufacturers_name':
             case 'tax_class_title':
             case 'categories_name':
                 $field_status = self::DBIO_SPECIAL_IMPORT;
                 break;
+
             default:
                 break;
         }
@@ -649,7 +653,7 @@ class DbIoProductsHandler extends DbIoHandler
     // - REMOVE: Removes a product from the database.
     // - UNLINK: 'Unlinks' a product from a category **other than** the product's current master-categories-id.
     //
-    protected function importHandleDbIoCommand($command, $data)
+    protected function importHandleDbIoCommand($command, $data): bool
     {
         global $db;
 
@@ -695,7 +699,7 @@ class DbIoProductsHandler extends DbIoHandler
                 break;
 
             // -----
-            // REMOVE: Removes a product from the database.  The function zen_remove_product and the product itself must 
+            // REMOVE: Removes a product from the database.  The function zen_remove_product and the product itself must
             // exist for the operation to complete. No additional CSV-record processing required.
             //
             case self::DBIO_COMMAND_REMOVE:
@@ -884,7 +888,7 @@ class DbIoProductsHandler extends DbIoHandler
     // It's the responsibility of this handler to deal with the case where multiple database entries are found that match
     // the current record's specification.
     //
-    protected function importCheckKeyValue($data)
+    protected function importCheckKeyValue(array $data): bool
     {
         global $db;
 
@@ -998,10 +1002,10 @@ class DbIoProductsHandler extends DbIoHandler
     // This function handles any overall record post-processing required for the Products import, specifically
     // making sure that the products' price sorter is run for the just inserted/updated product.
     //
-    // If the import for a multi-lingual store includes product-related meta-tags, need some additional checking 
+    // If the import for a multilingual store includes product-related meta-tags, need some additional checking
     // to make sure that everything's 'in sync'.
     //
-    protected function importRecordPostProcess($products_id)
+    protected function importRecordPostProcess($products_id): void
     {
         global $db;
 
@@ -1026,7 +1030,7 @@ class DbIoProductsHandler extends DbIoHandler
         zen_update_products_price_sorter($pID);
 
         // -----
-        // If the import includes products' metatags entries for a multi-lingual store, need to check that:
+        // If the import includes products' metatags entries for a multilingual store, need to check that:
         //
         // 1) If a metatags-entry exists for at least one of the store's languages, need to create an empty
         //    entry for any language that doesn't currently have such a record.
@@ -1081,7 +1085,7 @@ class DbIoProductsHandler extends DbIoHandler
         }
     }
 
-    protected function importAddField($table_name, $field_name, $field_value)
+    protected function importAddField(string $table_name, string $field_name, ?string $field_value): void
     {
         $this->debugMessage("Products::importAddField ($table_name, $field_name, $field_value)");
         global $db;
@@ -1101,6 +1105,7 @@ class DbIoProductsHandler extends DbIoHandler
                 }
                 parent::importAddField($table_name, $field_name, $field_value);
                 break;
+
             case self::DBIO_SPECIAL_IMPORT:
                 switch ($field_name) {
                     case 'manufacturers_name':
@@ -1126,7 +1131,7 @@ class DbIoProductsHandler extends DbIoHandler
                                         ],
                                     ];
                                     $db->perform(TABLE_MANUFACTURERS, $sql_data_array);
-                                    $manufacturers_id = $db->Insert_ID();
+                                    $manufacturers_id = $db->insert_ID();
 
                                     foreach ($this->languages as $language_code => $language_id) {
                                         $sql_data_array = [
@@ -1141,7 +1146,7 @@ class DbIoProductsHandler extends DbIoHandler
                                                 'type' => 'integer',
                                             ],
                                         ];
-                                        $db->perform (TABLE_MANUFACTURERS_INFO, $sql_data_array);
+                                        $db->perform(TABLE_MANUFACTURERS_INFO, $sql_data_array);
                                     }
                                 }
                             }
@@ -1151,6 +1156,7 @@ class DbIoProductsHandler extends DbIoHandler
                             'type' => 'integer',
                         ];
                         break;
+
                     case 'tax_class_title':
                         if (!empty($field_value)) {
                             $tax_class_check_sql = "SELECT tax_class_id FROM " . TABLE_TAX_CLASS . " WHERE tax_class_title = :tax_class_title: LIMIT 1";
@@ -1165,6 +1171,7 @@ class DbIoProductsHandler extends DbIoHandler
                             ];
                         }
                         break;
+
                     case 'categories_name':
                         $parent_category = 0;
                         $categories_name_ok = true;
@@ -1177,7 +1184,7 @@ class DbIoProductsHandler extends DbIoHandler
                                 break;
                             }
 
-                            $category_info_sql = 
+                            $category_info_sql =
                                 "SELECT c.categories_id FROM " . TABLE_CATEGORIES . " c
                                         INNER JOIN " . TABLE_CATEGORIES_DESCRIPTION . " cd
                                             ON cd.categories_id = c.categories_id
@@ -1230,17 +1237,19 @@ class DbIoProductsHandler extends DbIoHandler
                             $this->record_status = false;
                         }
                         break;
+
                     default:
                         break;
                 }  //-END switch interrogating $field_name for self::DBIO_SPECIAL_IMPORT
                 break;
+
             default:
                 parent::importAddField($table_name, $field_name, $field_value);
                 break;
         }  //-END switch interrogating $table_name
     }  //-END function importAddField
 
-    protected function createCategory($categories_name, $parent_category_id)
+    protected function createCategory(string $categories_name, string $parent_category_id): false|string
     {
         global $db;
 
@@ -1248,7 +1257,7 @@ class DbIoProductsHandler extends DbIoHandler
         $parent_check = $db->Execute(
             "SELECT products_id
                FROM " . TABLE_PRODUCTS_TO_CATEGORIES . "
-              WHERE categories_id = $parent_category_id
+              WHERE categories_id = " . (int)$parent_category_id . "
               LIMIT 1"
         );
         if (!$parent_check->EOF) {
@@ -1274,8 +1283,8 @@ class DbIoProductsHandler extends DbIoHandler
                     ],
                 ];
                 $db->perform(TABLE_CATEGORIES, $sql_data_array);
-                $created_category_id = zen_db_insert_id();
-                
+                $created_category_id = (string)zen_db_insert_id();
+
                 $description_array = [
                     [
                         'fieldName' => 'categories_id',
@@ -1319,7 +1328,7 @@ class DbIoProductsHandler extends DbIoHandler
     // happens within this function and we set the return value to false to indicate to the parent processing that the
     // associated update has been already handled.
     //
-    protected function importUpdateRecordKey($table_name, $table_fields, $products_id)
+    protected function importUpdateRecordKey(string $table_name, array|false $table_fields, string $products_id): array|false
     {
         global $db;
 
@@ -1379,7 +1388,7 @@ class DbIoProductsHandler extends DbIoHandler
                     // Indicate to the parent class that the table-record has been processed.
                     //
                     $table_fields = false;
-                    
+
                     // -----
                     // If we're updating the product, remove this language-specific meta-tags' record.
                     //
@@ -1388,7 +1397,7 @@ class DbIoProductsHandler extends DbIoHandler
                         // If the current DbIo operation is an import-check, simply output a debug message containing
                         // the record-deletion SQL.  Otherwise, actually run the SQL, removing that record.
                         //
-                        $sql = 
+                        $sql =
                             "DELETE FROM " . TABLE_META_TAGS_PRODUCTS_DESCRIPTION . "
                               WHERE products_id = " . $this->key_fields['products_id'] . "
                                 AND language_id = " . $this->import_language_id . "
@@ -1414,7 +1423,7 @@ class DbIoProductsHandler extends DbIoHandler
             default:
                 break;
         }
-        return parent::importUpdateRecordKey($table_name, $table_fields, $products_id);
+        return parent::importUpdateRecordKey($table_name, $table_fields, (string)$products_id);
     }
 
     // -----
@@ -1424,7 +1433,7 @@ class DbIoProductsHandler extends DbIoHandler
     //
     // For product inserts, ensure that the `products_id` field is not part of the to-be-inserted record.
     //
-    protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
+    protected function importBuildSqlQuery(string $table_name, string $table_alias, array $table_fields, string $extra_where_clause = '', bool $is_override = false, bool $is_insert = true): string
     {
         global $db;
 
@@ -1457,7 +1466,7 @@ class DbIoProductsHandler extends DbIoHandler
 
                 // -----
                 // Check to see if the existing product's language-specific meta-tags record exists. If not,
-                // we'll do an database action 'override' so that the meta-tag information can be inserted
+                // we'll do a database action 'override' so that the meta-tag information can be inserted
                 // even though the base product's being updated.
                 //
                 $check = $db->Execute(

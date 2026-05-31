@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2014-2026 Vinos de Frutas Tropicales
@@ -22,19 +24,19 @@ class DbIoOptionsStockFullHandler extends DbIoOptionsStockBase
     // -----
     // Handler-specific variable declarations.
     //
-    protected $saved_data;
+    protected array $saved_data;
 
-    public static function getHandlerInformation()
+    public static function getHandlerInformation(): array|false
     {
         global $sniffer;
-        if (zen_config('DBIO_CURRENT_VERSION', '0.0.0') < '1.1.0' || !defined('TABLE_PRODUCTS_OPTIONS_STOCK') || !$sniffer->table_exists(TABLE_PRODUCTS_OPTIONS_STOCK)) {
-            trigger_error("Incompatible DbIo version (" . zen_config('DBIO_CURRENT_VERSION', '0.0.0') . ") detected.  Either update the DbIo plugin to v1.1.0 or later or remove this file.", E_USER_WARNING);
+        if (zen_config('DBIO_CURRENT_VERSION', '0.0.0') < '2.2.0' || !defined('TABLE_PRODUCTS_OPTIONS_STOCK') || !$sniffer->table_exists(TABLE_PRODUCTS_OPTIONS_STOCK)) {
+            trigger_error("Incompatible DbIo version (" . zen_config('DBIO_CURRENT_VERSION', '0.0.0') . ") detected.  Either update the DbIo plugin to v2.2.0 or later or remove this file.", E_USER_WARNING);
             return false;
         }
         DbIoHandler::loadHandlerMessageFile('OptionsStockFull');
         return [
             'version' => '2.2.0',
-            'handler_version' => '1.1.0',
+            'handler_version' => '2.2.0',
             'include_header' => true,
             'export_only' => false,
             'description' => DBIO_OPTIONSSTOCKFULL_DESCRIPTION,
@@ -45,7 +47,7 @@ class DbIoOptionsStockFullHandler extends DbIoOptionsStockBase
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the DbIo operations.
     //
-    protected function setHandlerConfiguration()
+    protected function setHandlerConfiguration(): void
     {
         $this->stats['report_name'] = 'OptionsStockFull';
         $this->config = self::getHandlerInformation();
@@ -66,49 +68,50 @@ class DbIoOptionsStockFullHandler extends DbIoOptionsStockBase
         ];
     }
 
-    protected function importHandleDbIoCommand($command, $data)
+    protected function importHandleDbIoCommand(string $command, array $data): bool
     {
         global $db;
 
         if (strtoupper($command) !== self::DBIO_COMMAND_REMOVE) {
             $this->debugMessage("Unrecognized command ($command) found at line #" . $this->stats['record_count'] . "; the operation was not performed.", self::DBIO_ERROR);
-        } else {
-            $option_error = false;
-            if ($this->posmBaseDetermineProductsId($data)) {
-                $option_message = '';
-                $options_array = $this->posmBaseProcessCurrentOptionCombination($this->products_id, $data, $option_message, true);
-                if ($options_array === false) {
-                    $option_error = true;
-                } else {
-                    // -----
-                    // The option-combinations are valid; next check to see if this is going to be an insert or update operation by seeing
-                    // if there's currently a record tieing those option-combinations to the current product.
-                    //
-                    $hash_value = generate_pos_option_hash($this->products_id, $options_array);
-                    $pos_info = $db->Execute(
-                        "SELECT pos_id FROM " . TABLE_PRODUCTS_OPTIONS_STOCK . "
-                          WHERE products_id = " . $this->products_id . "
-                            AND pos_hash = '$hash_value' LIMIT 1", false, false, 0, true
-                    );
-                    if ($pos_info->EOF) {
-                        $this->debugMessage("Record not removed at line #" . $this->stats['record_count'] . "; invalid option-combinations for the product.", self::DBIO_ERROR);
-                    } else {
-                        $this->debugMessage("Removing options' stock records for products ID " . $this->products_id . ", option-combination " . $this->importGetFieldValue('products_options_combination', $data), self::DBIO_ACTIVITY | self::DBIO_STATUS);
-                        if ($this->operation !== 'check') {
-                            $db->Execute("DELETE FROM " . TABLE_PRODUCTS_OPTIONS_STOCK . " WHERE pos_id = " . $pos_info->fields['pos_id']);
-                            $db->Execute("DELETE FROM " . TABLE_PRODUCTS_OPTIONS_STOCK_ATTRIBUTES . " WHERE pos_id = " . $pos_info->fields['pos_id']);
-                        }
-                    }
+            return false;
+        }
+
+        if ($this->posmBaseDetermineProductsId($data)) {
+            $option_message = '';
+            $options_array = $this->posmBaseProcessCurrentOptionCombination($this->products_id, $data, $option_message, true);
+            if ($options_array === false) {
+                return false;
+            }
+
+            // -----
+            // The option-combinations are valid; next check to see if this is going to be an insert or update operation by seeing
+            // if there's currently a record tieing those option-combinations to the current product.
+            //
+            $hash_value = generate_pos_option_hash($this->products_id, $options_array);
+            $pos_info = $db->Execute(
+                "SELECT pos_id FROM " . TABLE_PRODUCTS_OPTIONS_STOCK . "
+                  WHERE products_id = " . $this->products_id . "
+                    AND pos_hash = '$hash_value' LIMIT 1", false, false, 0, true
+            );
+            if ($pos_info->EOF) {
+                $this->debugMessage("Record not removed at line #" . $this->stats['record_count'] . "; invalid option-combinations for the product.", self::DBIO_ERROR);
+            } else {
+                $this->debugMessage("Removing options' stock records for products ID " . $this->products_id . ", option-combination " . $this->importGetFieldValue('products_options_combination', $data), self::DBIO_ACTIVITY | self::DBIO_STATUS);
+                if ($this->operation !== 'check') {
+                    $db->Execute("DELETE FROM " . TABLE_PRODUCTS_OPTIONS_STOCK . " WHERE pos_id = " . $pos_info->fields['pos_id']);
+                    $db->Execute("DELETE FROM " . TABLE_PRODUCTS_OPTIONS_STOCK_ATTRIBUTES . " WHERE pos_id = " . $pos_info->fields['pos_id']);
                 }
             }
         }
+        return false;
     }
 
     // -----
     // This report's import handling is a little different.  The base class' handling is used to determine whether an options' stock
     // record exists for the current CSV record's specified product's ID.
     //
-    protected function importCheckKeyValue($data)
+    protected function importCheckKeyValue(array $data): bool
     {
         global $db;
 
@@ -184,7 +187,7 @@ class DbIoOptionsStockFullHandler extends DbIoOptionsStockBase
     //
     // Note: Unlike other base-class functions, this function is a total override; calling the parent function will result in a record-import error.
     //
-    protected function importFinishProcessing()
+    protected function importFinishProcessing(): void
     {
         global $db;
 

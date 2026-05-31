@@ -1,9 +1,11 @@
 <?php
+
+declare(strict_types=1);
 // -----
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
-// Copyright (c) 2016-2023, Vinos de Frutas Tropicales.
+// Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.0.0.
+// Last updated: DbIo v2.2.0
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -15,15 +17,14 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 class DbIoOrdersHandler extends DbIoOrdersBase
 {
-    protected
-        $ot_class_defaults = [];
+    protected array $ot_class_defaults = [];
 
-    public static function getHandlerInformation()
+    public static function getHandlerInformation(): array|false
     {
-        DbIoHandler::loadHandlerMessageFile('Orders'); 
+        DbIoHandler::loadHandlerMessageFile('Orders');
         return [
-            'version' => '2.0.0',
-            'handler_version' => '1.3.0',
+            'version' => '2.2.0',
+            'handler_version' => '2.2.0',
             'include_header' => true,
             'export_only' => true,
             'allow_export_customizations' => true,
@@ -67,7 +68,7 @@ class DbIoOrdersHandler extends DbIoOrdersBase
     // This function, called during the overall class construction, is used to set this handler's database
     // configuration for the DbIo operations.
     //
-    protected function setHandlerConfiguration()
+    protected function setHandlerConfiguration(): void
     {
         global $db;
 
@@ -105,9 +106,10 @@ class DbIoOrdersHandler extends DbIoOrdersBase
         ];
     }
 
-    private function getOrdersStatusName($orders_status_id) {
+    private function getOrdersStatusName(string $orders_status_id): string
+    {
         global $db;
- 
+
         $check = $db->Execute(
             "SELECT orders_status_name
                FROM " . TABLE_ORDERS_STATUS . "
