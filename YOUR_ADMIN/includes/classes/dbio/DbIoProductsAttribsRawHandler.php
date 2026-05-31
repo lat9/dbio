@@ -165,7 +165,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     // -----
     // While the products_attributes_id field might be specified by the imported CSV, it's not a value that's importable.
     //
-    protected function importHeaderFieldCheck($field_name): string
+    protected function importHeaderFieldCheck(string $field_name): string
     {
         return ($field_name === 'products_attributes_id') ? self::DBIO_NO_IMPORT : self::DBIO_IMPORT_OK;
     }
@@ -178,7 +178,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     // Note: The checking needs to be performed **only** for an insert, since a products_attributes record is located
     // by a match on those three fields.
     //
-    protected function importCheckKeyValue($data): bool
+    protected function importCheckKeyValue(array $data): bool
     {
         global $db;
 
@@ -228,7 +228,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     // This function, called by the base DbIoHandler class when a non-blank v_dbio_command field is found in the
     // current import-record, gives this handler a chance to REMOVE a product option-combination from the database.
     //
-    protected function importHandleDbIoCommand($command, $data): bool
+    protected function importHandleDbIoCommand(string $command, array $data): bool
     {
         global $db;
 
@@ -270,7 +270,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     // Fix-up any blank values in the attribute's download maxdays/maxcount fields (they're output as blank if no associated downloads-table
     // record is found) to prevent unwanted warnings from being issued.
     //
-    protected function importProcessField($table_name, $field_name, $language_id, $field_value): void
+    protected function importProcessField(string $table_name, string $field_name, string $language_id, ?string $field_value): void
     {
         if ($table_name === TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD) {
             if (($field_name === 'products_attributes_maxdays' || $field_name === 'products_attributes_maxcount') && empty($field_value)) {
@@ -295,7 +295,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     // line of the imported CSV receives two 'importBuildSqlQuery' requests.  This function enables the addition of the
     // previous record's 'record_key', i.e. the products_attributes_id, to the to-be-generated SQL for the downloads.
     //
-    protected function importUpdateRecordKey($table_name, $table_fields, $record_key_value)
+    protected function importUpdateRecordKey(string $table_name, array|false $table_fields, string $record_key_value): array
     {
         if ($table_name === TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD && $this->import_is_insert === true) {
             $table_fields['products_attributes_id'] = [
@@ -310,7 +310,14 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     // This function, called to create an import-record's associated SQL, checks to see if the current attribute is to
     // have an associated download-file, tested by the presence of a value in the 'products_attributes_filename' field in the record.
     //
-    protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
+    protected function importBuildSqlQuery(
+        string $table_name,
+        string $table_alias,
+        array $table_fields,
+        string $extra_where_clause = '',
+        bool $is_override = false,
+        bool $is_insert = true
+    ): string|false
     {
         global $db;
 
@@ -407,7 +414,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     // considered 'not good' if it's an empty string, starts with a '.' character (preventing ../filename.ext) or
     // if the name contains one or more of the 'usual' invalid characters.
     //
-    protected function checkDownloadFilename($filename): bool
+    protected function checkDownloadFilename(string $filename): bool
     {
         $modifier = (zen_config('DBIO_CHARSET') === 'utf8') ? 'u' : '';
         return !($filename === '' || dbio_substr($filename, 0, 1) === '.' || preg_match('#[<>:"|?*]#' . $modifier, $filename));

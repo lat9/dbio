@@ -79,7 +79,7 @@ class DbIoProductsOptionsHandler extends DbIoHandler
     // 2) See if the associated language_id is, in fact, valid for the store.  If not, the
     //    record's import will be denied.
     //
-    protected function importCheckKeyValue($data): bool
+    protected function importCheckKeyValue(array $data): bool
     {
         if ($this->importGetFieldValue('products_options_id', $data) === '0') {
             $this->import_is_insert = true;
@@ -96,7 +96,7 @@ class DbIoProductsOptionsHandler extends DbIoHandler
     // Overriding the base import processing, to ensure that the v_products_options_id value is updated to
     // the next-available value if the import specifies the value as 0.
     //
-    protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true)
+    protected function importBuildSqlQuery(string $table_name, string $table_alias, array $table_fields, string $extra_where_clause = '', bool $is_override = false, bool $is_insert = true): string
     {
         global $db;
 

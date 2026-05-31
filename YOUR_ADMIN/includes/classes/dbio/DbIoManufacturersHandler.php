@@ -121,7 +121,7 @@ class DbIoManufacturersHandler extends DbIoHandler
     // If we're doing an update (i.e. existing manufacturer), need to update the primary where-clause to make sure that the
     // manufacturers table alias isn't part of the string for the non-manufacturers table.
     //
-    protected function importUpdateRecordKey($table_name, $table_fields, $products_id)
+    protected function importUpdateRecordKey(string $table_name, array|false $table_fields, string $products_id): array
     {
         if ($table_name !== TABLE_MANUFACTURERS) {
             if ($this->import_is_insert === true) {

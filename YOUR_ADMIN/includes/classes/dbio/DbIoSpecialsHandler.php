@@ -115,7 +115,7 @@ class DbIoSpecialsHandler extends DbIoHandler
     //                           that the field is calculated separately by the handler's processing.
     // - DBIO_SPECIAL_IMPORT ... The field requires special-handling by the handler to create the associated database elements.
     //
-    protected function importHeaderFieldCheck($field_name): string
+    protected function importHeaderFieldCheck(string $field_name): string
     {
         switch ($field_name) {
             case 'products_id':
@@ -146,7 +146,7 @@ class DbIoSpecialsHandler extends DbIoHandler
     //
     // This method also saves (for use by the 'importProcessField' method) the current record's products_id value.
     //
-    protected function importCheckKeyValue($data): bool
+    protected function importCheckKeyValue(array $data): bool
     {
         $specials_price = $this->importGetFieldValue('specials_new_products_price', $data);
         if ($specials_price === false) {
@@ -157,7 +157,7 @@ class DbIoSpecialsHandler extends DbIoHandler
         return $this->record_status;
     }
 
-    protected function importProcessField($table_name, $field_name, $language_id, $field_value): void
+    protected function importProcessField(string $table_name, string $field_name, string $language_id, ?string $field_value): void
     {
         global $db;
 
@@ -204,7 +204,7 @@ class DbIoSpecialsHandler extends DbIoHandler
                     break;
                 }
                 $products_base_price = zen_get_products_base_price($this->products_id);
-                $field_value = $products_base_price * (100 - $percent_off) / 100;
+                $field_value = (string)$products_base_price * (100 - $percent_off) / 100;
                 break;
 
             case 'specials_date_added':
@@ -262,7 +262,7 @@ class DbIoSpecialsHandler extends DbIoHandler
     // This function, called by the base DbIoHandler class when a non-blank v_dbio_command field is found in the
     // current import-record, gives this handler a chance to REMOVE a special's information from the database.
     //
-    protected function importHandleDbIoCommand($command, $data): bool
+    protected function importHandleDbIoCommand(string $command, array $data): bool
     {
         global $db;
 

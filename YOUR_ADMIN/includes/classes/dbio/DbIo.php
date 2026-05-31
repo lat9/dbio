@@ -11,7 +11,7 @@ if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
 }
 
-class DbIo extends base
+class DbIo
 {
     public object $handler;
 
@@ -28,7 +28,7 @@ class DbIo extends base
     protected string $message = '';
     protected bool $using_mbstring;
 
-    public function __construct($dbio_type = '', $file_suffix = '')
+    public function __construct(string $dbio_type = '', string $file_suffix = '')
     {
         $this->file_suffix = (($file_suffix === '') ? '' : ($file_suffix . '.')) . date('Ymd-His-') . mt_rand(1000,999999);
  
@@ -58,12 +58,12 @@ class DbIo extends base
     // -----
     // Returns the last message issued by the DbIo processing.
     //
-    public function getMessage()
+    public function getMessage(): string
     {
         return ($this->message === '') ? $this->handler->getHandlerMessage() : $this->message;
     }
 
-    public function isInitialized()
+    public function isInitialized(): bool
     {
         return $this->initialized;
     }
@@ -103,7 +103,7 @@ class DbIo extends base
     // This function also calls a helper-function to ensure that the directories used by the DbIo for its operation
     // exist and are writable.
     //
-    protected function initializeConfig($dbio_type)
+    protected function initializeConfig(string $dbio_type): bool
     {
         unset($this->handler);
         $this->message = '';
@@ -158,7 +158,7 @@ class DbIo extends base
     // Function that handles an export for the currently-active DbIo type.  The function takes an input that determines
     // where the exported data "goes", either to a 'file' or 'download' to auto-download the generated .csv file.
     //
-    public function dbioExport($export_to = 'file', $language = 'all')
+    public function dbioExport(string $export_to = 'file', string $language = 'all'): array
     {
         global $db;
 
@@ -240,7 +240,7 @@ class DbIo extends base
     // is specified as either 'all' (all store languages) or by the 2-character ISO code
     // associated with the language, e.g. 'en' for English or 'es' for Spanish.
     //
-    public function dbioImport($filename, $operation = 'check', $language = 'all'): array
+    public function dbioImport(string $filename, string $operation = 'check', string $language = 'all'): array
     {
         $completion_code = false;
         $this->message = '';
@@ -293,7 +293,7 @@ class DbIo extends base
     // Redirect any debug-messages from this level of processing to the handler's message handling, so that
     // all messages for a given import are recorded in a single location.
     //
-    protected function debugMessage($message): void
+    protected function debugMessage(string $message): void
     {
         $this->handler->debugMessage($message);
     }
@@ -301,7 +301,7 @@ class DbIo extends base
     // -----
     // Write the specified array (or arrays!) of data to the current export .csv file.
     //
-    private function writeCsvRecord($csv_record): void
+    private function writeCsvRecord(false|array $csv_record): void
     {
         if (is_array($csv_record) && count($csv_record) !== 0) {
             // -----

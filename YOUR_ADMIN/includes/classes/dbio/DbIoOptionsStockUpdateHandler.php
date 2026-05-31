@@ -65,7 +65,7 @@ class DbIoOptionsStockUpdateHandler extends DbIoOptionsStockBase
     // This report's import handling is a little different.  The base class' handling is used to determine whether the record's associated
     // products_id exists as a POSM-managed entity.
     //
-    protected function importCheckKeyValue($data): bool
+    protected function importCheckKeyValue(array $data): bool
     {
         global $db;
 

@@ -136,7 +136,7 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
     //    record's not *specifically* an insert, check to see whether the values-id/language-id
     //    pair are currently recorded in the database.  If not, this is a language-only record insert.
     //
-    protected function importCheckKeyValue($data): bool
+    protected function importCheckKeyValue(array $data): bool
     {
         $products_options_values_id = $this->importGetFieldValue('products_options_values_id', $data);
         $this->isLanguageOnlyInsert = false;
@@ -177,7 +177,7 @@ class DbIoProductsOptionsValuesHandler extends DbIoHandler
         return parent::importCheckKeyValue($data);
     }
 
-    protected function importProcessField($table_name, $field_name, $language_id, $field_value): void
+    protected function importProcessField(string $table_name, string $field_name, string $language_id, ?string $field_value): void
     {
         switch ($field_name) {
             case 'products_options_values_id':

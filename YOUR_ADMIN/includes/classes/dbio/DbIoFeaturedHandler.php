@@ -95,7 +95,7 @@ class DbIoFeaturedHandler extends DbIoHandler
     //                           that the field is calculated separately by the handler's processing.
     // - DBIO_SPECIAL_IMPORT ... The field requires special-handling by the handler to create the associated database elements.
     //
-    protected function importHeaderFieldCheck($field_name): string
+    protected function importHeaderFieldCheck(string $field_name): string
     {
         if ($field_name !== 'featured_id' && in_array($field_name, array_keys($this->tables['featured']['fields']))) {
             return self::DBIO_IMPORT_OK;
@@ -103,7 +103,7 @@ class DbIoFeaturedHandler extends DbIoHandler
         return self::DBIO_NO_IMPORT;
     }
 
-    protected function importProcessField($table_name, $field_name, $language_id, $field_value): void
+    protected function importProcessField(string $table_name, string $field_name, string $language_id, ?string $field_value): void
     {
         global $db;
 
@@ -129,7 +129,7 @@ class DbIoFeaturedHandler extends DbIoHandler
         parent::importProcessField($table_name, $field_name, $language_id, $field_value);
     }
 
-    protected function importAddField($table_name, $field_name, $field_value): void
+    protected function importAddField(string $table_name, string $field_name, ?string $field_value): void
     {
         $this->debugMessage("Featured::importAddField($table_name, $field_name, $field_value)");
         switch ($table_name) {
@@ -155,7 +155,7 @@ class DbIoFeaturedHandler extends DbIoHandler
     // This function, called by the base DbIoHandler class when a non-blank v_dbio_command field is found in the
     // current import-record, gives this handler a chance to REMOVE a featured product's record from the database.
     //
-    protected function importHandleDbIoCommand($command, $data)
+    protected function importHandleDbIoCommand(string $command, array $data): bool
     {
         global $db;
 

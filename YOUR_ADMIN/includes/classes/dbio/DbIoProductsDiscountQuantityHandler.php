@@ -108,7 +108,7 @@ class DbIoProductsDiscountQuantityHandler extends DbIoHandler
     // For this handler, a import-record must contain either a products_id or products_model that exists within the database or
     // the record cannot be imported.
     //
-    protected function importCheckKeyValue($data): bool
+    protected function importCheckKeyValue(array $data): bool
     {
         global $db;
 
@@ -139,10 +139,10 @@ class DbIoProductsDiscountQuantityHandler extends DbIoHandler
     // This function, called to process each field within a CSV import, validates the values for the products-table
     // entries.
     //
-    protected function importProcessField($table_name, $field_name, $language_id, $field_value): void
+    protected function importProcessField(string $table_name, string $field_name, string $language_id, ?string $field_value): void
     {
         parent::importProcessField($table_name, $field_name, $language_id, $field_value);
-        if ($this->record_status && $table_name == TABLE_PRODUCTS) {
+        if ($this->record_status && $table_name === TABLE_PRODUCTS) {
             switch ($field_name) {
                 case 'products_discount_type':
                     switch ($field_value) {
@@ -169,7 +169,7 @@ class DbIoProductsDiscountQuantityHandler extends DbIoHandler
                     }
                     break;
                 case 'products_mixed_discount_quantity':
-                    if ($field_value != 0 && $field_value != 1) {
+                    if ($field_value !== '0' && $field_value !== '1') {
                         $this->record_status = false;
                         $this->debugMessage("[*] $table_name.$field_name, line #" . $this->stats['record_count'] . ": Value ($field_value) is not valid for this field.", self::DBIO_ERROR);
                     }

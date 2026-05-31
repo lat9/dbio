@@ -146,7 +146,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
     //
     // The products_id value is saved by the base class processing in the class array "key_fields".
     //
-    protected function importCheckKeyValue($data): bool
+    protected function importCheckKeyValue(array $data): bool
     {
         if ($this->import_is_insert === true) {
             $this->record_status = false;
@@ -155,7 +155,7 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
         return $this->record_status;
     }
 
-    protected function importProcessField($table_name, $field_name, $language_id, $field_value): void
+    protected function importProcessField(string $table_name, string $field_name, string $language_id, ?string $field_value): void
     {
         switch ($field_name) {
             case 'products_options_type':
@@ -275,7 +275,6 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
                             }
                         }
                     }
-                    $this->record_status = 'processed';
                 }
             }
         }
@@ -285,7 +284,14 @@ class DbIoProductsAttribsBasicHandler extends DbIoHandler
         }
     }
 
-    protected function importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause = '', $is_override = false, $is_insert = true): string
+    protected function importBuildSqlQuery(
+        string $table_name,
+        string $table_alias,
+        array $table_fields,
+        string $extra_where_clause = '',
+        bool $is_override = false,
+        bool $is_insert = true
+    ): string|false
     {
         return ($table_name === TABLE_PRODUCTS) ? false : parent::importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause, $is_override, $is_insert);
     }

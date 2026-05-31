@@ -106,7 +106,8 @@ class DbIoOrdersHandler extends DbIoOrdersBase
         ];
     }
 
-    private function getOrdersStatusName($orders_status_id) {
+    private function getOrdersStatusName(string $orders_status_id): string
+    {
         global $db;
 
         $check = $db->Execute(

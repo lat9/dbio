@@ -16,7 +16,7 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 class DbIoOrdersBase extends DbIoHandler
 {
-    public static function getHandlerExportFilters()
+    public static function getHandlerExportFilters(): array
     {
         return [
             'orders_status' => [
