@@ -5,7 +5,7 @@ declare(strict_types=1);
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.2.0
+// Last updated: DbIo v2.2.1
 //
 use \ForceUTF8\Encoding;
 use \ForceUTF8\IconvOptions;
@@ -80,7 +80,7 @@ abstract class DbIoHandler extends base
     protected string $key_field_names;
     protected array $key_fields;
     protected string $key_from_clause;
-    protected false|string $key_index;
+    protected false|int $key_index;
     protected string $key_select_clause;
     protected string $key_where_clause;
     protected array $languages;
@@ -675,7 +675,7 @@ abstract class DbIoHandler extends base
         $key_index = 0;
         foreach ($header as &$current_field) {
             $table_name = self::DBIO_NO_IMPORT;
-            $field_language_id = 0;
+            $field_language_id = '0';
             if (dbio_strpos($current_field, 'v_') !== 0 || dbio_strlen($current_field) < 3) {
                 $current_field = self::DBIO_NO_IMPORT;
             } elseif ($current_field === 'v_dbio_command') {
