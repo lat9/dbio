@@ -837,7 +837,7 @@ abstract class DbIoHandler extends base
                 [
                     'import_sql_data' => $this->import_sql_data,
                     'table_names' => $this->table_names,
-                    'language_id' => $this->language_id,
+                    'language_id' => var_export($this->language_id, true),
                     'header_field_count' => $this->header_field_count,
                     'key_index' => $this->key_index,
                     'variable_keys' => $this->variable_keys,
@@ -1289,7 +1289,7 @@ abstract class DbIoHandler extends base
         return $this->record_status;
     }
 
-    protected function importUpdateRecordKey(string $table_name, array|false $table_fields, string $key_value): array|false
+    protected function importUpdateRecordKey(string $table_name, array|false $table_fields, string|false $key_value): array|false
     {
         return $table_fields;
     }
@@ -1309,9 +1309,9 @@ abstract class DbIoHandler extends base
     //
     protected function importGetLanguageFieldValue(string $field_name, string $language_id, array $data): false|string
     {
-        $this->debugMessage("importGetLanguageFieldValue for '$field_name' ($language_id) from " . print_r($data, true) . print_r($this->headers, true) . print_r($this->language_ids, true));
+        $this->debugMessage("importGetLanguageFieldValue for '$field_name' ($language_id) from " . print_r($data, true) . print_r($this->headers, true) . print_r($this->language_id, true));
         for ($i = 0, $field_index = false; $i < $this->header_field_count; $i++) {
-            if ($this->headers[$i] === $field_name && $this->language_ids[$i] === $language_id) {
+            if ($this->headers[$i] === $field_name && (string)$this->language_id[$i] === $language_id) {
                 $field_index = $i;
                 break;
             }
@@ -1410,8 +1410,7 @@ abstract class DbIoHandler extends base
         string $extra_where_clause = '',
         bool $is_override = false,
         bool $is_insert = true
-    ): string|false
-    {
+    ): string|false {
         global $db;
 
         $record_is_insert = ($is_override === true) ? $is_insert : $this->import_is_insert;
@@ -1489,7 +1488,7 @@ abstract class DbIoHandler extends base
         return $sql_query;
     }
 
-    protected function importRecordPostProcess(string $key_value): void
+    protected function importRecordPostProcess(string|false $key_value): void
     {
     }
 

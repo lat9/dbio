@@ -5,7 +5,7 @@ declare(strict_types=1);
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2017-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.2.0
+// Last updated: DbIo v2.2.1
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -121,18 +121,18 @@ class DbIoManufacturersHandler extends DbIoHandler
     // If we're doing an update (i.e. existing manufacturer), need to update the primary where-clause to make sure that the
     // manufacturers table alias isn't part of the string for the non-manufacturers table.
     //
-    protected function importUpdateRecordKey(string $table_name, array|false $table_fields, string $products_id): array
+    protected function importUpdateRecordKey(string $table_name, array|false $table_fields, string|false $record_key_value): array
     {
         if ($table_name !== TABLE_MANUFACTURERS) {
             if ($this->import_is_insert === true) {
                 $table_fields['manufacturers_id'] = [
-                    'value' => $products_id,
+                    'value' => $record_key_value,
                     'type' => 'integer'
                 ];
             } else {
                 $this->where_clause = 'manufacturers_id = ' . (int)$this->key_fields['manufacturers_id'];
             }
         }
-        return parent::importUpdateRecordKey($table_name, $table_fields, $products_id);
+        return parent::importUpdateRecordKey($table_name, $table_fields, $record_key_value);
     }
 }  //-END class DbIoManufacturersHandler

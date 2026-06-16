@@ -5,7 +5,7 @@ declare(strict_types=1);
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.2.0
+// Last updated: DbIo v2.2.1
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -295,7 +295,7 @@ class DbIoProductsAttribsRawHandler extends DbIoHandler
     // line of the imported CSV receives two 'importBuildSqlQuery' requests.  This function enables the addition of the
     // previous record's 'record_key', i.e. the products_attributes_id, to the to-be-generated SQL for the downloads.
     //
-    protected function importUpdateRecordKey(string $table_name, array|false $table_fields, string $record_key_value): array
+    protected function importUpdateRecordKey(string $table_name, array|false $table_fields, string|false $record_key_value): array
     {
         if ($table_name === TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD && $this->import_is_insert === true) {
             $table_fields['products_attributes_id'] = [

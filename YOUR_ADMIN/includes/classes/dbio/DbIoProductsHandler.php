@@ -5,7 +5,7 @@ declare(strict_types=1);
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2015-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.2.0
+// Last updated: DbIo v2.2.1
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -1109,7 +1109,7 @@ class DbIoProductsHandler extends DbIoHandler
             case self::DBIO_SPECIAL_IMPORT:
                 switch ($field_name) {
                     case 'manufacturers_name':
-                        $manufacturers_id = 0;
+                        $manufacturers_id = '0';
                         if (!empty ($field_value)) {
                             $manufacturer_check_sql = "SELECT manufacturers_id FROM " . TABLE_MANUFACTURERS . " WHERE manufacturers_name = :manufacturer_name: LIMIT 1";
                             $manufacturer_check = $db->ExecuteNoCache($db->bindVars($manufacturer_check_sql, ':manufacturer_name:', $field_value, 'string'));
@@ -1328,7 +1328,7 @@ class DbIoProductsHandler extends DbIoHandler
     // happens within this function and we set the return value to false to indicate to the parent processing that the
     // associated update has been already handled.
     //
-    protected function importUpdateRecordKey(string $table_name, array|false $table_fields, string $products_id): array|false
+    protected function importUpdateRecordKey(string $table_name, array|false $table_fields, string|false $record_key_value): array|false
     {
         global $db;
 
@@ -1336,7 +1336,7 @@ class DbIoProductsHandler extends DbIoHandler
             case TABLE_PRODUCTS:
                 if ($this->import_is_insert === true) {
                     $table_fields['products_id'] = [
-                        'value' => $products_id,
+                        'value' => $record_key_value,
                         'type' => 'integer'
                     ];
                 } else {
@@ -1348,7 +1348,7 @@ class DbIoProductsHandler extends DbIoHandler
             case TABLE_PRODUCTS_DESCRIPTION:
                 if ($this->import_is_insert === true) {
                     $table_fields['products_id'] = [
-                        'value' => $products_id,
+                        'value' => $record_key_value,
                         'type' => 'integer',
                     ];
                 }
@@ -1356,7 +1356,7 @@ class DbIoProductsHandler extends DbIoHandler
 
             case TABLE_PRODUCTS_TO_CATEGORIES:
                 if ($this->operation !== 'check') {
-                    $pID = ($this->import_is_insert === true) ? $products_id : $this->key_fields['products_id'];
+                    $pID = ($this->import_is_insert === true) ? $record_key_value : $this->key_fields['products_id'];
                     $db->Execute(
                         "INSERT IGNORE INTO $table_name
                             (products_id, categories_id)
@@ -1410,7 +1410,7 @@ class DbIoProductsHandler extends DbIoHandler
                     }
                 } elseif ($this->import_is_insert === true) {
                     $table_fields['products_id'] = [
-                        'value' => $products_id,
+                        'value' => $record_key_value,
                         'type' => 'integer',
                     ];
                     $table_fields['language_id'] = [
@@ -1423,7 +1423,7 @@ class DbIoProductsHandler extends DbIoHandler
             default:
                 break;
         }
-        return parent::importUpdateRecordKey($table_name, $table_fields, (string)$products_id);
+        return parent::importUpdateRecordKey($table_name, $table_fields, $record_key_value);
     }
 
     // -----

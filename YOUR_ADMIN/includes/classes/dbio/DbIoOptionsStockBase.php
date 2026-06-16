@@ -5,7 +5,7 @@ declare(strict_types=1);
 // Part of the DataBase Import/Export (aka DbIo) plugin by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2014-2026 Vinos de Frutas Tropicales
 //
-// Last updated:  DbIo v2.2.0
+// Last updated:  DbIo v2.2.1
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -341,7 +341,7 @@ class DbIoOptionsStockBase extends DbIoHandler
                 $this->debugMessage("getOptionIdFromName: No matching record found for the option named $option_name; the record at line #" . $this->stats['record_count'] . " not imported", self::DBIO_ERROR);
                 break;
             case 1:
-                $option_id = $option_info->fields['products_options_id'];
+                $option_id = (int)$option_info->fields['products_options_id'];
                 break;
             default:
                 $option_id = [];
@@ -365,7 +365,7 @@ class DbIoOptionsStockBase extends DbIoHandler
     //
     // * When the return-value is an array, then the matching 'option_id' and 'option_value_id' values are returned.
     //
-    private function getOptionValueIdFromName(string $option_value_name, string|array $option_id): false|array
+    private function getOptionValueIdFromName(string $option_value_name, int|array $option_id): false|array
     {
         global $db;
 
@@ -553,7 +553,7 @@ class DbIoOptionsStockBase extends DbIoHandler
     // definition in the DbIoHandler class, but is unused -- see the method definition
     // above.
     //
-    protected function importRecordPostProcess(string $key_value): void
+    protected function importRecordPostProcess(string|false $key_value): void
     {
         $this->posmBaseUpdateBaseProductsQuantity();
     }
