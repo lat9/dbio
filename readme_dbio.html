@@ -142,7 +142,14 @@ body {
                         <h4 class="font-italic mb-4">Change History</h4>
                         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
                         <ul>
-                         <li>v2.2.1, 2026-06-20 (lat9):<ul>
+                          <li>v2.2.2-beta1, 2026-07-15 (lat9):<ul>
+                            <li>BUGFIX: ProductsHandler: $record_key_value must be string|false, int given.</li>
+                            <li>The following files were changed:<ol>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
+                            </ol></li>
+                          </ul></li>
+                          <li>v2.2.1, 2026-06-20 (lat9):<ul>
                             <li>BUGFIX: Correct <code>language_id</code> default to prevent PHP Fatal error if no language element in import.</li>
                             <li>BUGFIX: Correct type-hint for <code>DbioHandler::key_index</code>; changing to <code>int|false</code>.</li>
                             <li>BUGFIX: Additional modifications for missed type-hinting changes introduced in v2.2.0.</li>

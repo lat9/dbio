@@ -5,7 +5,7 @@ declare(strict_types=1);
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2016-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.2.1
+// Last updated: DbIo v2.2.2
 //
 use \ForceUTF8\Encoding;
 use \ForceUTF8\IconvOptions;
@@ -1027,8 +1027,13 @@ abstract class DbIoHandler extends base
                                         $sql_query = $this->importBuildSqlQuery($table_name, $table_alias, $table_fields, $extra_where_clause);
                                         if ($sql_query !== false && $this->operation !== 'check') {
                                             $db->Execute($sql_query);
+
+                                            // -----
+                                            // Note: Casting the integer insert_ID to a string for type-hint compatibility with
+                                            // the importUpdateRecordKey method.
+                                            //
                                             if ($capture_key_value === true) {
-                                                $record_key_value = $db->insert_ID();
+                                                $record_key_value = (string)$db->insert_ID();
                                             }
                                         }
                                     }
