@@ -5,7 +5,7 @@ declare(strict_types=1);
 // Part of the DataBase Import/Export (aka DbIo) plugin by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2014-2026 Vinos de Frutas Tropicales
 //
-// Last updated:  DbIo v2.2.1
+// Last updated:  DbIo v2.2.2
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -26,8 +26,8 @@ class DbIoOptionsStockBase extends DbIoHandler
     // use of the colon (:) as the inner separator.  Unfortunately, there are stores (like the ZC demo products) that include
     // a colon in either an option's name or an option-value's name.
     //
-    public const string OPTION_OUTER_SEPARATOR = '^';
-    public const string OPTION_INNER_SEPARATOR = '~';
+    public const OPTION_OUTER_SEPARATOR = '^';
+    public const OPTION_INNER_SEPARATOR = '~';
 
     // -----
     // Handler-specific variable declarations.
