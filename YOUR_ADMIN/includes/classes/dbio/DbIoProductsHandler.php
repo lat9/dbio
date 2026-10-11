@@ -5,7 +5,7 @@ declare(strict_types=1);
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2015-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.2.1
+// Last updated: DbIo v2.2.2
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -16,10 +16,10 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 class DbIoProductsHandler extends DbIoHandler
 {
-    public const string DBIO_COMMAND_ADD = 'ADD';      //-Forces the current product to be added, even if the model already exists.
-    public const string DBIO_COMMAND_LINK = 'LINK';     //-Links the product to the category specified by v_categories_name
-    public const string DBIO_COMMAND_MOVE = 'MOVE';     //-Moves the product to the category specified by v_categories_name
-    public const string DBIO_COMMAND_UNLINK = 'UNLINK';   //-Unlinks the product from the specified v_categories_name, so long as it's not the current master_categories_id.
+    public const DBIO_COMMAND_ADD = 'ADD';      //-Forces the current product to be added, even if the model already exists.
+    public const DBIO_COMMAND_LINK = 'LINK';     //-Links the product to the category specified by v_categories_name
+    public const DBIO_COMMAND_MOVE = 'MOVE';     //-Moves the product to the category specified by v_categories_name
+    public const DBIO_COMMAND_UNLINK = 'UNLINK';   //-Unlinks the product from the specified v_categories_name, so long as it's not the current master_categories_id.
 
     protected bool $categories_name_found;
     protected bool $import_meta_tags_post_process;

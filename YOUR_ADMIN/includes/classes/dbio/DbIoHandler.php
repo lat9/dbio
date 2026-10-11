@@ -20,34 +20,34 @@ abstract class DbIoHandler extends base
 //                                    C O N S T A N T S
 // ----------------------------------------------------------------------------------
     // ----- Interface Constants -----
-    public const string DBIO_HANDLER_VERSION   = '2.2.0';
+    public const DBIO_HANDLER_VERSION   = '2.2.0';
     // ----- Field-Import Status Values -----
-    public const string DBIO_IMPORT_OK = '--ok--';
-    public const string DBIO_NO_IMPORT = '--none--';
-    public const string DBIO_SPECIAL_IMPORT = '--special--';
-    public const string DBIO_UNKNOWN_VALUE = '--unknown--';
+    public const DBIO_IMPORT_OK = '--ok--';
+    public const DBIO_NO_IMPORT = '--none--';
+    public const DBIO_SPECIAL_IMPORT = '--special--';
+    public const DBIO_UNKNOWN_VALUE = '--unknown--';
     // ----- DbIo commands -----
-    public const string DBIO_COMMAND_REMOVE = 'REMOVE';
+    public const DBIO_COMMAND_REMOVE = 'REMOVE';
     // ----- Message Severity ----- ** Note ** This set of constants are bit-flags!
-    public const int DBIO_INFORMATIONAL = 1;
-    public const int DBIO_WARNING = 2;
-    public const int DBIO_ERROR = 4;
-    public const int DBIO_STATUS = 8;
-    public const int DBIO_ACTIVITY = 16;
+    public const DBIO_INFORMATIONAL = 1;
+    public const DBIO_WARNING = 2;
+    public const DBIO_ERROR = 4;
+    public const DBIO_STATUS = 8;
+    public const DBIO_ACTIVITY = 16;
     // ----- Handler configuration bit switches -----
-    public const int DBIO_FLAG_NONE = 0;            //- No special handling
-    public const int DBIO_FLAG_PER_LANGUAGE = 1;    //- Field is handled once per language
-    public const int DBIO_FLAG_NO_EXPORT = 2;       //- Possibly set during export-customization to indicate that the field should not be exported
-    public const int DBIO_FLAG_FIELD_SELECT = 4;    //- Indicates that an additional-header field has a companion select-field
+    public const DBIO_FLAG_NONE = 0;            //- No special handling
+    public const DBIO_FLAG_PER_LANGUAGE = 1;    //- Field is handled once per language
+    public const DBIO_FLAG_NO_EXPORT = 2;       //- Possibly set during export-customization to indicate that the field should not be exported
+    public const DBIO_FLAG_FIELD_SELECT = 4;    //- Indicates that an additional-header field has a companion select-field
     // ----- Handler key-configuration bit-switches -----
-    public const int DBIO_KEY_IS_VARIABLE = 1;      //- The associated key is mapped to an imported variable
-    public const int DBIO_KEY_IS_FIXED = 2;         //- The key is mapped to a fixed database field.
-    public const int DBIO_KEY_SELECTED = 4;         //- The key value is selected as part of the key-checking SQL (at least one required).
-    public const int DBIO_KEY_IS_MASTER = 8;        //- The key value is selected as part of the query, but is not mapped
-    public const int DBIO_KEY_IS_ALTERNATE = 16;    //- The key is used in addition to the "master" key setting to locate a unique matching record
+    public const DBIO_KEY_IS_VARIABLE = 1;      //- The associated key is mapped to an imported variable
+    public const DBIO_KEY_IS_FIXED = 2;         //- The key is mapped to a fixed database field.
+    public const DBIO_KEY_SELECTED = 4;         //- The key value is selected as part of the key-checking SQL (at least one required).
+    public const DBIO_KEY_IS_MASTER = 8;        //- The key value is selected as part of the query, but is not mapped
+    public const DBIO_KEY_IS_ALTERNATE = 16;    //- The key is used in addition to the "master" key setting to locate a unique matching record
     // ----- Handler language_override values -----
-    public const int DBIO_OVERRIDE_ALL = 1;     //- ALL fields within the language-based table use only the DEFAULT_LANGUAGE
-    public const int DBIO_OVERRIDE_STRING = 2;  //- String fields are I/O with language; others aren't.
+    public const DBIO_OVERRIDE_ALL = 1;     //- ALL fields within the language-based table use only the DEFAULT_LANGUAGE
+    public const DBIO_OVERRIDE_STRING = 2;  //- String fields are I/O with language; others aren't.
 
     public array $stats;
 

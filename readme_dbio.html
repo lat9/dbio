@@ -55,7 +55,7 @@ body {
                 <li>Zen Cart download link: <a href="https://www.zen-cart.com/downloads.php?do=file&id=2091" target="_blank">https://www.zen-cart.com/downloads.php?do=file&id=2091</a></li>
                 <li>Zen Cart support thread: <a href="https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?220569-Database-I-O-Manager-(DbIo)-Support-Thread</a></li>
                 <li>GitHub repository: <a href="https://github.com/lat9/dbio" target="_blank">https://github.com/lat9/dbio</a></li>
-                <li>Currently supporting Zen Cart versions 1.5.8 and later.</li>
+                <li>Currently supporting Zen Cart versions 1.5.8 and later, PHP versions 8.0 and later.</li>
             </ul>
         </header>
 
@@ -142,10 +142,14 @@ body {
                         <p class="h4 font-italic mb-4">Change History</p>
                         <p>You can view the details of these changes on the plugin's <a href="https://github.com/lat9/dbio/issues" target="_blank">GitHub repository.</a></p>
                         <ul>
-                          <li>v2.2.2-beta1, 2026-07-15 (lat9):<ul>
+                          <li>v2.2.2-beta2, 2026-10-11 (lat9):<ul>
                             <li>BUGFIX: ProductsHandler: $record_key_value must be string|false, int given.</li>
+                            <li>BUGFIX: Removing typing from class constants; requires PHP 8.3 or later.</li>
                             <li>The following files were changed:<ol>
                               <li>/YOUR_ADMIN/includes/classes/dbio/DbIoHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoOptionsStockBase.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsDiscountQuantityHandler.php</li>
+                              <li>/YOUR_ADMIN/includes/classes/dbio/DbIoProductsHandler.php</li>
                               <li>/YOUR_ADMIN/includes/init_includes/init_dbio_admin.php</li>
                             </ol></li>
                           </ul></li>

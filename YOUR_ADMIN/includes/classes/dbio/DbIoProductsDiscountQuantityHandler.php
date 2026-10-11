@@ -5,7 +5,7 @@ declare(strict_types=1);
 // Part of the DataBase Import/Export (aka DbIo) plugin, created by Cindy Merkin (cindy@vinosdefrutastropicales.com)
 // Copyright (c) 2018-2026, Vinos de Frutas Tropicales.
 //
-// Last updated: DbIo v2.2.0
+// Last updated: DbIo v2.2.2
 //
 if (!defined('IS_ADMIN_FLAG')) {
     exit('Illegal access');
@@ -16,20 +16,20 @@ if (!defined('IS_ADMIN_FLAG')) {
 //
 class DbIoProductsDiscountQuantityHandler extends DbIoHandler
 {
-    public const string DISCOUNT_TYPE_NONE = '0';
-    public const string DISCOUNT_TYPE_PERCENTAGE = '1';
-    public const string DISCOUNT_TYPE_ACTUAL_PRICE = '2';
-    public const string DISCOUNT_TYPE_AMOUNT_OFF = '3';
+    public const DISCOUNT_TYPE_NONE = '0';
+    public const DISCOUNT_TYPE_PERCENTAGE = '1';
+    public const DISCOUNT_TYPE_ACTUAL_PRICE = '2';
+    public const DISCOUNT_TYPE_AMOUNT_OFF = '3';
 
-    public const string DISCOUNT_TYPE_FROM_PRICE = '0';
-    public const string DISCOUNT_TYPE_FROM_SPECIAL = '1';
+    public const DISCOUNT_TYPE_FROM_PRICE = '0';
+    public const DISCOUNT_TYPE_FROM_SPECIAL = '1';
 
     public static function getHandlerInformation(): array|false
     {
         DbIoHandler::loadHandlerMessageFile('ProductsDiscountQuantity');
         return [
-            'version' => '2.2.0.0',
-            'handler_version' => '2.2.0',
+            'version' => '2.2.2',
+            'handler_version' => '2.2.2',
             'include_header' => true,
             'export_only' => false,
             'description' => DBIO_PRODUCTSDISCOUNTQUANTITY_DESCRIPTION,

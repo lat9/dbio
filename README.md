@@ -1,6 +1,6 @@
 The Database I/O Manager provides functionality similar to EZ-Populate, but has been totally redesigned from the ground up.
 
-Currently supporting Zen Cart versions 1.5.8 and later.
+Currently supporting Zen Cart versions 1.5.8 and later, PHP 8.0 and later.
 
 ## Zen Cart Support Thread
 
@@ -12,4 +12,4 @@ The _**Database I/O Manager**_ can also be downloaded from the Zen Cart [support
 
 ## Additional Information
 
-Refer to the plugin's [readme.html](https://htmlpreview.github.io/?https://github.com/lat9/dbio/blob/master/readme_dbio.html) and [Wiki Articles](https://github.com/lat9/dbio/wiki) for additional information.
+Refer to the plugin's [Wiki Articles](https://github.com/lat9/dbio/wiki) for additional information.
